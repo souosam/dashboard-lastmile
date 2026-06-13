@@ -176,9 +176,9 @@
   <div class="kpi-row">
     <div class="kpi"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
     <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">avaliação de clientes</div></div>
-    <div class="kpi"><div class="kpi-label">SLA Médio (dias)</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">todos os protocolos</div></div>
+    <div class="kpi"><div class="kpi-label">SLA Médio (dias)</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">últimos 6 meses</div></div>
     <div class="kpi"><div class="kpi-label">Protocolos Ativos</div><div class="kpi-value" id="kpiAtivos">—</div><div class="kpi-sub" id="kpiAtivosSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Concluídos</div><div class="kpi-value" id="kpiConcluidos">—</div><div class="kpi-sub">status 13</div></div>
+    <div class="kpi"><div class="kpi-label">Ativos Agora</div><div class="kpi-value" id="kpiConcluidos">—</div><div class="kpi-sub" id="kpiAtivosDetalhe">em andamento</div></div>
     <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
   </div>
 
@@ -481,15 +481,30 @@ function renderKPIs(rows) {
   const val = conc.reduce((s,r)=>s+r.valor,0);
   const notas = rows.filter(r=>r.nota>0).map(r=>r.nota);
   const nota = notas.length ? notas.reduce((a,b)=>a+b,0)/notas.length : 0;
-  const slas = rows.filter(r=>r.slaGP>0).map(r=>r.slaGP);
-  const sla = slas.length ? Math.round(slas.reduce((a,b)=>a+b,0)/slas.length) : 0;
+
+  // SLA médio últimos 6 meses
+  const now = new Date();
+  const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth()-6, 1);
+  const mNames6 = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const recentSlas = rows.filter(r => {
+    if (!r.slaGP || r.slaGP <= 0 || !r.mes) return false;
+    const parts = r.mes.split('/');
+    const mIdx = mNames6.indexOf(parts[0]);
+    const yr = 2000 + parseInt(parts[1]);
+    const d = new Date(yr, mIdx-1, 1);
+    return d >= sixMonthsAgo;
+  }).map(r=>r.slaGP);
+  const sla = recentSlas.length ? Math.round(recentSlas.reduce((a,b)=>a+b,0)/recentSlas.length) : 0;
+
   set('kpiValor','R$ '+val.toLocaleString('pt-BR',{minimumFractionDigits:2}));
   set('kpiValorSub',conc.length+' projetos concluídos');
   set('kpiNota', nota ? nota.toFixed(2) : '—');
   set('kpiSLA', sla||'—');
   set('kpiAtivos', ativos.length);
   set('kpiAtivosSub', rows.filter(r=>r.status&&r.status.includes('Cancelado')).length+' cancelados');
-  set('kpiConcluidos', conc.length);
+  // Card "Ativos Agora" (antigo Concluídos)
+  set('kpiConcluidos', ativos.length);
+  set('kpiAtivosDetalhe', ativos.length === 1 ? '1 protocolo ativo' : ativos.length+' em andamento');
   set('kpiTotal', rows.length);
 }
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
@@ -498,22 +513,30 @@ function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function renderFunnel(rows) {
   const counts={};
   rows.forEach(r=>{if(r.status)counts[r.status]=(counts[r.status]||0)+1;});
-  const sorted=Object.entries(counts).sort((a,b)=>(parseInt(a[0])||99)-(parseInt(b[0])||99));
-  const max=Math.max(...Object.values(counts));
+  // Ordenar por contagem decrescente = afunilamento real
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const max=sorted[0]?sorted[0][1]:1;
   const cls=s=>s.includes('Concluída')?'done':s.includes('Cancelado')?'danger':s.includes('Pendente')||s.includes('validação')?'warn':s.includes('Projeto Futuro')?'muted':'';
-  document.getElementById('funnelList').innerHTML=sorted.map(([s,c])=>`
-    <div class="funnel-item">
-      <div class="funnel-label" title="${s}">${s.replace(/^\d+\.\s*/,'')}</div>
-      <div class="funnel-bar-wrap"><div class="funnel-bar ${cls(s)}" style="width:${Math.max(4,Math.round(c/max*100))}%"></div></div>
-      <div class="funnel-count">${c}</div>
-    </div>`).join('');
+  document.getElementById('funnelList').innerHTML=sorted.map(([s,c],i)=>{
+    const pct=Math.max(4,Math.round(c/max*100));
+    return `
+    <div class="funnel-item" style="margin-bottom:3px;">
+      <div class="funnel-label" title="${s}" style="font-size:11px;min-width:145px;">${s.replace(/^\d+\.\s*/,'')}</div>
+      <div class="funnel-bar-wrap" style="height:20px;clip-path:polygon(0 15%,100% 0,100% 100%,0 85%);">
+        <div class="funnel-bar ${cls(s)}" style="width:${pct}%;height:100%;"></div>
+      </div>
+      <div class="funnel-count" style="font-size:12px;min-width:28px;">${c}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── DONUT ─────────────────────────────────────────────────────
 function renderDonut(rows) {
   const counts={};
   rows.forEach(r=>{if(r.produto)counts[r.produto]=(counts[r.produto]||0)+1;});
-  const labels=Object.keys(counts), data=labels.map(l=>counts[l]);
+  // Ordenar maior → menor
+  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+  const labels=sorted.map(e=>e[0]), data=sorted.map(e=>e[1]);
   const total=data.reduce((a,b)=>a+b,0);
   const colors=PALETTE.slice(0,labels.length);
   if(charts.donut)charts.donut.destroy();
@@ -533,12 +556,16 @@ function renderDonut(rows) {
 function renderSLAByProduct(rows) {
   const acc={};
   rows.filter(r=>r.produto&&r.slaGP>0).forEach(r=>{if(!acc[r.produto])acc[r.produto]=[];acc[r.produto].push(r.slaGP);});
-  const labels=Object.keys(acc).sort();
-  const data=labels.map(l=>Math.round(acc[l].reduce((a,b)=>a+b,0)/acc[l].length));
+  // Ordenar maior → menor
+  const sorted=Object.entries(acc)
+    .map(([l,v])=>({l,media:Math.round(v.reduce((a,b)=>a+b,0)/v.length)}))
+    .sort((a,b)=>b.media-a.media);
+  const labels=sorted.map(s=>s.l);
+  const data=sorted.map(s=>s.media);
   if(charts.slaProd)charts.slaProd.destroy();
   charts.slaProd=new Chart(document.getElementById('slaByProduct'),{
     type:'bar',
-    data:{labels,datasets:[{label:'Dias',data,backgroundColor:data.map(v=>v>35?'#e74c3c':v>25?'#f39c12':'#2ecc71'),borderRadius:5}]},
+    data:{labels,datasets:[{label:'Dias',data,backgroundColor:'#2ecc71',borderRadius:5}]},
     options:darkOpts({indexAxis:'y'})
   });
 }
