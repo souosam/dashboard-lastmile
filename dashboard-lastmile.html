@@ -114,6 +114,24 @@
     @keyframes spin{to{transform:rotate(360deg);}}
     #loadMsg{color:var(--textdim);font-size:13px;}
     #errorBanner{display:none;background:rgba(231,76,60,.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;}
+
+    /* LOGIN */
+    #loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:9999;}
+    .login-box{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:40px 44px;width:360px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+    .login-logo{width:52px;height:52px;border-radius:12px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#0f1117;margin:0 auto 20px;}
+    .login-title{font-size:18px;font-weight:700;margin-bottom:4px;}
+    .login-sub{font-size:12px;color:var(--muted);margin-bottom:28px;}
+    .login-input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;padding:11px 14px;outline:none;margin-bottom:12px;text-align:center;letter-spacing:2px;}
+    .login-input:focus{border-color:var(--accent);}
+    .login-btn{width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#0f1117;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .15s;margin-bottom:12px;}
+    .login-btn:hover{opacity:.88;}
+    .login-error{color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px;display:none;}
+    .login-footer{font-size:10px;color:var(--muted);margin-top:16px;}
+    #appContent{filter:blur(14px);pointer-events:none;user-select:none;transition:filter .5s;}
+    #appContent.unlocked{filter:none;pointer-events:auto;user-select:auto;}
+    .btn-logout{background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;margin-left:6px;}
+    .btn-logout:hover{border-color:var(--danger);color:var(--danger);}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
     /* META LINE INPUT */
     .meta-control{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
     .meta-control input{width:60px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;padding:3px 7px;outline:none;text-align:center;}
@@ -126,8 +144,23 @@
   </style>
 </head>
 <body>
+<!-- LOGIN SCREEN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">LM</div>
+    <div class="login-title">Last Mile Dashboard</div>
+    <div class="login-sub">GP · Samuel Almeida · Acesso restrito</div>
+    <input class="login-input" type="password" id="loginInput" placeholder="••••••••••••"
+      onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password"/>
+    <div class="login-error" id="loginError">Senha incorreta. Tente novamente.</div>
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="login-footer">🔒 Dados confidenciais · Acesso autorizado apenas</div>
+  </div>
+</div>
+
 <div id="loadingOverlay"><div class="spinner"></div><div id="loadMsg">Conectando ao Google Sheets…</div></div>
 
+<div id="appContent">
 <header>
   <div class="logo">
     <div class="logo-dot">LM</div>
@@ -136,6 +169,7 @@
   <div class="header-right">
     <span id="lastUpdated">—</span>
     <button class="btn btn-primary" id="btnRefresh" onclick="loadData()">↻ Atualizar</button>
+    <button class="btn-logout" onclick="doLogout()">⏻ Sair</button>
   </div>
 </header>
 
@@ -303,6 +337,7 @@
     </div>
   </div>
 </main>
+</div><!-- #appContent -->
 
 <script>
 const _d=[33,61,61,57,58,115,102,102,45,38,42,58,103,46,38,38,46,37,44,103,42,38,36,102,58,57,59,44,40,45,58,33,44,44,61,58,102,45,102,44,102,123,25,8,10,17,100,120,63,27,2,58,40,33,44,63,8,11,11,22,125,34,46,122,58,28,33,42,16,19,3,27,5,15,30,5,126,37,17,27,28,26,127,47,61,29,125,31,27,8,38,28,30,120,120,38,45,100,36,59,6,26,24,121,112,5,28,12,59,34,33,28,12,56,57,12,34,32,11,10,124,29,47,13,13,29,59,102,57,60,43,118,46,32,45,116,120,112,120,122,113,124,122,112,120,126,111,58,32,39,46,37,44,116,61,59,60,44,111,38,60,61,57,60,61,116,42,58,63];const CSV_URL=_d.map(c=>String.fromCharCode(c^73)).join('');
@@ -314,7 +349,7 @@ const CITY_COORDS={'São Paulo':[-23.55,-46.63],'Campinas':[-22.91,-47.06],'Sant
 
 let allRows=[],filteredRows=[],charts={},leafletMap=null,markersLayer=null,activeStatusFilter=null,metaSLA=30;
 
-window.addEventListener('DOMContentLoaded',loadData);
+// Auth handles DOMContentLoaded
 
 // ── LOAD ─────────────────────────────────────────────────────────
 async function loadData(){
@@ -689,6 +724,64 @@ function sortMonths(arr){
   const o={Out:10,Nov:11,Dez:12,Jan:1,Fev:2,Mar:3,Abr:4,Mai:5,Jun:6,Jul:7,Ago:8,Set:9};
   return[...new Set(arr)].filter(Boolean).sort((a,b)=>{const[ma,ya]=a.split('/');const[mb,yb]=b.split('/');const dy=parseInt(ya)-parseInt(yb);return dy!==0?dy:(o[ma]||0)-(o[mb]||0);});
 }
+// ── AUTH ─────────────────────────────────────────────────────────
+const PWD_HASH = '7759630c870a4291ea7cf40c7bac0ed4afba4a66de4b883c8da679962043fed5';
+const SESSION_KEY = 'lm_auth';
+
+async function sha256(msg) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(msg));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+async function doLogin() {
+  const input = document.getElementById('loginInput').value;
+  const hash = await sha256(input);
+  const errEl = document.getElementById('loginError');
+  if (hash === PWD_HASH) {
+    sessionStorage.setItem(SESSION_KEY, '1');
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').classList.add('unlocked');
+    errEl.style.display = 'none';
+    loadData();
+  } else {
+    errEl.style.display = 'block';
+    document.getElementById('loginInput').value = '';
+    document.getElementById('loginInput').focus();
+    // shake animation
+    const box = document.querySelector('.login-box');
+    box.style.animation = 'none';
+    box.offsetHeight;
+    box.style.animation = 'shake .4s ease';
+  }
+}
+
+function doLogout() {
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appContent').classList.remove('unlocked');
+  document.getElementById('loginInput').value = '';
+}
+
+// Check session on load
+window.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appContent').classList.add('unlocked');
+  } else {
+    document.getElementById('loginInput').focus();
+    // Don't load data until authenticated
+  }
+});
+
+// Shake animation
+const shakeStyle = document.createElement('style');
+shakeStyle.textContent = '@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}};'
+document.head.appendChild(shakeStyle);
+
+// Override loadData to check auth first
+const _origLoadData = loadData;
+// loadData is defined below, we override after
+
 function darkOpts(extra={}){
   const base={responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2333',borderColor:'#2a3147',borderWidth:1,titleColor:'#e8ecf4',bodyColor:'#9aa3bd'}},scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}}};
   if(extra.plugins?.tooltip){base.plugins.tooltip={...base.plugins.tooltip,...extra.plugins.tooltip};delete extra.plugins.tooltip;}
