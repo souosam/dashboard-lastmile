@@ -201,19 +201,25 @@
     </div>
   </div>
 
-  <!-- ROW 2: SLA mensal + PRC mensal + Valor mensal -->
-  <div class="grid-3">
+  <!-- ROW 2: 4 gráficos em 2x2 -->
+  <div class="grid-2" style="margin-bottom:20px;">
     <div class="card">
       <div class="card-title">SLA Médio por Mês</div>
       <div class="chart-wrap"><canvas id="slaByMonth"></canvas></div>
     </div>
     <div class="card">
+      <div class="card-title">Valor Entregue por Mês (R$)</div>
+      <div class="chart-wrap"><canvas id="valorByMonth"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-bottom:20px;">
+    <div class="card">
       <div class="card-title">Nota PRC por Mês</div>
       <div class="chart-wrap"><canvas id="prcByMonth"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Valor Entregue por Mês (R$)</div>
-      <div class="chart-wrap"><canvas id="valorByMonth"></canvas></div>
+      <div class="card-title">Protocolos Entregues por Mês</div>
+      <div class="chart-wrap"><canvas id="qtdByMonth"></canvas></div>
     </div>
   </div>
 
@@ -251,12 +257,8 @@
     </div>
   </div>
 
-  <!-- ROW 5: Qtd mensal + Top parceiros -->
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title">Protocolos Entregues por Mês</div>
-      <div class="chart-wrap"><canvas id="qtdByMonth"></canvas></div>
-    </div>
+  <!-- ROW 5: Top parceiros (full width) -->
+  <div style="margin-bottom:20px;">
     <div class="card">
       <div class="card-title">Parceiros com Mais Protocolos</div>
       <div class="chart-wrap"><canvas id="topParceiros"></canvas></div>
@@ -580,21 +582,22 @@ function renderFunnel(rows) {
   function renderBar(status, count, widthPct, minWidth) {
     const color = getColor(status);
     const label = status.replace(/^\d+\.\s*/,'').trim();
-    const w = Math.max(widthPct, minWidth||8);
+    const w = Math.max(widthPct, minWidth||30);
     return `
       <div style="display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:2px;">
         <div style="
           width:${w}%;
           background:${color};
           border-radius:4px;
-          padding:5px 12px;
+          padding:5px 14px;
           display:flex;
           justify-content:space-between;
           align-items:center;
           min-height:28px;
+          box-sizing:border-box;
         " title="${label}: ${count}">
-          <span style="font-size:11px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${label}</span>
-          <span style="font-size:12px;color:#fff;font-weight:800;margin-left:8px;flex-shrink:0;">${count}</span>
+          <span style="font-size:11px;color:#fff;font-weight:600;white-space:nowrap;">${label}</span>
+          <span style="font-size:12px;color:#fff;font-weight:800;margin-left:10px;flex-shrink:0;">${count}</span>
         </div>
       </div>`;
   }
@@ -607,18 +610,18 @@ function renderFunnel(rows) {
   const n = mainItems.length;
 
   const mainHTML = mainItems.map(([s, c], i) => {
-    // Funnel shape: max width decreasing from top, but actual bar = proportional to count
-    const funnelMax = 100 - (i / Math.max(n-1,1)) * 55; // topo 100%, base 45%
+    // Funil: topo 100% → base 45%, proporcional à quantidade
+    const funnelMax = 100 - (i / Math.max(n-1,1)) * 55;
     const propWidth = Math.round((c / mainMax) * funnelMax);
-    const finalWidth = Math.max(propWidth, 10);
-    return renderBar(s, c, finalWidth, 10);
+    const finalWidth = Math.max(propWidth, 38); // mínimo 38% para caber o texto
+    return renderBar(s, c, finalWidth, 38);
   }).join('');
 
-  // Bottom items: smaller, centered
+  // Bottom items
   const bottomMax = Math.max(...bottomItems.map(([,c])=>c), 1);
   const bottomHTML = bottomItems.map(([s, c]) => {
-    const w = Math.round(20 + (c / bottomMax) * 25); // entre 20% e 45%
-    return renderBar(s, c, w, 15);
+    const w = Math.round(30 + (c / bottomMax) * 30); // 30–60%
+    return renderBar(s, c, w, 30);
   }).join('');
 
   const container = document.getElementById('funnelList');
