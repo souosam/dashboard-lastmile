@@ -178,7 +178,7 @@
     <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">avaliação de clientes</div></div>
     <div class="kpi"><div class="kpi-label">SLA Médio (dias)</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">últimos 6 meses</div></div>
     <div class="kpi"><div class="kpi-label">Protocolos Ativos</div><div class="kpi-value" id="kpiAtivos">—</div><div class="kpi-sub" id="kpiAtivosSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Ativos Agora</div><div class="kpi-value" id="kpiConcluidos">—</div><div class="kpi-sub" id="kpiAtivosDetalhe">em andamento</div></div>
+    <div class="kpi"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" id="kpiConcluidos" style="font-size:20px;">—</div><div class="kpi-sub" id="kpiAtivosDetalhe">protocolos ativos</div></div>
     <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
   </div>
 
@@ -502,31 +502,92 @@ function renderKPIs(rows) {
   set('kpiSLA', sla||'—');
   set('kpiAtivos', ativos.length);
   set('kpiAtivosSub', rows.filter(r=>r.status&&r.status.includes('Cancelado')).length+' cancelados');
-  // Card "Ativos Agora" (antigo Concluídos)
-  set('kpiConcluidos', ativos.length);
-  set('kpiAtivosDetalhe', ativos.length === 1 ? '1 protocolo ativo' : ativos.length+' em andamento');
+  // Card "Ativos Agora" = soma de valor R$ dos protocolos ativos
+  const valorAtivos = ativos.reduce((s,r)=>s+r.valor, 0);
+  set('kpiConcluidos', 'R$ '+valorAtivos.toLocaleString('pt-BR',{minimumFractionDigits:2}));
+  set('kpiAtivosDetalhe', ativos.length+' protocolos ativos');
   set('kpiTotal', rows.length);
 }
 function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
 // ── FUNNEL ────────────────────────────────────────────────────
 function renderFunnel(rows) {
+  // Ordem do funil conforme pipeline real
+  const FUNNEL_ORDER = [
+    'Projeto Futuro','Em validação','Assinatura LM','Compra de material',
+    'Site Survey/PPI','Em andamento','Em configuração','Parado',
+    'Agendado','Boas vindas','Ag. Faturamento','Concluída','Cancelado'
+  ];
+
   const counts={};
   rows.forEach(r=>{if(r.status)counts[r.status]=(counts[r.status]||0)+1;});
-  // Ordenar por contagem decrescente = afunilamento real
-  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  const max=sorted[0]?sorted[0][1]:1;
-  const cls=s=>s.includes('Concluída')?'done':s.includes('Cancelado')?'danger':s.includes('Pendente')||s.includes('validação')?'warn':s.includes('Projeto Futuro')?'muted':'';
-  document.getElementById('funnelList').innerHTML=sorted.map(([s,c],i)=>{
-    const pct=Math.max(4,Math.round(c/max*100));
+
+  // Mapeia status do dado para nome do funil (match parcial)
+  function matchOrder(status) {
+    const s = status.replace(/^\d+\.\s*/,'').trim();
+    const idx = FUNNEL_ORDER.findIndex(o => s.toLowerCase().includes(o.toLowerCase()) || o.toLowerCase().includes(s.toLowerCase()));
+    return idx >= 0 ? idx : 99;
+  }
+
+  const sorted = Object.entries(counts).sort((a,b) => matchOrder(a[0]) - matchOrder(b[0]));
+  const total = sorted.reduce((s,[,c])=>s+c, 0);
+
+  // Funil visual: largura decresce do topo para baixo
+  // Topo = 100%, base = ~15% (como um funil real)
+  const n = sorted.length;
+
+  const colors = {
+    'Projeto Futuro':   '#6b7a9f',
+    'Em validação':     '#f39c12',
+    'Assinatura LM':    '#3498db',
+    'Compra de material':'#e67e22',
+    'Site Survey':      '#9b59b6',
+    'Em andamento':     '#f39c12',
+    'Em configuração':  '#1abc9c',
+    'Parado':           '#e74c3c',
+    'Agendado':         '#27ae60',
+    'Boas vindas':      '#2ecc71',
+    'Ag. Faturamento':  '#16a085',
+    'Concluída':        '#2ecc71',
+    'Cancelado':        '#e74c3c',
+  };
+
+  function getColor(status) {
+    const s = status.replace(/^\d+\.\s*/,'').trim();
+    for (const [key, color] of Object.entries(colors)) {
+      if (s.toLowerCase().includes(key.toLowerCase())) return color;
+    }
+    return '#2ecc71';
+  }
+
+  const container = document.getElementById('funnelList');
+  container.style.gap = '2px';
+
+  container.innerHTML = sorted.map(([s, c], i) => {
+    // Largura decresce linearmente do topo (100%) para baixo (20%)
+    const widthPct = Math.round(100 - (i / Math.max(n-1,1)) * 80);
+    const color = getColor(s);
+    const label = s.replace(/^\d+\.\s*/,'').trim();
+    const pct = Math.round(c/total*100);
     return `
-    <div class="funnel-item" style="margin-bottom:3px;">
-      <div class="funnel-label" title="${s}" style="font-size:11px;min-width:145px;">${s.replace(/^\d+\.\s*/,'')}</div>
-      <div class="funnel-bar-wrap" style="height:20px;clip-path:polygon(0 15%,100% 0,100% 100%,0 85%);">
-        <div class="funnel-bar ${cls(s)}" style="width:${pct}%;height:100%;"></div>
-      </div>
-      <div class="funnel-count" style="font-size:12px;min-width:28px;">${c}</div>
-    </div>`;
+      <div style="display:flex;flex-direction:column;align-items:center;width:100%;">
+        <div style="
+          width:${widthPct}%;
+          background:${color};
+          opacity:0.85;
+          border-radius:3px;
+          padding:4px 10px;
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          min-height:26px;
+          transition:opacity .2s;
+          cursor:default;
+        " title="${label}: ${c} (${pct}%)">
+          <span style="font-size:10px;color:#fff;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70%">${label}</span>
+          <span style="font-size:11px;color:#fff;font-weight:800;margin-left:6px;">${c}</span>
+        </div>
+      </div>`;
   }).join('');
 }
 
