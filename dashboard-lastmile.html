@@ -544,26 +544,26 @@ function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function renderFunnel(rows) {
   const FUNNEL_ORDER = [
     'Projeto Futuro','Em validação','Assinatura LM','Compra de material',
-    'Site Survey','Em andamento','Em configuração','Parado',
+    'Parado','Site Survey','Em andamento','Em configuração',
     'Agendado','Boas vindas','Ag. Faturamento'
   ];
   const BOTTOM_ORDER = ['Concluída','Cancelado'];
 
-  // Cores exatas da planilha
+  // Cores exatas conforme planilha
   const STATUS_COLORS = {
-    'Projeto Futuro':     '#a0a0a0',
-    'Em validação':       '#f39c12',
-    'Assinatura LM':      '#3498db',
-    'Compra de material': '#e67e22',
-    'Site Survey':        '#9b59b6',
-    'Em andamento':       '#f1c40f',
-    'Em configuração':    '#1a5276',
-    'Parado':             '#e74c3c',
-    'Agendado':           '#1abc9c',
-    'Boas vindas':        '#2ecc71',
-    'Ag. Faturamento':    '#16a085',
-    'Concluída':          '#27ae60',
-    'Cancelado':          '#c0392b',
+    'Projeto Futuro':     '#b0bec5',  // cinza claro
+    'Em validação':       '#f39c12',  // laranja
+    'Assinatura LM':      '#3498db',  // azul
+    'Compra de material': '#e67e22',  // laranja escuro
+    'Parado':             '#e74c3c',  // vermelho
+    'Site Survey':        '#8e44ad',  // roxo
+    'Em andamento':       '#f1c40f',  // amarelo
+    'Em configuração':    '#5b8dd9',  // azul médio
+    'Agendado':           '#1abc9c',  // verde água
+    'Boas vindas':        '#2ecc71',  // verde
+    'Ag. Faturamento':    '#16a085',  // verde escuro
+    'Concluída':          '#27ae60',  // verde
+    'Cancelado':          '#c0392b',  // vermelho escuro
   };
 
   function getColor(status) {
@@ -698,10 +698,9 @@ function renderSLAByMonth(rows) {
   charts.slaMon=new Chart(document.getElementById('slaByMonth'),{
     type:'line',
     data:{labels,datasets:[
-      {label:'SLA Médio',data,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.08)',tension:.3,pointBackgroundColor:'#2ecc71',fill:true,order:2},
-      {label:'Média',data:labels.map(()=>media),borderColor:'#f39c12',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+      {label:'SLA Médio',data,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.08)',tension:.3,pointBackgroundColor:'#2ecc71',fill:true}
     ]},
-    options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>c.dataset.label==='Média'?` Média: ${c.raw}d`:` ${c.raw}d`}}}})
+    options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>` ${c.raw}d`}}}})
   });
 }
 
@@ -739,18 +738,16 @@ function renderMonthlyCharts(rows) {
   charts.valMon=new Chart(document.getElementById('valorByMonth'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:'R$',data:vData,backgroundColor:'#1abc9c',borderRadius:5,order:2},
-      {label:'Média',data:labels.map(()=>vMedia),type:'line',borderColor:'#f39c12',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+      {label:'R$',data:vData,backgroundColor:'#1abc9c',borderRadius:5}
     ]},
-    options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>c.dataset.label==='Média'?' Média: R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}):(c.dataset.label==='R$'?' R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}):' '+c.raw)}}}})
+    options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>' R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2})}}}})
   });
 
   if(charts.qtdMon)charts.qtdMon.destroy();
   charts.qtdMon=new Chart(document.getElementById('qtdByMonth'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:'Qtd',data:qData,backgroundColor:'#3498db',borderRadius:5,order:2},
-      {label:'Média',data:labels.map(()=>qMedia),type:'line',borderColor:'#f39c12',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+      {label:'Qtd',data:qData,backgroundColor:'#3498db',borderRadius:5}
     ]},
     options:darkOpts()
   });
