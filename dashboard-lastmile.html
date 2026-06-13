@@ -201,15 +201,15 @@
     </div>
   </div>
 
-  <!-- ROW 2: 4 gráficos em 2x2 -->
+  <!-- ROW 2: 4 gráficos em 2x2 — Valor|Qtd / PRC|SLA -->
   <div class="grid-2" style="margin-bottom:20px;">
-    <div class="card">
-      <div class="card-title">SLA Médio por Mês</div>
-      <div class="chart-wrap"><canvas id="slaByMonth"></canvas></div>
-    </div>
     <div class="card">
       <div class="card-title">Valor Entregue por Mês (R$)</div>
       <div class="chart-wrap"><canvas id="valorByMonth"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Protocolos Entregues por Mês</div>
+      <div class="chart-wrap"><canvas id="qtdByMonth"></canvas></div>
     </div>
   </div>
   <div class="grid-2" style="margin-bottom:20px;">
@@ -218,8 +218,8 @@
       <div class="chart-wrap"><canvas id="prcByMonth"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Protocolos Entregues por Mês</div>
-      <div class="chart-wrap"><canvas id="qtdByMonth"></canvas></div>
+      <div class="card-title">SLA Médio por Mês</div>
+      <div class="chart-wrap"><canvas id="slaByMonth"></canvas></div>
     </div>
   </div>
 
@@ -519,25 +519,43 @@ function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 function renderFunnel(rows) {
   const FUNNEL_ORDER = [
     'Projeto Futuro','Em validação','Assinatura LM','Compra de material',
-    'Site Survey/PPI','Em andamento','Em configuração','Parado',
+    'Site Survey','Em andamento','Em configuração','Parado',
     'Agendado','Boas vindas','Ag. Faturamento'
   ];
   const BOTTOM_ORDER = ['Concluída','Cancelado'];
 
+  // Cores exatas da planilha
+  const STATUS_COLORS = {
+    'Projeto Futuro':     '#a0a0a0',
+    'Em validação':       '#f39c12',
+    'Assinatura LM':      '#3498db',
+    'Compra de material': '#e67e22',
+    'Site Survey':        '#9b59b6',
+    'Em andamento':       '#f1c40f',
+    'Em configuração':    '#1a5276',
+    'Parado':             '#e74c3c',
+    'Agendado':           '#1abc9c',
+    'Boas vindas':        '#2ecc71',
+    'Ag. Faturamento':    '#16a085',
+    'Concluída':          '#27ae60',
+    'Cancelado':          '#c0392b',
+  };
+
+  function getColor(status) {
+    const s = status.replace(/^\d+\.\s*/,'').trim();
+    for (const [key, color] of Object.entries(STATUS_COLORS)) {
+      if (s.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(s.toLowerCase())) return color;
+    }
+    return '#6b7a9f';
+  }
+
   const counts = {};
   rows.forEach(r => { if(r.status) counts[r.status] = (counts[r.status]||0)+1; });
 
-  function matchOrder(status, orderList) {
-    const s = status.replace(/^\d+\.\s*/,'').trim();
-    return orderList.findIndex(o => s.toLowerCase().includes(o.toLowerCase()) || o.toLowerCase().includes(s.toLowerCase()));
-  }
-
-  // Separar em dois grupos
+  const seen = new Set();
   const mainItems = [];
   const bottomItems = [];
-  const seen = new Set();
 
-  // Main funnel (ordem da lista)
   FUNNEL_ORDER.forEach(orderName => {
     Object.entries(counts).forEach(([status, count]) => {
       const s = status.replace(/^\d+\.\s*/,'').trim();
@@ -548,7 +566,6 @@ function renderFunnel(rows) {
     });
   });
 
-  // Bottom group (Concluída, Cancelado)
   BOTTOM_ORDER.forEach(orderName => {
     Object.entries(counts).forEach(([status, count]) => {
       const s = status.replace(/^\d+\.\s*/,'').trim();
@@ -559,76 +576,49 @@ function renderFunnel(rows) {
     });
   });
 
-  // Any remaining go to main
   Object.entries(counts).forEach(([status, count]) => {
     if (!seen.has(status)) { mainItems.push([status, count]); seen.add(status); }
   });
 
-  const colors = {
-    'Projeto Futuro':'#6b7a9f','Em validação':'#f39c12','Assinatura LM':'#3498db',
-    'Compra de material':'#e67e22','Site Survey':'#9b59b6','Em andamento':'#f39c12',
-    'Em configuração':'#1a6db5','Parado':'#e74c3c','Agendado':'#27ae60',
-    'Boas vindas':'#2ecc71','Ag. Faturamento':'#16a085','Faturamento':'#16a085',
-    'Concluída':'#27ae60','Cancelado':'#e74c3c',
-  };
-  function getColor(status) {
-    const s = status.replace(/^\d+\.\s*/,'').trim();
-    for (const [key, color] of Object.entries(colors)) {
-      if (s.toLowerCase().includes(key.toLowerCase())) return color;
-    }
-    return '#2ecc71';
-  }
+  // Proporcionalidade: maior item = 92%, menor item = proporcional
+  // Funil shape: cada barra centralizada, largura = proporcional ao count
+  // com mínimo de 28% para caber texto, máximo 92%
+  const mainMax = Math.max(...mainItems.map(([,c])=>c), 1);
 
-  function renderBar(status, count, widthPct, minWidth) {
+  function renderBar(status, count, maxCount, isBottom) {
     const color = getColor(status);
     const label = status.replace(/^\d+\.\s*/,'').trim();
-    const w = Math.max(widthPct, minWidth||30);
+    // Proporcional real: 28% mínimo, 92% máximo
+    const minW = isBottom ? 32 : 28;
+    const maxW = isBottom ? 65 : 92;
+    const w = Math.round(minW + (count / maxCount) * (maxW - minW));
     return `
-      <div style="display:flex;flex-direction:column;align-items:center;width:100%;margin-bottom:2px;">
+      <div style="display:flex;justify-content:center;width:100%;margin-bottom:3px;">
         <div style="
           width:${w}%;
           background:${color};
-          border-radius:4px;
+          border-radius:5px;
           padding:5px 14px;
           display:flex;
           justify-content:space-between;
           align-items:center;
           min-height:28px;
-          box-sizing:border-box;
-        " title="${label}: ${count}">
+        ">
           <span style="font-size:11px;color:#fff;font-weight:600;white-space:nowrap;">${label}</span>
-          <span style="font-size:12px;color:#fff;font-weight:800;margin-left:10px;flex-shrink:0;">${count}</span>
+          <span style="font-size:12px;color:#fff;font-weight:800;margin-left:10px;">${count}</span>
         </div>
       </div>`;
   }
 
-  // Max count among main items for proportional width
-  const mainMax = Math.max(...mainItems.map(([,c])=>c), 1);
-  // Top bar = 100%, others scale proportionally but funnel shape:
-  // width = max(proportional, funnel_min)
-  // Funnel: top item sempre 100%, resto proporcional mas com mínimo decrescente
-  const n = mainItems.length;
-
-  const mainHTML = mainItems.map(([s, c], i) => {
-    // Funil: topo 100% → base 45%, proporcional à quantidade
-    const funnelMax = 100 - (i / Math.max(n-1,1)) * 55;
-    const propWidth = Math.round((c / mainMax) * funnelMax);
-    const finalWidth = Math.max(propWidth, 38); // mínimo 38% para caber o texto
-    return renderBar(s, c, finalWidth, 38);
-  }).join('');
-
-  // Bottom items
+  const mainHTML = mainItems.map(([s,c]) => renderBar(s, c, mainMax, false)).join('');
   const bottomMax = Math.max(...bottomItems.map(([,c])=>c), 1);
-  const bottomHTML = bottomItems.map(([s, c]) => {
-    const w = Math.round(30 + (c / bottomMax) * 30); // 30–60%
-    return renderBar(s, c, w, 30);
-  }).join('');
+  const bottomHTML = bottomItems.map(([s,c]) => renderBar(s, c, bottomMax, true)).join('');
 
   const container = document.getElementById('funnelList');
   container.style.gap = '0px';
   container.innerHTML = mainHTML
-    + `<div style="height:14px;display:flex;align-items:center;justify-content:center;">
-         <div style="width:60%;height:1px;border-top:1px dashed #2a3147;margin:0 auto;"></div>
+    + `<div style="height:12px;display:flex;align-items:center;padding:0 4%;">
+         <div style="width:100%;height:1px;border-top:1px dashed #3a4560;"></div>
        </div>`
     + bottomHTML;
 }
@@ -678,11 +668,15 @@ function renderSLAByMonth(rows) {
   rows.filter(r=>r.mes&&r.slaGP>0).forEach(r=>{if(!acc[r.mes])acc[r.mes]=[];acc[r.mes].push(r.slaGP);});
   const labels=sortMonths(Object.keys(acc));
   const data=labels.map(l=>Math.round(acc[l].reduce((a,b)=>a+b,0)/acc[l].length));
+  const media=data.length?Math.round(data.reduce((a,b)=>a+b,0)/data.length):0;
   if(charts.slaMon)charts.slaMon.destroy();
   charts.slaMon=new Chart(document.getElementById('slaByMonth'),{
     type:'line',
-    data:{labels,datasets:[{label:'SLA Médio',data,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.1)',tension:.3,pointBackgroundColor:'#2ecc71',fill:true}]},
-    options:darkOpts()
+    data:{labels,datasets:[
+      {label:'SLA Médio',data,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.08)',tension:.3,pointBackgroundColor:'#2ecc71',fill:true,order:2},
+      {label:'Média',data:labels.map(()=>media),borderColor:'#f39c12',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+    ]},
+    options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>c.dataset.label==='Média'?` Média: ${c.raw}d`:` ${c.raw}d`}}}})
   });
 }
 
@@ -709,16 +703,30 @@ function renderMonthlyCharts(rows) {
     qAcc[r.mes]=(qAcc[r.mes]||0)+1;
   });
   const labels=sortMonths([...new Set([...Object.keys(vAcc),...Object.keys(qAcc)])]);
+
+  // Calcular médias
+  const vData=labels.map(l=>vAcc[l]||0);
+  const qData=labels.map(l=>qAcc[l]||0);
+  const vMedia=vData.length?Math.round(vData.reduce((a,b)=>a+b,0)/vData.length):0;
+  const qMedia=qData.length?Math.round(qData.reduce((a,b)=>a+b,0)/qData.length):0;
+
   if(charts.valMon)charts.valMon.destroy();
   charts.valMon=new Chart(document.getElementById('valorByMonth'),{
     type:'bar',
-    data:{labels,datasets:[{label:'R$',data:labels.map(l=>vAcc[l]||0),backgroundColor:'#1abc9c',borderRadius:5}]},
-    options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>' R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2})}}}})
+    data:{labels,datasets:[
+      {label:'R$',data:vData,backgroundColor:'#1abc9c',borderRadius:5,order:2},
+      {label:'Média',data:labels.map(()=>vMedia),type:'line',borderColor:'#f39c12',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+    ]},
+    options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>c.dataset.label==='Média'?' Média: R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}):(c.dataset.label==='R$'?' R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}):' '+c.raw)}}}})
   });
+
   if(charts.qtdMon)charts.qtdMon.destroy();
   charts.qtdMon=new Chart(document.getElementById('qtdByMonth'),{
     type:'bar',
-    data:{labels,datasets:[{label:'Qtd',data:labels.map(l=>qAcc[l]||0),backgroundColor:'#3498db',borderRadius:5}]},
+    data:{labels,datasets:[
+      {label:'Qtd',data:qData,backgroundColor:'#3498db',borderRadius:5,order:2},
+      {label:'Média',data:labels.map(()=>qMedia),type:'line',borderColor:'#f39c12',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+    ]},
     options:darkOpts()
   });
 }
