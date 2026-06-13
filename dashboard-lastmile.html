@@ -366,7 +366,8 @@ async function loadData() {
 // ── CSV PARSER ────────────────────────────────────────────────
 function parseCSV(text) {
   const normalized = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
-  const lines = normalized.trim().split('\n');
+  // Use multi-line safe parser to handle quoted fields with newlines/commas
+  const lines = parseCSVLines(normalized.trim());
   if (lines.length < 2) return [];
   const firstLine = lines[0];
   const sep = firstLine.split(';').length > firstLine.split(',').length ? ';' : ',';
@@ -396,12 +397,11 @@ function parseCSV(text) {
     const cliente = get('cliente');
     if (!cliente || cliente.toLowerCase() === 'cliente') return null;
 
-    // valor
-    const vRaw = get('valor').replace(/R\$\s*/,'').replace(/\s/g,'');
-    let valor = 0;
-    if (vRaw.includes(',') && vRaw.includes('.')) valor = parseFloat(vRaw.replace(/\./g,'').replace(',','.')) || 0;
-    else if (vRaw.includes(',')) valor = parseFloat(vRaw.replace(',','.')) || 0;
-    else valor = parseFloat(vRaw) || 0;
+    // valor — handles R$1.200,00 / R$ 1.234,56 / 1234,56 / 1234.56
+    const vRaw = get('valor').replace(/R\$\s*/,'').trim();
+    // Remove thousand separators (dots) and convert comma decimal to dot
+    const vClean = vRaw.replace(/\./g,'').replace(',','.');
+    const valor = parseFloat(vClean.replace(/[^\d.]/g,'')) || 0;
 
     // nota
     const nRaw = get('nota');
@@ -438,13 +438,38 @@ function parseCSV(text) {
 function parseLine(line, sep) {
   sep = sep || ',';
   const res=[]; let cur='', inQ=false;
-  for (const ch of line) {
-    if (ch==='"') { inQ=!inQ; continue; }
+  for (let i=0; i<line.length; i++) {
+    const ch = line[i];
+    if (ch==='"') {
+      if (inQ && line[i+1]==='"') { cur+='"'; i++; } // escaped quote ""
+      else { inQ=!inQ; }
+      continue;
+    }
     if (ch===sep && !inQ) { res.push(cur); cur=''; continue; }
     cur+=ch;
   }
   res.push(cur);
   return res;
+}
+
+// Multi-line CSV parser: handles fields that contain newlines inside quotes
+function parseCSVLines(text) {
+  const lines = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === '"') {
+      if (inQ && text[i+1] === '"') { cur += '"'; i++; }
+      else { inQ = !inQ; cur += ch; }
+    } else if ((ch === '\n') && !inQ) {
+      lines.push(cur);
+      cur = '';
+    } else {
+      cur += ch;
+    }
+  }
+  if (cur) lines.push(cur);
+  return lines;
 }
 
 // ── FILTERS ──────────────────────────────────────────────────
