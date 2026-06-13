@@ -415,51 +415,98 @@ function setMsg(m) { document.getElementById('loadMsg').textContent = m; }
 
 // ── CSV ───────────────────────────────────────────────────────────
 function parseCSV(text) {
-  const lines = text.trim().split('\n');
+  // Normalize line endings
+  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const lines = normalized.trim().split('\n');
   if (lines.length < 2) return [];
-  const headers = parseLine(lines[0]).map(h => h.trim().replace(/^"|"$/g,''));
+
+  // Auto-detect separator
+  const firstLine = lines[0];
+  const sep = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
+
+  const headers = parseLine(lines[0], sep).map(h => h.trim().replace(/^"|"$/g,'').replace(/\uFEFF/g,''));
+
+  console.log('=== HEADERS [sep=' + sep + '] ===');
+  headers.forEach((h,i) => console.log('[' + i + '] "' + h + '"'));
+  console.log('Total linhas:', lines.length);
+
   const ci = name => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
+
   const idx = {
-    cliente: ci('Cliente'), parceiro: ci('Parceiro'), cidade: ci('Cidade'),
-    protocolo: ci('Protocolo'), produto: ci('Produto'), status: ci('Status'),
-    slaGP: ci('SLA GP'), valor: ci('Valor'), nota: ci('Nota'),
-    dataConclusao: ci('Data de conclusão'), dataVenda: ci('Data da venda'),
+    cliente: ci('cliente'), parceiro: ci('parceiro'), cidade: ci('cidade'),
+    protocolo: ci('protocolo'), produto: ci('produto'), status: ci('status'),
+    slaGP: ci('sla gp'), valor: ci('valor'), nota: ci('nota'),
+    dataConclusao: ci('conclus'), dataVenda: ci('venda'),
   };
+  console.log('=== ÍNDICES ===', JSON.stringify(idx));
 
-  return lines.slice(1).map(line => {
-    const cols = parseLine(line);
-    const get = key => (cols[idx[key]] || '').trim().replace(/^"|"$/g,'');
+  const rows = lines.slice(1).map(line => {
+    if (!line.trim()) return null;
+    const cols = parseLine(line, sep);
+    const get = key => {
+      const i = idx[key];
+      if (i === undefined || i < 0 || i >= cols.length) return '';
+      return (cols[i] || '').trim().replace(/^"|"$/g,'');
+    };
+
     const cliente = get('cliente');
-    if (!cliente || cliente === 'Cliente') return null;
+    if (!cliente || cliente.toLowerCase() === 'cliente') return null;
 
-    const valor = parseFloat(get('valor').replace('R$','').replace(/\./g,'').replace(',','.').trim()) || 0;
-    const notaStr = get('nota');
-    const nota = notaStr.includes('★') ? notaStr.split('').filter(c=>c==='★').length : 0;
-    const slaGP = parseInt(get('slaGP')) || 0;
+    // Parse valor — handles R$ 1.234,56 or 1234,56 or 1234.56
+    const valorRaw = get('valor').replace(/R\$\s*/,'').replace(/\s/g,'');
+    let valor = 0;
+    if (valorRaw.includes(',') && valorRaw.includes('.')) {
+      valor = parseFloat(valorRaw.replace(/\./g,'').replace(',','.')) || 0;
+    } else if (valorRaw.includes(',')) {
+      valor = parseFloat(valorRaw.replace(',','.')) || 0;
+    } else {
+      valor = parseFloat(valorRaw) || 0;
+    }
+
+    // Parse nota — handles ★★★★★ or 5 or 5,00
+    const notaRaw = get('nota');
+    let nota = 0;
+    if (notaRaw.includes('\u2605')) {
+      nota = notaRaw.split('').filter(c => c === '\u2605').length;
+    } else {
+      const n = parseFloat(notaRaw.replace(',','.'));
+      if (!isNaN(n) && n >= 0 && n <= 5) nota = Math.round(n);
+    }
+
+    const slaGP = parseInt(get('slaGP').replace(',','.')) || 0;
     const status = get('status');
     const produto = get('produto');
 
     const dateRef = get('dataConclusao') || get('dataVenda');
     let mes = '';
     if (dateRef) {
-      const p = dateRef.split('/');
-      if (p.length >= 3) {
-        const mNames = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const mNames = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      if (dateRef.includes('/')) {
+        const p = dateRef.split('/');
         const mNum = parseInt(p[1]);
-        if (mNum >= 1 && mNum <= 12) mes = `${mNames[mNum]}/${p[2].slice(-2)}`;
+        if (mNum >= 1 && mNum <= 12) mes = mNames[mNum] + '/' + p[2].slice(-2);
+      } else if (dateRef.includes('-')) {
+        const p = dateRef.split('-');
+        const mNum = parseInt(p[1]);
+        if (mNum >= 1 && mNum <= 12) mes = mNames[mNum] + '/' + p[0].slice(-2);
       }
     }
 
     return { cliente, parceiro: get('parceiro'), cidade: get('cidade'),
       protocolo: get('protocolo'), produto, status, valor, nota, slaGP, mes };
   }).filter(Boolean);
+
+  console.log('=== ROWS PARSED:', rows.length, '===');
+  if (rows.length > 0) console.log('Exemplo:', JSON.stringify(rows[0]));
+  return rows;
 }
 
-function parseLine(line) {
+function parseLine(line, sep) {
+  sep = sep || ',';
   const res = []; let cur = '', inQ = false;
   for (const ch of line) {
     if (ch === '"') { inQ = !inQ; continue; }
-    if (ch === ',' && !inQ) { res.push(cur); cur = ''; continue; }
+    if (ch === sep && !inQ) { res.push(cur); cur = ''; continue; }
     cur += ch;
   }
   res.push(cur);
