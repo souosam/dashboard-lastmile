@@ -265,26 +265,99 @@
     <div class="card">
       <div class="card-title">Mapa de Cidades · Protocolos</div>
       <div style="position:relative;">
-        <svg id="mapSvg" viewBox="0 0 600 620" xmlns="http://www.w3.org/2000/svg">
-          <!-- Brazil outline simplified -->
-          <path id="brazilPath" fill="#1a2236" stroke="#2a3147" stroke-width="1.2"
-            d="M230,20 L260,18 L290,22 L320,28 L350,30 L375,38 L400,50 L420,65
-               L435,82 L445,100 L450,120 L448,140 L440,158 L428,172 L415,182
-               L425,195 L438,210 L448,228 L452,248 L450,268 L442,285 L430,298
-               L415,308 L398,315 L380,318 L365,320 L355,335 L348,352 L345,370
-               L348,390 L355,410 L362,430 L365,450 L360,468 L348,482 L330,492
-               L310,498 L288,500 L265,498 L245,490 L228,478 L215,462 L205,445
-               L198,428 L195,410 L198,392 L205,376 L215,362 L225,348 L232,332
-               L235,315 L230,298 L220,282 L208,268 L195,256 L182,245 L170,238
-               L158,235 L148,238 L138,245 L128,255 L118,265 L108,272 L98,275
-               L88,272 L80,265 L74,255 L70,244 L68,232 L70,220 L75,210 L82,202
-               L90,196 L100,192 L112,190 L125,192 L138,198 L148,205 L155,212
-               L158,205 L158,195 L155,183 L148,170 L140,157 L132,145 L128,132
-               L128,120 L132,108 L138,98 L145,90 L152,83 L158,75 L162,66
-               L165,57 L168,48 L172,40 L178,34 L185,28 L192,24 L200,21 L210,20 Z"/>
-          <!-- State borders suggestion (very light) -->
-          <g id="bubbleLayer"></g>
-        </svg>
+        <svg id="mapSvg" viewBox="0 0 800 900" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:420px;">
+  <defs>
+    <style>
+      .estado { fill: #1a2236; stroke: #2a3147; stroke-width: 1; transition: fill 0.2s; cursor:pointer; }
+      .estado:hover { fill: #243050; }
+      .estado-label { font-size: 9px; fill: #6b7a9f; pointer-events: none; text-anchor: middle; }
+    </style>
+  </defs>
+  <!-- BRASIL - Estados com paths reais (projeção simplificada) -->
+  <!-- AC - Acre -->
+  <path class="estado" id="AC" d="M 82,442 L 155,410 L 178,425 L 192,448 L 170,468 L 130,472 L 95,460 Z"/>
+  <text class="estado-label" x="135" y="445">AC</text>
+  <!-- AM - Amazonas -->
+  <path class="estado" id="AM" d="M 155,250 L 265,230 L 310,255 L 318,310 L 295,355 L 255,375 L 192,390 L 158,370 L 140,330 L 148,285 Z"/>
+  <text class="estado-label" x="228" y="310">AM</text>
+  <!-- RR - Roraima -->
+  <path class="estado" id="RR" d="M 215,120 L 270,110 L 295,145 L 285,195 L 255,210 L 220,200 L 200,170 Z"/>
+  <text class="estado-label" x="248" y="165">RR</text>
+  <!-- PA - Pará -->
+  <path class="estado" id="PA" d="M 265,230 L 355,200 L 430,210 L 460,240 L 455,290 L 415,330 L 370,350 L 318,345 L 295,310 Z"/>
+  <text class="estado-label" x="375" y="275">PA</text>
+  <!-- AP - Amapá -->
+  <path class="estado" id="AP" d="M 390,140 L 430,130 L 450,155 L 440,195 L 410,205 L 390,180 Z"/>
+  <text class="estado-label" x="418" y="170">AP</text>
+  <!-- MA - Maranhão -->
+  <path class="estado" id="MA" d="M 430,210 L 500,200 L 530,225 L 525,275 L 495,305 L 455,310 L 430,285 L 415,250 Z"/>
+  <text class="estado-label" x="473" y="258">MA</text>
+  <!-- PI - Piauí -->
+  <path class="estado" id="PI" d="M 500,200 L 545,205 L 560,240 L 555,290 L 530,315 L 500,310 L 480,285 L 480,245 Z"/>
+  <text class="estado-label" x="520" y="260">PI</text>
+  <!-- CE - Ceará -->
+  <path class="estado" id="CE" d="M 545,190 L 590,185 L 610,215 L 600,260 L 570,270 L 545,255 L 535,225 Z"/>
+  <text class="estado-label" x="573" y="228">CE</text>
+  <!-- RN - Rio Grande do Norte -->
+  <path class="estado" id="RN" d="M 590,185 L 630,190 L 640,215 L 618,235 L 595,230 L 585,210 Z"/>
+  <text class="estado-label" x="612" y="213">RN</text>
+  <!-- PB - Paraíba -->
+  <path class="estado" id="PB" d="M 600,240 L 638,238 L 645,258 L 620,268 L 598,262 Z"/>
+  <text class="estado-label" x="622" y="256">PB</text>
+  <!-- PE - Pernambuco -->
+  <path class="estado" id="PE" d="M 555,265 L 645,260 L 648,280 L 610,295 L 568,292 L 548,280 Z"/>
+  <text class="estado-label" x="600" y="280">PE</text>
+  <!-- AL - Alagoas -->
+  <path class="estado" id="AL" d="M 595,295 L 635,290 L 638,312 L 610,320 L 590,310 Z"/>
+  <text class="estado-label" x="614" y="308">AL</text>
+  <!-- SE - Sergipe -->
+  <path class="estado" id="SE" d="M 580,310 L 610,308 L 612,330 L 588,335 L 575,322 Z"/>
+  <text class="estado-label" x="594" y="325">SE</text>
+  <!-- BA - Bahia -->
+  <path class="estado" id="BA" d="M 455,290 L 555,275 L 580,310 L 590,370 L 575,430 L 535,465 L 490,470 L 450,450 L 430,410 L 420,360 L 430,320 Z"/>
+  <text class="estado-label" x="508" y="380">BA</text>
+  <!-- TO - Tocantins -->
+  <path class="estado" id="TO" d="M 370,340 L 420,330 L 435,370 L 430,420 L 405,445 L 375,440 L 355,410 L 355,370 Z"/>
+  <text class="estado-label" x="393" y="390">TO</text>
+  <!-- RO - Rondônia -->
+  <path class="estado" id="RO" d="M 178,390 L 245,375 L 268,400 L 262,445 L 225,460 L 188,450 L 172,425 Z"/>
+  <text class="estado-label" x="220" y="420">RO</text>
+  <!-- MT - Mato Grosso -->
+  <path class="estado" id="MT" d="M 255,355 L 370,340 L 395,375 L 390,440 L 355,470 L 295,475 L 258,455 L 248,410 L 255,375 Z"/>
+  <text class="estado-label" x="322" y="415">MT</text>
+  <!-- MS - Mato Grosso do Sul -->
+  <path class="estado" id="MS" d="M 258,475 L 355,470 L 370,510 L 355,555 L 315,570 L 270,555 L 248,520 Z"/>
+  <text class="estado-label" x="308" y="520">MS</text>
+  <!-- GO - Goiás -->
+  <path class="estado" id="GO" d="M 390,440 L 450,435 L 470,470 L 460,520 L 420,540 L 375,530 L 358,495 L 360,460 Z"/>
+  <text class="estado-label" x="415" y="490">GO</text>
+  <!-- DF - Distrito Federal -->
+  <path class="estado" id="DF" d="M 440,490 L 455,488 L 458,502 L 443,505 Z" stroke-width="0.5"/>
+  <text class="estado-label" x="449" y="498">DF</text>
+  <!-- MG - Minas Gerais -->
+  <path class="estado" id="MG" d="M 450,450 L 535,450 L 560,480 L 555,545 L 510,575 L 460,570 L 425,545 L 415,505 L 420,468 Z"/>
+  <text class="estado-label" x="490" y="515">MG</text>
+  <!-- ES - Espírito Santo -->
+  <path class="estado" id="ES" d="M 560,480 L 592,478 L 598,515 L 575,535 L 552,520 L 548,495 Z"/>
+  <text class="estado-label" x="573" y="508">ES</text>
+  <!-- RJ - Rio de Janeiro -->
+  <path class="estado" id="RJ" d="M 545,548 L 588,535 L 600,558 L 572,575 L 545,568 Z"/>
+  <text class="estado-label" x="572" y="558">RJ</text>
+  <!-- SP - São Paulo -->
+  <path class="estado" id="SP" d="M 415,545 L 510,545 L 528,570 L 510,610 L 460,620 L 415,605 L 400,575 Z"/>
+  <text class="estado-label" x="462" y="583">SP</text>
+  <!-- PR - Paraná -->
+  <path class="estado" id="PR" d="M 355,600 L 460,595 L 478,625 L 460,655 L 400,660 L 355,645 L 340,620 Z"/>
+  <text class="estado-label" x="408" y="630">PR</text>
+  <!-- SC - Santa Catarina -->
+  <path class="estado" id="SC" d="M 345,658 L 455,650 L 462,675 L 440,698 L 380,700 L 345,685 Z"/>
+  <text class="estado-label" x="402" y="678">SC</text>
+  <!-- RS - Rio Grande do Sul -->
+  <path class="estado" id="RS" d="M 320,700 L 440,695 L 448,730 L 420,775 L 370,785 L 325,760 L 308,730 Z"/>
+  <text class="estado-label" x="378" y="742">RS</text>
+  <!-- Camada de bolhas -->
+  <g id="bubbleLayer"></g>
+</svg>
       </div>
     </div>
     <div class="card">
@@ -331,9 +404,10 @@ const PALETTE = ['#2ecc71','#1abc9c','#3498db','#9b59b6','#f39c12','#e74c3c','#e
 // SVG viewBox: 0 0 600 620
 // Brazil lat: ~5°N to -33°S, lon: -73°W to -35°W
 function latLonToSVG(lat, lon) {
+  // viewBox 0 0 800 900 — calibrated to the state paths above
   const minLat = -34, maxLat = 5.5;
   const minLon = -74, maxLon = -34;
-  const svgW = 560, svgH = 580, offX = 20, offY = 20;
+  const svgW = 680, svgH = 780, offX = 60, offY = 110;
   const x = offX + ((lon - minLon) / (maxLon - minLon)) * svgW;
   const y = offY + ((maxLat - lat) / (maxLat - minLat)) * svgH;
   return { x, y };
@@ -750,9 +824,67 @@ function renderTopClients(rows) {
 }
 
 // ── Map ───────────────────────────────────────────────────────────
+// Map estado names to UF siglas
+const CITY_TO_STATE = {
+  'São Paulo':'SP','Campinas':'SP','Santos':'SP','Guarulhos':'SP','Sorocaba':'SP',
+  'Piracicaba':'SP','Limeira':'SP','Jundiaí':'SP','Barueri':'SP','São Bernardo do Campo':'SP',
+  'Cajamar':'SP','Salto':'SP','Indaiatuba':'SP','Porto Feliz':'SP','Cotia':'SP',
+  'São Carlos':'SP','São Roque':'SP','Bragança Paulista':'SP','Itapetininga':'SP',
+  'Assis':'SP','Araçatuba':'SP','Votuporanga':'SP','Presidente Prudente':'SP',
+  'Bauru':'SP','Marília':'SP','Extrema':'MG','Franco da Rocha':'SP','Santo André':'SP',
+  'Hidrolândia':'GO','Tocantins':'MG','Recreio':'MG','Matipó':'MG','Laranjal':'MG',
+  'Bambuí':'MG','Monte Azul':'MG','Catuti':'MG','Buritis':'MG','Guanambi':'BA',
+  'Gameleiras':'MG','Mamonas':'MG','Dom Cavati':'MG','Andradas':'MG',
+  'Uruana de Minas':'MG','Mato Verde':'MG','Santo Antônio do Retiro':'MG',
+  'Conceição do Mato Dentro':'MG','Altinópolis':'SP','Cássia':'MG',
+  'São Roque de Minas':'MG','Araxá':'MG','Itapecerica':'MG','Jaguariúna':'SP',
+  'Manaus':'AM','Belém':'PA','Sinop':'MT','São Luiz':'MA','São Luiz Gonzaga':'RS',
+  'Campina do Monte Alegre':'SP','Angatuba':'SP','Itaberá':'SP','Timóteo':'MG',
+  'Pederneiras':'SP','Bertioga':'SP','Itararé':'SP','Valparaíso':'SP',
+  'Laranjal Paulista':'SP','Uirapuru':'GO','Vila Flores':'RS','Itu':'SP',
+  'Campo Florido':'MG','Jacuí':'MG','Uberaba':'MG','Uberlândia':'MG',
+  'Iturама':'MG','Iturama':'MG','Palmas':'TO','Águas de Lindóia':'SP',
+  'Cássia dos Coqueiros':'SP','Altinópolis':'SP','Altinpolis':'SP',
+};
+
 function renderMap(rows) {
   const cityCount = {};
   rows.forEach(r => { if(r.cidade) cityCount[r.cidade]=(cityCount[r.cidade]||0)+1; });
+
+  // Count by state
+  const stateCount = {};
+  Object.entries(cityCount).forEach(([city, count]) => {
+    const uf = CITY_TO_STATE[city];
+    if (uf) stateCount[uf] = (stateCount[uf]||0) + count;
+  });
+  const maxState = Math.max(...Object.values(stateCount), 1);
+
+  // Color states
+  document.querySelectorAll('.estado').forEach(el => {
+    const uf = el.id;
+    const count = stateCount[uf] || 0;
+    if (count > 0) {
+      const intensity = count / maxState;
+      const r = Math.round(30 + intensity * 16);
+      const g = Math.round(40 + intensity * 160);
+      const b = Math.round(60 + intensity * 80);
+      el.style.fill = `rgb(${r},${g},${b})`;
+      el.style.fillOpacity = 0.4 + intensity * 0.6;
+    } else {
+      el.style.fill = '#1a2236';
+      el.style.fillOpacity = 1;
+    }
+    el.addEventListener('mouseenter', (e) => {
+      const cities = Object.entries(cityCount)
+        .filter(([c]) => CITY_TO_STATE[c] === uf)
+        .sort((a,b)=>b[1]-a[1]).slice(0,3)
+        .map(([c,n])=>`${c}: ${n}`).join('<br>');
+      showMapTooltipHTML(e, `<strong>${uf}</strong> · ${count} protocolos${cities?'<br>'+cities:''}`);
+    });
+    el.addEventListener('mouseleave', hideMapTooltip);
+  });
+
+  // Bubbles for cities with known coords
   const maxCount = Math.max(...Object.values(cityCount), 1);
   const bubbleLayer = document.getElementById('bubbleLayer');
   bubbleLayer.innerHTML = '';
@@ -761,12 +893,13 @@ function renderMap(rows) {
     const coords = CITY_COORDS[cidade];
     if (!coords) return;
     const { x, y } = latLonToSVG(coords[0], coords[1]);
-    const r = 4 + (count / maxCount) * 20;
-    const opacity = 0.5 + (count / maxCount) * 0.5;
+    const r = 3 + (count / maxCount) * 16;
     const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
     circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', r);
-    circle.setAttribute('fill', '#2ecc71'); circle.setAttribute('fill-opacity', opacity);
-    circle.setAttribute('stroke', '#27ae60'); circle.setAttribute('stroke-width', '1');
+    circle.setAttribute('fill', '#f39c12');
+    circle.setAttribute('fill-opacity', 0.85);
+    circle.setAttribute('stroke', '#e67e22');
+    circle.setAttribute('stroke-width', '1');
     circle.classList.add('map-bubble');
     circle.addEventListener('mouseenter', (e) => showMapTooltip(e, cidade, count));
     circle.addEventListener('mouseleave', hideMapTooltip);
@@ -777,10 +910,18 @@ function renderMap(rows) {
   const sorted = Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,20);
   document.getElementById('cityRanking').innerHTML = sorted.map(([city, count], i) => `
     <div class="map-city-row">
-      <div class="city-dot" style="background:${i<3?'#f39c12':'#2ecc71'}"></div>
+      <div class="city-dot" style="background:${i===0?'#f39c12':i<3?'#e67e22':'#2ecc71'}"></div>
       <span style="color:var(--textdim);font-size:12px">${city}</span>
       <span class="city-count">${count}</span>
     </div>`).join('');
+}
+
+function showMapTooltipHTML(e, html) {
+  const tip = document.getElementById('mapTooltip');
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  tip.style.left = (e.pageX + 14) + 'px';
+  tip.style.top  = (e.pageY - 36) + 'px';
 }
 
 function showMapTooltip(e, cidade, count) {
