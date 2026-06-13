@@ -1,160 +1,141 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>GP · Last Mile Dashboard</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
   <style>
     :root {
-      --bg:      #0f1117;
-      --surface: #181c27;
-      --card:    #1e2333;
-      --border:  #2a3147;
-      --accent:  #2ecc71;
-      --accent2: #1abc9c;
-      --warn:    #f39c12;
-      --danger:  #e74c3c;
-      --muted:   #6b7a9f;
-      --text:    #e8ecf4;
-      --textdim: #9aa3bd;
-      --radius:  10px;
-      --font:    'Inter', system-ui, sans-serif;
+      --bg:#0f1117; --surface:#181c27; --card:#1e2333; --border:#2a3147;
+      --accent:#2ecc71; --accent2:#1abc9c; --warn:#f39c12; --danger:#e74c3c;
+      --muted:#6b7a9f; --text:#e8ecf4; --textdim:#9aa3bd; --radius:10px;
+      --font:'Inter',system-ui,sans-serif;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; line-height: 1.5; min-height: 100vh; }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:14px;line-height:1.5;min-height:100vh;}
 
     /* HEADER */
-    header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 16px 28px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-    .logo { display: flex; align-items: center; gap: 12px; }
-    .logo-dot { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 15px; color: #0f1117; }
-    .logo-text { font-size: 16px; font-weight: 700; letter-spacing: .5px; }
-    .logo-sub  { font-size: 11px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-    .header-right { display: flex; align-items: center; gap: 14px; }
-    #lastUpdated { font-size: 11px; color: var(--muted); }
-    .btn-refresh { background: var(--accent); color: #0f1117; border: none; border-radius: 6px; padding: 6px 14px; font-size: 12px; font-weight: 700; cursor: pointer; transition: opacity .15s; }
-    .btn-refresh:hover { opacity: .85; }
-    .btn-refresh:disabled { opacity: .5; cursor: default; }
+    header{background:var(--surface);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:200;}
+    .logo{display:flex;align-items:center;gap:12px;}
+    .logo-dot{width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--accent),var(--accent2));display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;color:#0f1117;}
+    .logo-text{font-size:16px;font-weight:700;letter-spacing:.5px;}
+    .logo-sub{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+    .header-right{display:flex;align-items:center;gap:14px;}
+    #lastUpdated{font-size:11px;color:var(--muted);}
+    .btn-refresh{background:var(--accent);color:#0f1117;border:none;border-radius:6px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:opacity .15s;}
+    .btn-refresh:hover{opacity:.85;}
+    .btn-refresh:disabled{opacity:.5;cursor:default;}
 
     /* LAYOUT */
-    main { padding: 24px 28px; max-width: 1600px; margin: 0 auto; }
+    main{padding:24px 28px;max-width:1600px;margin:0 auto;}
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;}
+    .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;margin-bottom:20px;}
+    .grid-map{display:grid;grid-template-columns:1.5fr 1fr;gap:20px;margin-bottom:20px;}
+    @media(max-width:1100px){.grid-3{grid-template-columns:1fr 1fr;}.grid-map{grid-template-columns:1fr;}}
+    @media(max-width:720px){.grid-2,.grid-3{grid-template-columns:1fr;}}
 
     /* KPI */
-    .kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .kpi { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; position: relative; overflow: hidden; }
-    .kpi::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: var(--radius) var(--radius) 0 0; }
-    .kpi-label { font-size: 10px; font-weight: 700; letter-spacing: 1.2px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-    .kpi-value { font-size: 28px; font-weight: 800; color: var(--accent); line-height: 1; }
-    .kpi-sub   { font-size: 11px; color: var(--textdim); margin-top: 4px; }
-
-    /* GRIDS */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-    .grid-map { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 20px; }
-    @media (max-width: 1100px) { .grid-3 { grid-template-columns: 1fr 1fr; } .grid-map { grid-template-columns: 1fr; } }
-    @media (max-width: 720px)  { .grid-2, .grid-3 { grid-template-columns: 1fr; } }
+    .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+    .kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;position:relative;overflow:hidden;}
+    .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:var(--radius) var(--radius) 0 0;}
+    .kpi-label{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px;}
+    .kpi-value{font-size:28px;font-weight:800;color:var(--accent);line-height:1;}
+    .kpi-sub{font-size:11px;color:var(--textdim);margin-top:4px;}
 
     /* CARD */
-    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
-    .card-title { font-size: 11px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
-    .card-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+    .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;}
+    .card-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+    .card-title::after{content:'';flex:1;height:1px;background:var(--border);}
 
     /* FUNNEL */
-    .funnel-list { display: flex; flex-direction: column; gap: 6px; }
-    .funnel-item { display: flex; align-items: center; gap: 10px; }
-    .funnel-label { font-size: 11px; color: var(--textdim); min-width: 160px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .funnel-bar-wrap { flex: 1; height: 18px; background: var(--surface); border-radius: 4px; overflow: hidden; }
-    .funnel-bar { height: 100%; border-radius: 4px; background: linear-gradient(90deg, var(--accent), var(--accent2)); transition: width .6s ease; }
-    .funnel-bar.danger { background: linear-gradient(90deg, #e74c3c, #c0392b); }
-    .funnel-bar.warn   { background: linear-gradient(90deg, #f39c12, #e67e22); }
-    .funnel-bar.muted  { background: linear-gradient(90deg, #6b7a9f, #4a5568); }
-    .funnel-bar.done   { background: linear-gradient(90deg, #2ecc71, #27ae60); }
-    .funnel-count { font-size: 12px; font-weight: 700; color: var(--text); min-width: 28px; text-align: right; }
-
-    /* TOP TABLE */
-    .top-table { width: 100%; border-collapse: collapse; }
-    .top-table th { font-size: 10px; letter-spacing: .8px; text-transform: uppercase; color: var(--muted); text-align: left; padding: 0 0 8px 0; border-bottom: 1px solid var(--border); }
-    .top-table td { padding: 7px 0; font-size: 12px; border-bottom: 1px solid #1e2333; }
-    .top-table td:last-child { text-align: right; font-weight: 700; color: var(--accent); }
-    .rank { color: var(--muted); font-size: 11px; min-width: 20px; display: inline-block; }
-
-    /* SLA BADGE */
-    .sla-badge { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 700; }
-    .sla-ok   { background: rgba(46,204,113,.15); color: var(--accent); }
-    .sla-warn { background: rgba(243,156,18,.15);  color: var(--warn); }
-    .sla-bad  { background: rgba(231,76,60,.15);   color: var(--danger); }
-
-    /* CHART */
-    .chart-wrap { position: relative; height: 220px; }
-    .chart-wrap-tall { position: relative; height: 300px; }
-
-    /* PROTO TABLE */
-    .proto-wrap { overflow-x: auto; }
-    .proto-table { width: 100%; border-collapse: collapse; font-size: 12px; min-width: 700px; }
-    .proto-table th { background: var(--surface); color: var(--muted); font-size: 10px; letter-spacing: .8px; text-transform: uppercase; padding: 8px 10px; text-align: left; position: sticky; top: 0; }
-    .proto-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--textdim); }
-    .proto-table tr:hover td { background: var(--surface); color: var(--text); }
-    .proto-table td:first-child { color: var(--text); font-weight: 500; }
-    .status-chip { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
-    .s-active  { background: rgba(243,156,18,.12); color: var(--warn); }
-    .s-pending { background: rgba(107,122,159,.12); color: var(--muted); }
-    .s-done    { background: rgba(46,204,113,.12);  color: var(--accent); }
-    .s-cancel  { background: rgba(231,76,60,.12);   color: var(--danger); }
-    .prod-chip { display: inline-block; padding: 1px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; background: var(--surface); color: var(--textdim); border: 1px solid var(--border); }
-
-    /* LOADING */
-    #loadingOverlay { position: fixed; inset: 0; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 999; transition: opacity .3s; }
-    .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #loadMsg { color: var(--textdim); font-size: 13px; }
-
-    /* ERROR */
-    #errorBanner { display: none; background: rgba(231,76,60,.12); border: 1px solid var(--danger); color: var(--danger); border-radius: 8px; padding: 14px 18px; margin-bottom: 20px; font-size: 13px; }
-
-    /* FILTER */
-    .filter-bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; align-items: center; }
-    .filter-bar label { font-size: 11px; color: var(--muted); margin-right: -6px; }
-    .filter-bar select, .filter-bar input { background: var(--card); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 12px; padding: 6px 10px; outline: none; }
-    .filter-bar select:focus, .filter-bar input:focus { border-color: var(--accent); }
+    .funnel-list{display:flex;flex-direction:column;gap:6px;}
+    .funnel-item{display:flex;align-items:center;gap:10px;}
+    .funnel-label{font-size:11px;color:var(--textdim);min-width:155px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .funnel-bar-wrap{flex:1;height:16px;background:var(--surface);border-radius:4px;overflow:hidden;}
+    .funnel-bar{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .5s ease;}
+    .funnel-bar.danger{background:linear-gradient(90deg,#e74c3c,#c0392b);}
+    .funnel-bar.warn{background:linear-gradient(90deg,#f39c12,#e67e22);}
+    .funnel-bar.muted{background:linear-gradient(90deg,#6b7a9f,#4a5568);}
+    .funnel-bar.done{background:linear-gradient(90deg,#2ecc71,#27ae60);}
+    .funnel-count{font-size:12px;font-weight:700;color:var(--text);min-width:28px;text-align:right;}
 
     /* DONUT */
-    .donut-wrap { display: flex; gap: 20px; align-items: center; }
-    .donut-chart { flex: 0 0 140px; position: relative; height: 140px; }
-    .donut-legend { flex: 1; display: flex; flex-direction: column; gap: 6px; }
-    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
-    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-    .legend-pct { margin-left: auto; color: var(--muted); font-size: 11px; }
+    .donut-wrap{display:flex;gap:20px;align-items:center;}
+    .donut-chart{flex:0 0 140px;position:relative;height:140px;}
+    .donut-legend{flex:1;display:flex;flex-direction:column;gap:6px;}
+    .legend-item{display:flex;align-items:center;gap:8px;font-size:12px;}
+    .legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+    .legend-pct{margin-left:auto;color:var(--muted);font-size:11px;}
+
+    /* TOP TABLE */
+    .top-table{width:100%;border-collapse:collapse;}
+    .top-table th{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);text-align:left;padding:0 0 8px 0;border-bottom:1px solid var(--border);}
+    .top-table td{padding:7px 0;font-size:12px;border-bottom:1px solid #1e2333;}
+    .top-table td:last-child{text-align:right;font-weight:700;color:var(--accent);}
+    .rank{color:var(--muted);font-size:11px;min-width:20px;display:inline-block;}
+
+    /* SLA BADGE */
+    .sla-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;}
+    .sla-ok{background:rgba(46,204,113,.15);color:var(--accent);}
+    .sla-warn{background:rgba(243,156,18,.15);color:var(--warn);}
+    .sla-bad{background:rgba(231,76,60,.15);color:var(--danger);}
+
+    /* CHART */
+    .chart-wrap{position:relative;height:220px;}
+
+    /* SLA PARCEIRO */
+    .parc-bar-wrap{width:100%;height:14px;background:var(--surface);border-radius:4px;overflow:hidden;margin:2px 0;}
+    .parc-bar{height:100%;border-radius:4px;transition:width .5s ease;}
+
+    /* PROTO TABLE */
+    .proto-wrap{overflow-x:auto;}
+    .proto-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px;}
+    .proto-table th{background:var(--surface);color:var(--muted);font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:8px 10px;text-align:left;position:sticky;top:0;}
+    .proto-table td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--textdim);}
+    .proto-table tr:hover td{background:var(--surface);color:var(--text);}
+    .proto-table td:first-child{color:var(--text);font-weight:500;}
+    .status-chip{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700;}
+    .s-active{background:rgba(243,156,18,.12);color:var(--warn);}
+    .s-pending{background:rgba(107,122,159,.12);color:var(--muted);}
+    .s-done{background:rgba(46,204,113,.12);color:var(--accent);}
+    .s-cancel{background:rgba(231,76,60,.12);color:var(--danger);}
+    .prod-chip{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;background:var(--surface);color:var(--textdim);border:1px solid var(--border);}
 
     /* MAP */
-    #mapSvg { width: 100%; height: 380px; }
-    .map-bubble { cursor: pointer; transition: opacity .2s; }
-    .map-bubble:hover { opacity: .75; }
-    .map-tooltip {
-      position: absolute;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      font-size: 12px;
-      pointer-events: none;
-      display: none;
-      z-index: 50;
-      color: var(--text);
-      white-space: nowrap;
-    }
-    .map-city-list { display: flex; flex-direction: column; gap: 5px; max-height: 340px; overflow-y: auto; }
-    .map-city-row { display: flex; align-items: center; gap: 8px; font-size: 12px; padding: 4px 0; border-bottom: 1px solid var(--border); }
-    .city-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
-    .city-count { margin-left: auto; color: var(--accent); font-weight: 700; }
+    #leafletMap{height:420px;border-radius:8px;overflow:hidden;}
+    .leaflet-container{background:#0f1117 !important;}
+    .leaflet-popup-content-wrapper{background:#1e2333;border:1px solid #2a3147;color:#e8ecf4;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+    .leaflet-popup-tip{background:#1e2333;}
+    .leaflet-popup-close-button{color:#6b7a9f !important;}
+    .leaflet-control-zoom a{background:#1e2333 !important;color:#e8ecf4 !important;border-color:#2a3147 !important;}
+    .leaflet-control-zoom a:hover{background:#2a3147 !important;}
+    .leaflet-control-attribution{background:rgba(15,17,23,.8) !important;color:#6b7a9f !important;font-size:9px;}
+    .leaflet-control-attribution a{color:#2ecc71 !important;}
+    .leaflet-tooltip{background:#1e2333;border:1px solid #2a3147;color:#e8ecf4;font-family:system-ui;font-size:12px;border-radius:6px;}
 
-    /* PRC stars section */
-    .star-value { color: var(--warn); font-weight: 700; }
+    /* CITY LIST */
+    .map-city-list{display:flex;flex-direction:column;gap:5px;max-height:380px;overflow-y:auto;}
+    .map-city-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);}
+    .city-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+    .city-count{margin-left:auto;color:var(--accent);font-weight:700;}
 
-    /* SLA parceiro table */
-    .parc-table { width: 100%; border-collapse: collapse; }
-    .parc-table td { padding: 5px 0; font-size: 12px; }
-    .parc-bar-wrap { width: 100%; height: 14px; background: var(--surface); border-radius: 4px; overflow: hidden; margin: 2px 0; }
-    .parc-bar { height: 100%; border-radius: 4px; transition: width .5s ease; }
+    /* FILTER */
+    .filter-bar{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+    .filter-bar label{font-size:11px;color:var(--muted);margin-right:-6px;}
+    .filter-bar select,.filter-bar input{background:var(--card);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 10px;outline:none;}
+    .filter-bar select:focus,.filter-bar input:focus{border-color:var(--accent);}
+
+    /* LOADING */
+    #loadingOverlay{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;z-index:999;transition:opacity .3s;}
+    .spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+    #loadMsg{color:var(--textdim);font-size:13px;}
+
+    /* ERROR */
+    #errorBanner{display:none;background:rgba(231,76,60,.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:13px;}
   </style>
 </head>
 <body>
@@ -163,8 +144,6 @@
   <div class="spinner"></div>
   <div id="loadMsg">Conectando ao Google Sheets…</div>
 </div>
-
-<div class="map-tooltip" id="mapTooltip"></div>
 
 <header>
   <div class="logo">
@@ -188,9 +167,9 @@
     <select id="filterProduto" onchange="applyFilters()"><option value="">Todos</option></select>
     <label>Status</label>
     <select id="filterStatus" onchange="applyFilters()"><option value="">Todos</option></select>
-    <label>Buscar cliente</label>
-    <input type="text" id="filterCliente" placeholder="Nome do cliente…" oninput="applyFilters()" />
-    <label style="margin-left:auto;color:var(--muted);font-size:11px;" id="totalCount"></label>
+    <label>Cliente</label>
+    <input type="text" id="filterCliente" placeholder="Buscar cliente…" oninput="applyFilters()"/>
+    <span style="margin-left:auto;font-size:11px;color:var(--muted);" id="totalCount"></span>
   </div>
 
   <!-- KPIs -->
@@ -203,11 +182,11 @@
     <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
   </div>
 
-  <!-- ROW 1: funnel + donut + SLA por produto -->
+  <!-- ROW 1: Funil + Donut + SLA produto -->
   <div class="grid-3">
     <div class="card">
       <div class="card-title">Status dos Protocolos</div>
-      <div class="funnel-list" id="funnelList"><div style="color:var(--muted);font-size:12px">Carregando…</div></div>
+      <div class="funnel-list" id="funnelList"></div>
     </div>
     <div class="card">
       <div class="card-title">Distribuição por Produto</div>
@@ -222,7 +201,7 @@
     </div>
   </div>
 
-  <!-- ROW 2: SLA mensal + Nota PRC mensal + Valor mensal -->
+  <!-- ROW 2: SLA mensal + PRC mensal + Valor mensal -->
   <div class="grid-3">
     <div class="card">
       <div class="card-title">SLA Médio por Mês</div>
@@ -238,11 +217,11 @@
     </div>
   </div>
 
-  <!-- ROW 3: SLA por parceiro + Top clientes valor + Top clientes qtd -->
+  <!-- ROW 3: SLA parceiro + Top valor + Top qtd -->
   <div class="grid-3">
     <div class="card">
-      <div class="card-title">SLA Médio por Parceiro (Top 15)</div>
-      <div style="overflow-y:auto; max-height:320px;" id="slaParcList"></div>
+      <div class="card-title">SLA Médio por Parceiro</div>
+      <div style="overflow-y:auto;max-height:320px;" id="slaParcList"></div>
     </div>
     <div class="card">
       <div class="card-title">Top Clientes · Valor</div>
@@ -260,105 +239,11 @@
     </div>
   </div>
 
-  <!-- ROW 4: Mapa + cidades ranking -->
+  <!-- ROW 4: Mapa + ranking cidades -->
   <div class="grid-map">
     <div class="card">
       <div class="card-title">Mapa de Cidades · Protocolos</div>
-      <div style="position:relative;">
-        <svg id="mapSvg" viewBox="0 0 800 900" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:420px;">
-  <defs>
-    <style>
-      .estado { fill: #1a2236; stroke: #2a3147; stroke-width: 1; transition: fill 0.2s; cursor:pointer; }
-      .estado:hover { fill: #243050; }
-      .estado-label { font-size: 9px; fill: #6b7a9f; pointer-events: none; text-anchor: middle; }
-    </style>
-  </defs>
-  <!-- BRASIL - Estados com paths reais (projeção simplificada) -->
-  <!-- AC - Acre -->
-  <path class="estado" id="AC" d="M 82,442 L 155,410 L 178,425 L 192,448 L 170,468 L 130,472 L 95,460 Z"/>
-  <text class="estado-label" x="135" y="445">AC</text>
-  <!-- AM - Amazonas -->
-  <path class="estado" id="AM" d="M 155,250 L 265,230 L 310,255 L 318,310 L 295,355 L 255,375 L 192,390 L 158,370 L 140,330 L 148,285 Z"/>
-  <text class="estado-label" x="228" y="310">AM</text>
-  <!-- RR - Roraima -->
-  <path class="estado" id="RR" d="M 215,120 L 270,110 L 295,145 L 285,195 L 255,210 L 220,200 L 200,170 Z"/>
-  <text class="estado-label" x="248" y="165">RR</text>
-  <!-- PA - Pará -->
-  <path class="estado" id="PA" d="M 265,230 L 355,200 L 430,210 L 460,240 L 455,290 L 415,330 L 370,350 L 318,345 L 295,310 Z"/>
-  <text class="estado-label" x="375" y="275">PA</text>
-  <!-- AP - Amapá -->
-  <path class="estado" id="AP" d="M 390,140 L 430,130 L 450,155 L 440,195 L 410,205 L 390,180 Z"/>
-  <text class="estado-label" x="418" y="170">AP</text>
-  <!-- MA - Maranhão -->
-  <path class="estado" id="MA" d="M 430,210 L 500,200 L 530,225 L 525,275 L 495,305 L 455,310 L 430,285 L 415,250 Z"/>
-  <text class="estado-label" x="473" y="258">MA</text>
-  <!-- PI - Piauí -->
-  <path class="estado" id="PI" d="M 500,200 L 545,205 L 560,240 L 555,290 L 530,315 L 500,310 L 480,285 L 480,245 Z"/>
-  <text class="estado-label" x="520" y="260">PI</text>
-  <!-- CE - Ceará -->
-  <path class="estado" id="CE" d="M 545,190 L 590,185 L 610,215 L 600,260 L 570,270 L 545,255 L 535,225 Z"/>
-  <text class="estado-label" x="573" y="228">CE</text>
-  <!-- RN - Rio Grande do Norte -->
-  <path class="estado" id="RN" d="M 590,185 L 630,190 L 640,215 L 618,235 L 595,230 L 585,210 Z"/>
-  <text class="estado-label" x="612" y="213">RN</text>
-  <!-- PB - Paraíba -->
-  <path class="estado" id="PB" d="M 600,240 L 638,238 L 645,258 L 620,268 L 598,262 Z"/>
-  <text class="estado-label" x="622" y="256">PB</text>
-  <!-- PE - Pernambuco -->
-  <path class="estado" id="PE" d="M 555,265 L 645,260 L 648,280 L 610,295 L 568,292 L 548,280 Z"/>
-  <text class="estado-label" x="600" y="280">PE</text>
-  <!-- AL - Alagoas -->
-  <path class="estado" id="AL" d="M 595,295 L 635,290 L 638,312 L 610,320 L 590,310 Z"/>
-  <text class="estado-label" x="614" y="308">AL</text>
-  <!-- SE - Sergipe -->
-  <path class="estado" id="SE" d="M 580,310 L 610,308 L 612,330 L 588,335 L 575,322 Z"/>
-  <text class="estado-label" x="594" y="325">SE</text>
-  <!-- BA - Bahia -->
-  <path class="estado" id="BA" d="M 455,290 L 555,275 L 580,310 L 590,370 L 575,430 L 535,465 L 490,470 L 450,450 L 430,410 L 420,360 L 430,320 Z"/>
-  <text class="estado-label" x="508" y="380">BA</text>
-  <!-- TO - Tocantins -->
-  <path class="estado" id="TO" d="M 370,340 L 420,330 L 435,370 L 430,420 L 405,445 L 375,440 L 355,410 L 355,370 Z"/>
-  <text class="estado-label" x="393" y="390">TO</text>
-  <!-- RO - Rondônia -->
-  <path class="estado" id="RO" d="M 178,390 L 245,375 L 268,400 L 262,445 L 225,460 L 188,450 L 172,425 Z"/>
-  <text class="estado-label" x="220" y="420">RO</text>
-  <!-- MT - Mato Grosso -->
-  <path class="estado" id="MT" d="M 255,355 L 370,340 L 395,375 L 390,440 L 355,470 L 295,475 L 258,455 L 248,410 L 255,375 Z"/>
-  <text class="estado-label" x="322" y="415">MT</text>
-  <!-- MS - Mato Grosso do Sul -->
-  <path class="estado" id="MS" d="M 258,475 L 355,470 L 370,510 L 355,555 L 315,570 L 270,555 L 248,520 Z"/>
-  <text class="estado-label" x="308" y="520">MS</text>
-  <!-- GO - Goiás -->
-  <path class="estado" id="GO" d="M 390,440 L 450,435 L 470,470 L 460,520 L 420,540 L 375,530 L 358,495 L 360,460 Z"/>
-  <text class="estado-label" x="415" y="490">GO</text>
-  <!-- DF - Distrito Federal -->
-  <path class="estado" id="DF" d="M 440,490 L 455,488 L 458,502 L 443,505 Z" stroke-width="0.5"/>
-  <text class="estado-label" x="449" y="498">DF</text>
-  <!-- MG - Minas Gerais -->
-  <path class="estado" id="MG" d="M 450,450 L 535,450 L 560,480 L 555,545 L 510,575 L 460,570 L 425,545 L 415,505 L 420,468 Z"/>
-  <text class="estado-label" x="490" y="515">MG</text>
-  <!-- ES - Espírito Santo -->
-  <path class="estado" id="ES" d="M 560,480 L 592,478 L 598,515 L 575,535 L 552,520 L 548,495 Z"/>
-  <text class="estado-label" x="573" y="508">ES</text>
-  <!-- RJ - Rio de Janeiro -->
-  <path class="estado" id="RJ" d="M 545,548 L 588,535 L 600,558 L 572,575 L 545,568 Z"/>
-  <text class="estado-label" x="572" y="558">RJ</text>
-  <!-- SP - São Paulo -->
-  <path class="estado" id="SP" d="M 415,545 L 510,545 L 528,570 L 510,610 L 460,620 L 415,605 L 400,575 Z"/>
-  <text class="estado-label" x="462" y="583">SP</text>
-  <!-- PR - Paraná -->
-  <path class="estado" id="PR" d="M 355,600 L 460,595 L 478,625 L 460,655 L 400,660 L 355,645 L 340,620 Z"/>
-  <text class="estado-label" x="408" y="630">PR</text>
-  <!-- SC - Santa Catarina -->
-  <path class="estado" id="SC" d="M 345,658 L 455,650 L 462,675 L 440,698 L 380,700 L 345,685 Z"/>
-  <text class="estado-label" x="402" y="678">SC</text>
-  <!-- RS - Rio Grande do Sul -->
-  <path class="estado" id="RS" d="M 320,700 L 440,695 L 448,730 L 420,775 L 370,785 L 325,760 L 308,730 Z"/>
-  <text class="estado-label" x="378" y="742">RS</text>
-  <!-- Camada de bolhas -->
-  <g id="bubbleLayer"></g>
-</svg>
-      </div>
+      <div id="leafletMap"></div>
     </div>
     <div class="card">
       <div class="card-title">Ranking de Cidades</div>
@@ -366,8 +251,8 @@
     </div>
   </div>
 
-  <!-- ROW 5: Qtd por mês + proto table -->
-  <div class="grid-2" style="margin-bottom:20px;">
+  <!-- ROW 5: Qtd mensal + Top parceiros -->
+  <div class="grid-2">
     <div class="card">
       <div class="card-title">Protocolos Entregues por Mês</div>
       <div class="chart-wrap"><canvas id="qtdByMonth"></canvas></div>
@@ -378,15 +263,13 @@
     </div>
   </div>
 
+  <!-- ROW 6: Tabela detalhada -->
   <div class="card" style="margin-bottom:20px;">
     <div class="card-title">Protocolos Detalhados</div>
     <div class="proto-wrap" style="max-height:400px;overflow-y:auto;">
-      <table class="proto-table" id="protoTable">
+      <table class="proto-table">
         <thead>
-          <tr>
-            <th>Cliente</th><th>Parceiro</th><th>Cidade</th><th>Protocolo</th>
-            <th>Produto</th><th>Status</th><th>SLA (dias)</th><th>Valor</th><th>Nota</th>
-          </tr>
+          <tr><th>Cliente</th><th>Parceiro</th><th>Cidade</th><th>Protocolo</th><th>Produto</th><th>Status</th><th>SLA</th><th>Valor</th><th>Nota</th></tr>
         </thead>
         <tbody id="protoBody"></tbody>
       </table>
@@ -395,68 +278,60 @@
 </main>
 
 <script>
-// ── Config ───────────────────────────────────────────────────────
+// ── CONFIG ──────────────────────────────────────────────────────
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRKsahevABB_4kg3sUhcYZJRLFWL7lXRUS6ftT4VRAoUW11od-mrOSQ09LUErkhUEqpEkiBC5TfDDTr/pub?gid=1913853917&single=true&output=csv';
-
 const PALETTE = ['#2ecc71','#1abc9c','#3498db','#9b59b6','#f39c12','#e74c3c','#e67e22','#27ae60','#2980b9','#8e44ad','#16a085','#d35400'];
 
-// Approximate lat/lon → SVG coords for Brazilian cities
-// SVG viewBox: 0 0 600 620
-// Brazil lat: ~5°N to -33°S, lon: -73°W to -35°W
-function latLonToSVG(lat, lon) {
-  // viewBox 0 0 800 900 — calibrated to the state paths above
-  const minLat = -34, maxLat = 5.5;
-  const minLon = -74, maxLon = -34;
-  const svgW = 680, svgH = 780, offX = 60, offY = 110;
-  const x = offX + ((lon - minLon) / (maxLon - minLon)) * svgW;
-  const y = offY + ((maxLat - lat) / (maxLat - minLat)) * svgH;
-  return { x, y };
-}
-
-// City coordinate database (lat, lon)
+// ── CITY COORDS (lat, lon) ──────────────────────────────────────
 const CITY_COORDS = {
-  'São Paulo': [-23.55, -46.63], 'Campinas': [-22.91, -47.06],
-  'Santos': [-23.96, -46.33], 'Guarulhos': [-23.46, -46.53],
-  'Sorocaba': [-23.50, -47.46], 'Piracicaba': [-22.72, -47.65],
-  'Limeira': [-22.56, -47.40], 'Jundiaí': [-23.19, -46.88],
-  'Barueri': [-23.51, -46.88], 'São Bernardo do Campo': [-23.69, -46.56],
-  'Cajamar': [-23.35, -46.88], 'Salto': [-23.20, -47.29],
-  'Indaiatuba': [-23.09, -47.22], 'Porto Feliz': [-23.21, -47.52],
-  'Cotia': [-23.60, -46.92], 'São Carlos': [-21.99, -47.89],
-  'São Roque': [-23.53, -47.14], 'Bragança Paulista': [-22.95, -46.54],
-  'Itapetininga': [-23.60, -48.05], 'Assis': [-22.66, -50.41],
-  'Araçatuba': [-21.21, -50.43], 'Votuporanga': [-20.42, -49.97],
-  'Presidente Prudente': [-22.12, -51.39], 'Bauru': [-22.31, -49.07],
-  'Marília': [-22.21, -49.95], 'Sinop': [-11.86, -55.51],
-  'Extrema': [-22.86, -46.32], 'Franco da Rocha': [-23.32, -46.72],
-  'Santo André': [-23.66, -46.53], 'São Luiz': [-2.53, -44.30],
-  'Manaus': [-3.10, -60.02], 'Belém': [-1.46, -48.50],
-  'Hidrolândia': [-16.96, -49.22], 'Tocantins': [-21.18, -43.02],
-  'Recreio': [-21.36, -42.46], 'Matipó': [-20.28, -42.34],
-  'Laranjal': [-21.37, -42.67], 'Bambuí': [-20.01, -45.98],
-  'Monte Azul': [-15.15, -42.87], 'Catuti': [-15.27, -42.97],
-  'Buritis': [-15.62, -46.42], 'Guanambi': [-14.22, -42.78],
-  'Gameleiras': [-15.47, -43.00], 'Mamonas': [-15.07, -42.98],
-  'Dom Cavati': [-19.35, -42.07], 'Andradas': [-22.07, -46.57],
-  'Uruana de Minas': [-16.26, -46.15], 'Mato Verde': [-15.41, -42.87],
-  'Santo Antônio do Retiro': [-15.27, -42.97], 'Conceição do Mato Dentro': [-19.04, -43.42],
-  'Altinópolis': [-21.02, -47.37], 'Cássia': [-20.58, -46.92],
-  'São Roque de Minas': [-20.25, -46.37], 'Araxá': [-19.59, -46.94],
-  'Itapecerica': [-20.48, -45.12], 'Jaguariúna': [-22.70, -47.00],
-  'Campina do Monte Alegre': [-23.60, -48.48], 'Angatuba': [-23.49, -48.41],
-  'Itaberá': [-23.86, -49.14], 'Timóteo': [-19.58, -42.65],
-  'Pederneiras': [-22.35, -48.77], 'Bertioga': [-23.85, -46.14],
-  'Itararé': [-24.11, -49.33], 'Valparaíso': [-21.22, -50.87],
-  'Laranjal Paulista': [-23.04, -47.84], 'Uirapuru': [-14.63, -49.93],
-  'Vila Flores': [-28.87, -51.57], 'Itu': [-23.27, -47.30],
-  'São Luiz Gonzaga': [-28.40, -54.96],
+  'São Paulo':[-23.55,-46.63],'Campinas':[-22.91,-47.06],'Santos':[-23.96,-46.33],
+  'Guarulhos':[-23.46,-46.53],'Sorocaba':[-23.50,-47.46],'Piracicaba':[-22.72,-47.65],
+  'Limeira':[-22.56,-47.40],'Jundiaí':[-23.19,-46.88],'Barueri':[-23.51,-46.88],
+  'São Bernardo do Campo':[-23.69,-46.56],'Cajamar':[-23.35,-46.88],'Salto':[-23.20,-47.29],
+  'Indaiatuba':[-23.09,-47.22],'Porto Feliz':[-23.21,-47.52],'Cotia':[-23.60,-46.92],
+  'São Carlos':[-21.99,-47.89],'São Roque':[-23.53,-47.14],'Bragança Paulista':[-22.95,-46.54],
+  'Itapetininga':[-23.60,-48.05],'Assis':[-22.66,-50.41],'Araçatuba':[-21.21,-50.43],
+  'Votuporanga':[-20.42,-49.97],'Presidente Prudente':[-22.12,-51.39],'Bauru':[-22.31,-49.07],
+  'Marília':[-22.21,-49.95],'Extrema':[-22.86,-46.32],'Franco da Rocha':[-23.32,-46.72],
+  'Santo André':[-23.66,-46.53],'Vinhedo':[-23.03,-46.97],'Valinhos':[-22.98,-47.01],
+  'Americana':[-22.74,-47.33],'Ribeirão Preto':[-21.17,-47.81],'São José do Rio Preto':[-20.82,-49.38],
+  'Franca':[-20.54,-47.40],'Araraquara':[-21.79,-48.17],'Rio Claro':[-22.41,-47.56],
+  'Botucatu':[-22.89,-48.44],'Jacareí':[-23.30,-45.97],'São José dos Campos':[-23.18,-45.88],
+  'Taubaté':[-23.03,-45.56],'Mogi das Cruzes':[-23.52,-46.19],'Osasco':[-23.53,-46.79],
+  'Itu':[-23.27,-47.30],'Jaguariúna':[-22.70,-47.00],'Angatuba':[-23.49,-48.41],
+  'Itaberá':[-23.86,-49.14],'Pederneiras':[-22.35,-48.77],'Bertioga':[-23.85,-46.14],
+  'Itararé':[-24.11,-49.33],'Valparaíso':[-21.22,-50.87],'Laranjal Paulista':[-23.04,-47.84],
+  'Campina do Monte Alegre':[-23.60,-48.48],'Altinópolis':[-21.02,-47.37],
+  'Cássia dos Coqueiros':[-21.37,-47.23],'Águas de Lindóia':[-22.47,-46.63],
+  'Sinop':[-11.86,-55.51],'Manaus':[-3.10,-60.02],'Belém':[-1.46,-48.50],
+  'São Luiz':[-2.53,-44.30],'São Luís':[-2.53,-44.30],'Palmas':[-10.18,-48.33],
+  'Hidrolândia':[-16.96,-49.22],'Uirapuru':[-14.63,-49.93],'Goiânia':[-16.69,-49.25],
+  'Belo Horizonte':[-19.92,-43.94],'Uberlândia':[-18.92,-48.28],'Uberaba':[-19.75,-47.93],
+  'Araxá':[-19.59,-46.94],'Timóteo':[-19.58,-42.65],'Dom Cavati':[-19.35,-42.07],
+  'Andradas':[-22.07,-46.57],'Bambuí':[-20.01,-45.98],'Itapecerica':[-20.48,-45.12],
+  'Cássia':[-20.58,-46.92],'Conceição do Mato Dentro':[-19.04,-43.42],
+  'Tocantins':[-21.18,-43.02],'Recreio':[-21.36,-42.46],'Matipó':[-20.28,-42.34],
+  'Laranjal':[-21.37,-42.67],'Campo Florido':[-19.78,-48.57],'Jacuí':[-21.03,-46.74],
+  'Iturama':[-19.73,-50.20],'Monte Azul':[-15.15,-42.87],'Catuti':[-15.27,-42.97],
+  'Buritis':[-15.62,-46.42],'Guanambi':[-14.22,-42.78],'Gameleiras':[-15.47,-43.00],
+  'Mamonas':[-15.07,-42.98],'Uruana de Minas':[-16.26,-46.15],'Mato Verde':[-15.41,-42.87],
+  'São Roque de Minas':[-20.25,-46.37],'Extrema':[-22.86,-46.32],
+  'Curitiba':[-25.43,-49.27],'Londrina':[-23.31,-51.17],'Maringá':[-23.42,-51.94],
+  'Porto Alegre':[-30.03,-51.22],'Caxias do Sul':[-29.17,-51.18],'Vila Flores':[-28.87,-51.57],
+  'São Luiz Gonzaga':[-28.40,-54.96],'Florianópolis':[-27.60,-48.55],'Joinville':[-26.30,-48.84],
+  'Salvador':[-12.97,-38.50],'Fortaleza':[-3.72,-38.54],'Recife':[-8.05,-34.88],
+  'Natal':[-5.79,-35.21],'João Pessoa':[-7.12,-34.86],'Maceió':[-9.67,-35.74],
+  'Aracaju':[-10.91,-37.07],'Teresina':[-5.09,-42.80],'Rio de Janeiro':[-22.91,-43.17],
+  'Campo Grande':[-20.44,-54.65],'Cuiabá':[-15.60,-56.10],'Porto Velho':[-8.76,-63.90],
+  'Rio Branco':[-9.97,-67.81],'Boa Vista':[2.82,-60.67],'Macapá':[0.03,-51.07],
 };
 
-// ── State ─────────────────────────────────────────────────────────
-let allRows = [], filteredRows = [], charts = {};
+// ── STATE ──────────────────────────────────────────────────────
+let allRows = [], filteredRows = [], charts = {}, leafletMap = null, markersLayer = null;
 
 window.addEventListener('DOMContentLoaded', loadData);
 
+// ── LOAD ──────────────────────────────────────────────────────
 async function loadData() {
   const btn = document.getElementById('btnRefresh');
   const overlay = document.getElementById('loadingOverlay');
@@ -464,11 +339,11 @@ async function loadData() {
   btn.disabled = true;
   overlay.style.display = 'flex'; overlay.style.opacity = '1';
   err.style.display = 'none';
-  setMsg('Conectando ao Google Sheets…');
+  document.getElementById('loadMsg').textContent = 'Conectando ao Google Sheets…';
   try {
     const resp = await fetch(CSV_URL + '&_=' + Date.now());
     if (!resp.ok) throw new Error('HTTP ' + resp.status);
-    setMsg('Processando dados…');
+    document.getElementById('loadMsg').textContent = 'Processando dados…';
     const text = await resp.text();
     allRows = parseCSV(text);
     filteredRows = [...allRows];
@@ -476,7 +351,8 @@ async function loadData() {
     render();
     document.getElementById('lastUpdated').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
   } catch(e) {
-    err.textContent = `⚠ Erro ao carregar: ${e.message}. Verifique se a planilha está pública ("Qualquer pessoa com o link pode ver").`;
+    console.error(e);
+    err.textContent = '⚠ Erro ao carregar: ' + e.message + '. Verifique se a planilha está publicada como CSV.';
     err.style.display = 'block';
   } finally {
     overlay.style.opacity = '0';
@@ -485,34 +361,27 @@ async function loadData() {
   }
 }
 
-function setMsg(m) { document.getElementById('loadMsg').textContent = m; }
-
-// ── CSV ───────────────────────────────────────────────────────────
+// ── CSV PARSER ────────────────────────────────────────────────
 function parseCSV(text) {
-  // Normalize line endings
-  const normalized = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const normalized = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
   const lines = normalized.trim().split('\n');
   if (lines.length < 2) return [];
-
-  // Auto-detect separator
   const firstLine = lines[0];
-  const sep = (firstLine.split(';').length > firstLine.split(',').length) ? ';' : ',';
-
+  const sep = firstLine.split(';').length > firstLine.split(',').length ? ';' : ',';
   const headers = parseLine(lines[0], sep).map(h => h.trim().replace(/^"|"$/g,'').replace(/\uFEFF/g,''));
 
-  console.log('=== HEADERS [sep=' + sep + '] ===');
-  headers.forEach((h,i) => console.log('[' + i + '] "' + h + '"'));
-  console.log('Total linhas:', lines.length);
+  console.log('Headers [sep=' + sep + ']:', headers);
 
   const ci = name => headers.findIndex(h => h.toLowerCase().includes(name.toLowerCase()));
-
   const idx = {
     cliente: ci('cliente'), parceiro: ci('parceiro'), cidade: ci('cidade'),
     protocolo: ci('protocolo'), produto: ci('produto'), status: ci('status'),
     slaGP: ci('sla gp'), valor: ci('valor'), nota: ci('nota'),
     dataConclusao: ci('conclus'), dataVenda: ci('venda'),
   };
-  console.log('=== ÍNDICES ===', JSON.stringify(idx));
+  console.log('Column indices:', idx);
+
+  const mNames = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
 
   const rows = lines.slice(1).map(line => {
     if (!line.trim()) return null;
@@ -520,79 +389,68 @@ function parseCSV(text) {
     const get = key => {
       const i = idx[key];
       if (i === undefined || i < 0 || i >= cols.length) return '';
-      return (cols[i] || '').trim().replace(/^"|"$/g,'');
+      return (cols[i]||'').trim().replace(/^"|"$/g,'');
     };
-
     const cliente = get('cliente');
     if (!cliente || cliente.toLowerCase() === 'cliente') return null;
 
-    // Parse valor — handles R$ 1.234,56 or 1234,56 or 1234.56
-    const valorRaw = get('valor').replace(/R\$\s*/,'').replace(/\s/g,'');
+    // valor
+    const vRaw = get('valor').replace(/R\$\s*/,'').replace(/\s/g,'');
     let valor = 0;
-    if (valorRaw.includes(',') && valorRaw.includes('.')) {
-      valor = parseFloat(valorRaw.replace(/\./g,'').replace(',','.')) || 0;
-    } else if (valorRaw.includes(',')) {
-      valor = parseFloat(valorRaw.replace(',','.')) || 0;
-    } else {
-      valor = parseFloat(valorRaw) || 0;
-    }
+    if (vRaw.includes(',') && vRaw.includes('.')) valor = parseFloat(vRaw.replace(/\./g,'').replace(',','.')) || 0;
+    else if (vRaw.includes(',')) valor = parseFloat(vRaw.replace(',','.')) || 0;
+    else valor = parseFloat(vRaw) || 0;
 
-    // Parse nota — handles ★★★★★ or 5 or 5,00
-    const notaRaw = get('nota');
+    // nota
+    const nRaw = get('nota');
     let nota = 0;
-    if (notaRaw.includes('\u2605')) {
-      nota = notaRaw.split('').filter(c => c === '\u2605').length;
-    } else {
-      const n = parseFloat(notaRaw.replace(',','.'));
-      if (!isNaN(n) && n >= 0 && n <= 5) nota = Math.round(n);
-    }
+    if (nRaw.includes('\u2605')) nota = nRaw.split('').filter(c=>c==='\u2605').length;
+    else { const n = parseFloat(nRaw.replace(',','.')); if (!isNaN(n) && n>=0 && n<=5) nota = Math.round(n); }
 
-    const slaGP = parseInt(get('slaGP').replace(',','.')) || 0;
-    const status = get('status');
-    const produto = get('produto');
+    const slaGP = parseInt(get('slaGP')) || 0;
 
+    // mes
     const dateRef = get('dataConclusao') || get('dataVenda');
     let mes = '';
     if (dateRef) {
-      const mNames = ['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
       if (dateRef.includes('/')) {
         const p = dateRef.split('/');
-        const mNum = parseInt(p[1]);
-        if (mNum >= 1 && mNum <= 12) mes = mNames[mNum] + '/' + p[2].slice(-2);
+        const m = parseInt(p[1]);
+        if (m>=1&&m<=12) mes = mNames[m]+'/'+p[2].slice(-2);
       } else if (dateRef.includes('-')) {
         const p = dateRef.split('-');
-        const mNum = parseInt(p[1]);
-        if (mNum >= 1 && mNum <= 12) mes = mNames[mNum] + '/' + p[0].slice(-2);
+        const m = parseInt(p[1]);
+        if (m>=1&&m<=12) mes = mNames[m]+'/'+p[0].slice(-2);
       }
     }
 
-    return { cliente, parceiro: get('parceiro'), cidade: get('cidade'),
-      protocolo: get('protocolo'), produto, status, valor, nota, slaGP, mes };
+    return { cliente, parceiro:get('parceiro'), cidade:get('cidade'),
+      protocolo:get('protocolo'), produto:get('produto'), status:get('status'),
+      valor, nota, slaGP, mes };
   }).filter(Boolean);
 
-  console.log('=== ROWS PARSED:', rows.length, '===');
-  if (rows.length > 0) console.log('Exemplo:', JSON.stringify(rows[0]));
+  console.log('Rows parsed:', rows.length, rows[0]);
   return rows;
 }
 
 function parseLine(line, sep) {
   sep = sep || ',';
-  const res = []; let cur = '', inQ = false;
+  const res=[]; let cur='', inQ=false;
   for (const ch of line) {
-    if (ch === '"') { inQ = !inQ; continue; }
-    if (ch === sep && !inQ) { res.push(cur); cur = ''; continue; }
-    cur += ch;
+    if (ch==='"') { inQ=!inQ; continue; }
+    if (ch===sep && !inQ) { res.push(cur); cur=''; continue; }
+    cur+=ch;
   }
   res.push(cur);
   return res;
 }
 
-// ── Filters ───────────────────────────────────────────────────────
+// ── FILTERS ──────────────────────────────────────────────────
 function buildFilters() {
   const prods = [...new Set(allRows.map(r=>r.produto).filter(Boolean))].sort();
   const stats = [...new Set(allRows.map(r=>r.status).filter(Boolean))].sort();
-  document.getElementById('filterProduto').innerHTML = '<option value="">Todos</option>' + prods.map(p=>`<option value="${p}">${p}</option>`).join('');
-  document.getElementById('filterStatus').innerHTML  = '<option value="">Todos</option>' + stats.map(s=>`<option value="${s}">${s}</option>`).join('');
+  document.getElementById('filterProduto').innerHTML = '<option value="">Todos</option>'+prods.map(p=>`<option value="${p}">${p}</option>`).join('');
+  document.getElementById('filterStatus').innerHTML  = '<option value="">Todos</option>'+stats.map(s=>`<option value="${s}">${s}</option>`).join('');
 }
 
 function applyFilters() {
@@ -600,347 +458,234 @@ function applyFilters() {
   const stat = document.getElementById('filterStatus').value;
   const cli  = document.getElementById('filterCliente').value.toLowerCase();
   filteredRows = allRows.filter(r =>
-    (!prod || r.produto === prod) &&
-    (!stat || r.status === stat) &&
-    (!cli  || r.cliente.toLowerCase().includes(cli))
+    (!prod || r.produto===prod) && (!stat || r.status===stat) &&
+    (!cli || r.cliente.toLowerCase().includes(cli))
   );
   render();
 }
 
-// ── Render ────────────────────────────────────────────────────────
+// ── RENDER ───────────────────────────────────────────────────
 function render() {
   const rows = filteredRows;
-  document.getElementById('totalCount').textContent = `${rows.length} protocolos exibidos`;
-  renderKPIs(rows);
-  renderFunnel(rows);
-  renderDonut(rows);
-  renderSLAByProduct(rows);
-  renderSLAByMonth(rows);
-  renderPRCByMonth(rows);
-  renderMonthlyCharts(rows);
-  renderSLAParceiro(rows);
-  renderTopClients(rows);
-  renderTopParceiros(rows);
-  renderMap(rows);
-  renderProtoTable(rows);
+  document.getElementById('totalCount').textContent = rows.length + ' protocolos exibidos';
+  renderKPIs(rows); renderFunnel(rows); renderDonut(rows);
+  renderSLAByProduct(rows); renderSLAByMonth(rows); renderPRCByMonth(rows);
+  renderMonthlyCharts(rows); renderSLAParceiro(rows); renderTopClients(rows);
+  renderTopParceiros(rows); renderMap(rows); renderProtoTable(rows);
 }
 
-// ── KPIs ──────────────────────────────────────────────────────────
+// ── KPIs ──────────────────────────────────────────────────────
 function renderKPIs(rows) {
-  const concluidos = rows.filter(r => r.status === '13. Concluída');
-  const ativos = rows.filter(r => r.status && !r.status.includes('Cancelado') && !r.status.includes('Concluída') && !r.status.includes('Projeto Futuro'));
-  const valorTotal = concluidos.reduce((s,r) => s+r.valor, 0);
+  const conc = rows.filter(r=>r.status==='13. Concluída');
+  const ativos = rows.filter(r=>r.status&&!r.status.includes('Cancelado')&&!r.status.includes('Concluída')&&!r.status.includes('Projeto Futuro'));
+  const val = conc.reduce((s,r)=>s+r.valor,0);
   const notas = rows.filter(r=>r.nota>0).map(r=>r.nota);
-  const notaMedia = notas.length ? notas.reduce((a,b)=>a+b,0)/notas.length : 0;
+  const nota = notas.length ? notas.reduce((a,b)=>a+b,0)/notas.length : 0;
   const slas = rows.filter(r=>r.slaGP>0).map(r=>r.slaGP);
-  const slaMedia = slas.length ? Math.round(slas.reduce((a,b)=>a+b,0)/slas.length) : 0;
-  setText('kpiValor', 'R$ ' + valorTotal.toLocaleString('pt-BR',{minimumFractionDigits:2}));
-  setText('kpiValorSub', `${concluidos.length} projetos concluídos`);
-  setText('kpiNota', notaMedia ? notaMedia.toFixed(2) : '—');
-  setText('kpiSLA', slaMedia || '—');
-  setText('kpiAtivos', ativos.length);
-  setText('kpiAtivosSub', `${rows.filter(r=>r.status?.includes('Cancelado')).length} cancelados`);
-  setText('kpiConcluidos', concluidos.length);
-  setText('kpiTotal', rows.length);
+  const sla = slas.length ? Math.round(slas.reduce((a,b)=>a+b,0)/slas.length) : 0;
+  set('kpiValor','R$ '+val.toLocaleString('pt-BR',{minimumFractionDigits:2}));
+  set('kpiValorSub',conc.length+' projetos concluídos');
+  set('kpiNota', nota ? nota.toFixed(2) : '—');
+  set('kpiSLA', sla||'—');
+  set('kpiAtivos', ativos.length);
+  set('kpiAtivosSub', rows.filter(r=>r.status&&r.status.includes('Cancelado')).length+' cancelados');
+  set('kpiConcluidos', conc.length);
+  set('kpiTotal', rows.length);
 }
-function setText(id, v) { const el=document.getElementById(id); if(el) el.textContent=v; }
+function set(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
-// ── Funnel ────────────────────────────────────────────────────────
+// ── FUNNEL ────────────────────────────────────────────────────
 function renderFunnel(rows) {
-  const counts = {};
-  rows.forEach(r => { if (r.status) counts[r.status] = (counts[r.status]||0)+1; });
-  const sorted = Object.entries(counts).sort((a,b) => (parseInt(a[0])||99)-(parseInt(b[0])||99));
-  const max = Math.max(...Object.values(counts));
-  const cls = s => s.includes('Concluída')?'done':s.includes('Cancelado')?'danger':s.includes('Pendente')||s.includes('validação')?'warn':s.includes('Projeto Futuro')?'muted':'';
-  document.getElementById('funnelList').innerHTML = sorted.map(([status,count]) => `
+  const counts={};
+  rows.forEach(r=>{if(r.status)counts[r.status]=(counts[r.status]||0)+1;});
+  const sorted=Object.entries(counts).sort((a,b)=>(parseInt(a[0])||99)-(parseInt(b[0])||99));
+  const max=Math.max(...Object.values(counts));
+  const cls=s=>s.includes('Concluída')?'done':s.includes('Cancelado')?'danger':s.includes('Pendente')||s.includes('validação')?'warn':s.includes('Projeto Futuro')?'muted':'';
+  document.getElementById('funnelList').innerHTML=sorted.map(([s,c])=>`
     <div class="funnel-item">
-      <div class="funnel-label" title="${status}">${status.replace(/^\d+\.\s*/,'')}</div>
-      <div class="funnel-bar-wrap"><div class="funnel-bar ${cls(status)}" style="width:${Math.max(4,Math.round(count/max*100))}%"></div></div>
-      <div class="funnel-count">${count}</div>
+      <div class="funnel-label" title="${s}">${s.replace(/^\d+\.\s*/,'')}</div>
+      <div class="funnel-bar-wrap"><div class="funnel-bar ${cls(s)}" style="width:${Math.max(4,Math.round(c/max*100))}%"></div></div>
+      <div class="funnel-count">${c}</div>
     </div>`).join('');
 }
 
-// ── Donut ─────────────────────────────────────────────────────────
+// ── DONUT ─────────────────────────────────────────────────────
 function renderDonut(rows) {
-  const counts = {};
-  rows.forEach(r => { if(r.produto) counts[r.produto]=(counts[r.produto]||0)+1; });
-  const labels = Object.keys(counts), data = labels.map(l=>counts[l]);
-  const total = data.reduce((a,b)=>a+b,0);
-  const colors = PALETTE.slice(0,labels.length);
-  if (charts.donut) charts.donut.destroy();
-  charts.donut = new Chart(document.getElementById('donutChart').getContext('2d'), {
+  const counts={};
+  rows.forEach(r=>{if(r.produto)counts[r.produto]=(counts[r.produto]||0)+1;});
+  const labels=Object.keys(counts), data=labels.map(l=>counts[l]);
+  const total=data.reduce((a,b)=>a+b,0);
+  const colors=PALETTE.slice(0,labels.length);
+  if(charts.donut)charts.donut.destroy();
+  charts.donut=new Chart(document.getElementById('donutChart').getContext('2d'),{
     type:'doughnut',
-    data:{ labels, datasets:[{ data, backgroundColor:colors, borderWidth:0, hoverOffset:6 }] },
-    options:{ cutout:'65%', plugins:{ legend:{display:false}, tooltip:{
-      callbacks:{label:c=>` ${c.label}: ${c.raw} (${Math.round(c.raw/total*100)}%)`}
-    }}, animation:{animateRotate:true} }
+    data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:6}]},
+    options:{cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw} (${Math.round(c.raw/total*100)}%)`}}},animation:{animateRotate:true}}
   });
-  document.getElementById('donutLegend').innerHTML = labels.map((l,i)=>`
+  document.getElementById('donutLegend').innerHTML=labels.map((l,i)=>`
     <div class="legend-item">
       <div class="legend-dot" style="background:${colors[i]}"></div>
-      <span>${l}</span>
-      <span class="legend-pct">${data[i]} · ${Math.round(data[i]/total*100)}%</span>
+      <span>${l}</span><span class="legend-pct">${data[i]} · ${Math.round(data[i]/total*100)}%</span>
     </div>`).join('');
 }
 
-// ── SLA by product ────────────────────────────────────────────────
+// ── SLA BY PRODUCT ────────────────────────────────────────────
 function renderSLAByProduct(rows) {
-  const acc = {};
-  rows.filter(r=>r.produto&&r.slaGP>0).forEach(r=>{ if(!acc[r.produto])acc[r.produto]=[]; acc[r.produto].push(r.slaGP); });
-  const labels = Object.keys(acc).sort();
-  const data = labels.map(l=>Math.round(acc[l].reduce((a,b)=>a+b,0)/acc[l].length));
-  if (charts.slaProd) charts.slaProd.destroy();
-  charts.slaProd = new Chart(document.getElementById('slaByProduct'), {
+  const acc={};
+  rows.filter(r=>r.produto&&r.slaGP>0).forEach(r=>{if(!acc[r.produto])acc[r.produto]=[];acc[r.produto].push(r.slaGP);});
+  const labels=Object.keys(acc).sort();
+  const data=labels.map(l=>Math.round(acc[l].reduce((a,b)=>a+b,0)/acc[l].length));
+  if(charts.slaProd)charts.slaProd.destroy();
+  charts.slaProd=new Chart(document.getElementById('slaByProduct'),{
     type:'bar',
-    data:{ labels, datasets:[{ label:'Dias', data, backgroundColor:data.map(v=>v>35?'#e74c3c':v>25?'#f39c12':'#2ecc71'), borderRadius:5 }] },
-    options: darkOpts({ indexAxis:'y' })
+    data:{labels,datasets:[{label:'Dias',data,backgroundColor:data.map(v=>v>35?'#e74c3c':v>25?'#f39c12':'#2ecc71'),borderRadius:5}]},
+    options:darkOpts({indexAxis:'y'})
   });
 }
 
-// ── SLA by month ──────────────────────────────────────────────────
+// ── SLA BY MONTH ─────────────────────────────────────────────
 function renderSLAByMonth(rows) {
-  const acc = {};
-  rows.filter(r=>r.mes&&r.slaGP>0).forEach(r=>{ if(!acc[r.mes])acc[r.mes]=[]; acc[r.mes].push(r.slaGP); });
-  const labels = sortMonths(Object.keys(acc));
-  const data = labels.map(l=>Math.round(acc[l].reduce((a,b)=>a+b,0)/acc[l].length));
-  if (charts.slaMon) charts.slaMon.destroy();
-  charts.slaMon = new Chart(document.getElementById('slaByMonth'), {
+  const acc={};
+  rows.filter(r=>r.mes&&r.slaGP>0).forEach(r=>{if(!acc[r.mes])acc[r.mes]=[];acc[r.mes].push(r.slaGP);});
+  const labels=sortMonths(Object.keys(acc));
+  const data=labels.map(l=>Math.round(acc[l].reduce((a,b)=>a+b,0)/acc[l].length));
+  if(charts.slaMon)charts.slaMon.destroy();
+  charts.slaMon=new Chart(document.getElementById('slaByMonth'),{
     type:'line',
-    data:{ labels, datasets:[{ label:'SLA Médio (dias)', data, borderColor:'#2ecc71', backgroundColor:'rgba(46,204,113,.1)', tension:.3, pointBackgroundColor:'#2ecc71', fill:true }] },
-    options: darkOpts()
+    data:{labels,datasets:[{label:'SLA Médio',data,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.1)',tension:.3,pointBackgroundColor:'#2ecc71',fill:true}]},
+    options:darkOpts()
   });
 }
 
-// ── PRC por mês ───────────────────────────────────────────────────
+// ── PRC BY MONTH ─────────────────────────────────────────────
 function renderPRCByMonth(rows) {
-  const acc = {};
-  rows.filter(r=>r.mes&&r.nota>0).forEach(r=>{ if(!acc[r.mes])acc[r.mes]=[]; acc[r.mes].push(r.nota); });
-  const labels = sortMonths(Object.keys(acc));
-  const data = labels.map(l=> +(acc[l].reduce((a,b)=>a+b,0)/acc[l].length).toFixed(2));
-  const counts = labels.map(l=>acc[l].length);
-  if (charts.prcMon) charts.prcMon.destroy();
-  charts.prcMon = new Chart(document.getElementById('prcByMonth'), {
+  const acc={};
+  rows.filter(r=>r.mes&&r.nota>0).forEach(r=>{if(!acc[r.mes])acc[r.mes]=[];acc[r.mes].push(r.nota);});
+  const labels=sortMonths(Object.keys(acc));
+  const data=labels.map(l=>+(acc[l].reduce((a,b)=>a+b,0)/acc[l].length).toFixed(2));
+  const counts=labels.map(l=>acc[l].length);
+  if(charts.prcMon)charts.prcMon.destroy();
+  charts.prcMon=new Chart(document.getElementById('prcByMonth'),{
     type:'line',
-    data:{ labels, datasets:[{
-      label:'Nota média', data,
-      borderColor:'#f39c12', backgroundColor:'rgba(243,156,18,.1)',
-      tension:.3, pointBackgroundColor:'#f39c12', fill:true,
-      pointRadius:5, pointHoverRadius:7
-    }] },
-    options: darkOpts({
-      scales:{
-        x:{ grid:{color:'#2a3147'}, ticks:{color:'#6b7a9f',font:{size:10}} },
-        y:{ min:0, max:5.5, grid:{color:'#2a3147'}, ticks:{color:'#6b7a9f',font:{size:10}} }
-      },
-      plugins:{
-        tooltip:{ callbacks:{
-          label: (c) => ` Nota: ${c.raw} ★ (${counts[c.dataIndex]} avaliações)`
-        }}
-      }
-    })
+    data:{labels,datasets:[{label:'Nota média',data,borderColor:'#f39c12',backgroundColor:'rgba(243,156,18,.1)',tension:.3,pointBackgroundColor:'#f39c12',fill:true,pointRadius:5}]},
+    options:darkOpts({scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{min:0,max:5.5,grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}},plugins:{tooltip:{callbacks:{label:(c)=>` Nota: ${c.raw} ★ (${counts[c.dataIndex]} avaliações)`}}}})
   });
 }
 
-// ── SLA por parceiro ──────────────────────────────────────────────
-function renderSLAParceiro(rows) {
-  const acc = {};
-  rows.filter(r=>r.parceiro&&r.slaGP>0).forEach(r=>{
-    if(!acc[r.parceiro]) acc[r.parceiro] = {sum:0,count:0};
-    acc[r.parceiro].sum += r.slaGP; acc[r.parceiro].count++;
+// ── MONTHLY CHARTS ────────────────────────────────────────────
+function renderMonthlyCharts(rows) {
+  const vAcc={},qAcc={};
+  rows.filter(r=>r.status==='13. Concluída'&&r.mes).forEach(r=>{
+    vAcc[r.mes]=(vAcc[r.mes]||0)+r.valor;
+    qAcc[r.mes]=(qAcc[r.mes]||0)+1;
   });
-  const sorted = Object.entries(acc)
-    .map(([p,v])=>({ parceiro:p, media: Math.round(v.sum/v.count), count:v.count }))
-    .sort((a,b)=>b.count-a.count)  // sort by volume first
-    .slice(0,15);
+  const labels=sortMonths([...new Set([...Object.keys(vAcc),...Object.keys(qAcc)])]);
+  if(charts.valMon)charts.valMon.destroy();
+  charts.valMon=new Chart(document.getElementById('valorByMonth'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'R$',data:labels.map(l=>vAcc[l]||0),backgroundColor:'#1abc9c',borderRadius:5}]},
+    options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>' R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2})}}}})
+  });
+  if(charts.qtdMon)charts.qtdMon.destroy();
+  charts.qtdMon=new Chart(document.getElementById('qtdByMonth'),{
+    type:'bar',
+    data:{labels,datasets:[{label:'Qtd',data:labels.map(l=>qAcc[l]||0),backgroundColor:'#3498db',borderRadius:5}]},
+    options:darkOpts()
+  });
+}
 
-  const maxMedia = Math.max(...sorted.map(s=>s.media));
-  const container = document.getElementById('slaParcList');
-  container.innerHTML = sorted.map(s => {
-    const pct = Math.round(s.media/maxMedia*100);
-    const color = s.media>40?'#e74c3c':s.media>28?'#f39c12':'#2ecc71';
-    return `
-      <div style="margin-bottom:8px;">
-        <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
-          <span style="color:var(--textdim)">${s.parceiro}</span>
-          <span style="color:${color};font-weight:700">${s.media}d <span style="color:var(--muted);font-weight:400">(${s.count} protos)</span></span>
-        </div>
-        <div class="parc-bar-wrap">
-          <div class="parc-bar" style="width:${pct}%;background:${color}"></div>
-        </div>
-      </div>`;
+// ── SLA PARCEIRO ─────────────────────────────────────────────
+function renderSLAParceiro(rows) {
+  const acc={};
+  rows.filter(r=>r.parceiro&&r.slaGP>0).forEach(r=>{
+    if(!acc[r.parceiro])acc[r.parceiro]={sum:0,count:0};
+    acc[r.parceiro].sum+=r.slaGP; acc[r.parceiro].count++;
+  });
+  const sorted=Object.entries(acc).map(([p,v])=>({p,media:Math.round(v.sum/v.count),count:v.count})).sort((a,b)=>b.count-a.count).slice(0,15);
+  const maxM=Math.max(...sorted.map(s=>s.media));
+  document.getElementById('slaParcList').innerHTML=sorted.map(s=>{
+    const pct=Math.round(s.media/maxM*100);
+    const color=s.media>40?'#e74c3c':s.media>28?'#f39c12':'#2ecc71';
+    return `<div style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:2px;">
+        <span style="color:var(--textdim)">${s.p}</span>
+        <span style="color:${color};font-weight:700">${s.media}d <span style="color:var(--muted);font-weight:400">(${s.count})</span></span>
+      </div>
+      <div class="parc-bar-wrap"><div class="parc-bar" style="width:${pct}%;background:${color}"></div></div>
+    </div>`;
   }).join('');
 }
 
-// ── Monthly charts ────────────────────────────────────────────────
-function renderMonthlyCharts(rows) {
-  const valorAcc={}, qtdAcc={};
-  rows.filter(r=>r.status==='13. Concluída'&&r.mes).forEach(r=>{
-    valorAcc[r.mes]=(valorAcc[r.mes]||0)+r.valor;
-    qtdAcc[r.mes]=(qtdAcc[r.mes]||0)+1;
-  });
-  const labels = sortMonths([...new Set([...Object.keys(valorAcc),...Object.keys(qtdAcc)])]);
-
-  if (charts.valorMon) charts.valorMon.destroy();
-  charts.valorMon = new Chart(document.getElementById('valorByMonth'), {
-    type:'bar',
-    data:{ labels, datasets:[{ label:'R$', data:labels.map(l=>valorAcc[l]||0), backgroundColor:'#1abc9c', borderRadius:5 }] },
-    options: darkOpts({ plugins:{ tooltip:{ callbacks:{ label:c=>' R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2}) }}}})
-  });
-
-  if (charts.qtdMon) charts.qtdMon.destroy();
-  charts.qtdMon = new Chart(document.getElementById('qtdByMonth'), {
-    type:'bar',
-    data:{ labels, datasets:[{ label:'Qtd', data:labels.map(l=>qtdAcc[l]||0), backgroundColor:'#3498db', borderRadius:5 }] },
-    options: darkOpts()
-  });
-}
-
-// ── Top parceiros ─────────────────────────────────────────────────
-function renderTopParceiros(rows) {
-  const acc={};
-  rows.forEach(r=>{ if(r.parceiro) acc[r.parceiro]=(acc[r.parceiro]||0)+1; });
-  const top = Object.entries(acc).sort((a,b)=>b[1]-a[1]).slice(0,12);
-  if (charts.topParc) charts.topParc.destroy();
-  charts.topParc = new Chart(document.getElementById('topParceiros'), {
-    type:'bar',
-    data:{ labels:top.map(t=>t[0]), datasets:[{ label:'Protocolos', data:top.map(t=>t[1]), backgroundColor:PALETTE, borderRadius:5 }] },
-    options: darkOpts({ indexAxis:'y' })
-  });
-}
-
-// ── Top clientes ──────────────────────────────────────────────────
+// ── TOP CLIENTS ───────────────────────────────────────────────
 function renderTopClients(rows) {
   const vMap={};
-  rows.filter(r=>r.status==='13. Concluída').forEach(r=>{ vMap[r.cliente]=(vMap[r.cliente]||0)+r.valor; });
-  const topV = Object.entries(vMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  document.getElementById('topValorTable').querySelector('tbody').innerHTML = topV.map(([c,v],i)=>`
-    <tr><td><span class="rank">${i+1}</span></td><td>${shortName(c)}</td><td>R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('');
-
+  rows.filter(r=>r.status==='13. Concluída').forEach(r=>{vMap[r.cliente]=(vMap[r.cliente]||0)+r.valor;});
+  const topV=Object.entries(vMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('topValorTable').querySelector('tbody').innerHTML=topV.map(([c,v],i)=>`
+    <tr><td><span class="rank">${i+1}</span></td><td>${sname(c)}</td><td>R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('');
   const qMap={};
-  rows.forEach(r=>{ qMap[r.cliente]=(qMap[r.cliente]||0)+1; });
-  const topQ = Object.entries(qMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  document.getElementById('topQtdTable').querySelector('tbody').innerHTML = topQ.map(([c,n],i)=>`
-    <tr><td><span class="rank">${i+1}</span></td><td>${shortName(c)}</td><td>${n}</td></tr>`).join('');
+  rows.forEach(r=>{qMap[r.cliente]=(qMap[r.cliente]||0)+1;});
+  const topQ=Object.entries(qMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  document.getElementById('topQtdTable').querySelector('tbody').innerHTML=topQ.map(([c,n],i)=>`
+    <tr><td><span class="rank">${i+1}</span></td><td>${sname(c)}</td><td>${n}</td></tr>`).join('');
 }
 
-// ── Map ───────────────────────────────────────────────────────────
-// Map estado names to UF siglas
-const CITY_TO_STATE = {
-  'São Paulo':'SP','Campinas':'SP','Santos':'SP','Guarulhos':'SP','Sorocaba':'SP',
-  'Piracicaba':'SP','Limeira':'SP','Jundiaí':'SP','Barueri':'SP','São Bernardo do Campo':'SP',
-  'Cajamar':'SP','Salto':'SP','Indaiatuba':'SP','Porto Feliz':'SP','Cotia':'SP',
-  'São Carlos':'SP','São Roque':'SP','Bragança Paulista':'SP','Itapetininga':'SP',
-  'Assis':'SP','Araçatuba':'SP','Votuporanga':'SP','Presidente Prudente':'SP',
-  'Bauru':'SP','Marília':'SP','Extrema':'MG','Franco da Rocha':'SP','Santo André':'SP',
-  'Hidrolândia':'GO','Tocantins':'MG','Recreio':'MG','Matipó':'MG','Laranjal':'MG',
-  'Bambuí':'MG','Monte Azul':'MG','Catuti':'MG','Buritis':'MG','Guanambi':'BA',
-  'Gameleiras':'MG','Mamonas':'MG','Dom Cavati':'MG','Andradas':'MG',
-  'Uruana de Minas':'MG','Mato Verde':'MG','Santo Antônio do Retiro':'MG',
-  'Conceição do Mato Dentro':'MG','Altinópolis':'SP','Cássia':'MG',
-  'São Roque de Minas':'MG','Araxá':'MG','Itapecerica':'MG','Jaguariúna':'SP',
-  'Manaus':'AM','Belém':'PA','Sinop':'MT','São Luiz':'MA','São Luiz Gonzaga':'RS',
-  'Campina do Monte Alegre':'SP','Angatuba':'SP','Itaberá':'SP','Timóteo':'MG',
-  'Pederneiras':'SP','Bertioga':'SP','Itararé':'SP','Valparaíso':'SP',
-  'Laranjal Paulista':'SP','Uirapuru':'GO','Vila Flores':'RS','Itu':'SP',
-  'Campo Florido':'MG','Jacuí':'MG','Uberaba':'MG','Uberlândia':'MG',
-  'Iturама':'MG','Iturama':'MG','Palmas':'TO','Águas de Lindóia':'SP',
-  'Cássia dos Coqueiros':'SP','Altinópolis':'SP','Altinpolis':'SP',
-};
+// ── TOP PARCEIROS ─────────────────────────────────────────────
+function renderTopParceiros(rows) {
+  const acc={};
+  rows.forEach(r=>{if(r.parceiro)acc[r.parceiro]=(acc[r.parceiro]||0)+1;});
+  const top=Object.entries(acc).sort((a,b)=>b[1]-a[1]).slice(0,12);
+  if(charts.topParc)charts.topParc.destroy();
+  charts.topParc=new Chart(document.getElementById('topParceiros'),{
+    type:'bar',
+    data:{labels:top.map(t=>t[0]),datasets:[{label:'Protocolos',data:top.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},
+    options:darkOpts({indexAxis:'y'})
+  });
+}
 
+// ── LEAFLET MAP ───────────────────────────────────────────────
 function renderMap(rows) {
-  const cityCount = {};
-  rows.forEach(r => { if(r.cidade) cityCount[r.cidade]=(cityCount[r.cidade]||0)+1; });
+  const cityCount={};
+  rows.forEach(r=>{if(r.cidade)cityCount[r.cidade]=(cityCount[r.cidade]||0)+1;});
+  const maxCount=Math.max(...Object.values(cityCount),1);
 
-  // Count by state
-  const stateCount = {};
-  Object.entries(cityCount).forEach(([city, count]) => {
-    const uf = CITY_TO_STATE[city];
-    if (uf) stateCount[uf] = (stateCount[uf]||0) + count;
-  });
-  const maxState = Math.max(...Object.values(stateCount), 1);
+  if (!leafletMap) {
+    leafletMap=L.map('leafletMap',{center:[-15.8,-47.9],zoom:4});
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{
+      attribution:'© <a href="https://carto.com/">CARTO</a>',subdomains:'abcd',maxZoom:19
+    }).addTo(leafletMap);
+    markersLayer=L.layerGroup().addTo(leafletMap);
+  } else {
+    markersLayer.clearLayers();
+  }
 
-  // Color states
-  document.querySelectorAll('.estado').forEach(el => {
-    const uf = el.id;
-    const count = stateCount[uf] || 0;
-    if (count > 0) {
-      const intensity = count / maxState;
-      const r = Math.round(30 + intensity * 16);
-      const g = Math.round(40 + intensity * 160);
-      const b = Math.round(60 + intensity * 80);
-      el.style.fill = `rgb(${r},${g},${b})`;
-      el.style.fillOpacity = 0.4 + intensity * 0.6;
-    } else {
-      el.style.fill = '#1a2236';
-      el.style.fillOpacity = 1;
-    }
-    el.addEventListener('mouseenter', (e) => {
-      const cities = Object.entries(cityCount)
-        .filter(([c]) => CITY_TO_STATE[c] === uf)
-        .sort((a,b)=>b[1]-a[1]).slice(0,3)
-        .map(([c,n])=>`${c}: ${n}`).join('<br>');
-      showMapTooltipHTML(e, `<strong>${uf}</strong> · ${count} protocolos${cities?'<br>'+cities:''}`);
-    });
-    el.addEventListener('mouseleave', hideMapTooltip);
+  Object.entries(cityCount).forEach(([cidade,count])=>{
+    const coords=CITY_COORDS[cidade];
+    if(!coords)return;
+    const radius=6+(count/maxCount)*22;
+    const intensity=count/maxCount;
+    const color=intensity>0.6?'#e74c3c':intensity>0.3?'#f39c12':'#2ecc71';
+    L.circleMarker(coords,{radius,fillColor:color,color:'#fff',weight:1,opacity:.9,fillOpacity:.78})
+      .bindTooltip(`<strong>${cidade}</strong>: ${count} protocolo${count>1?'s':''}`,{sticky:true})
+      .bindPopup(`<div style="font-family:system-ui;min-width:130px"><b style="font-size:14px">${cidade}</b><br><span style="color:#aaa;font-size:12px">${count} protocolo${count>1?'s':''}</span></div>`)
+      .addTo(markersLayer);
   });
 
-  // Bubbles for cities with known coords
-  const maxCount = Math.max(...Object.values(cityCount), 1);
-  const bubbleLayer = document.getElementById('bubbleLayer');
-  bubbleLayer.innerHTML = '';
-
-  Object.entries(cityCount).forEach(([cidade, count]) => {
-    const coords = CITY_COORDS[cidade];
-    if (!coords) return;
-    const { x, y } = latLonToSVG(coords[0], coords[1]);
-    const r = 3 + (count / maxCount) * 16;
-    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-    circle.setAttribute('cx', x); circle.setAttribute('cy', y); circle.setAttribute('r', r);
-    circle.setAttribute('fill', '#f39c12');
-    circle.setAttribute('fill-opacity', 0.85);
-    circle.setAttribute('stroke', '#e67e22');
-    circle.setAttribute('stroke-width', '1');
-    circle.classList.add('map-bubble');
-    circle.addEventListener('mouseenter', (e) => showMapTooltip(e, cidade, count));
-    circle.addEventListener('mouseleave', hideMapTooltip);
-    bubbleLayer.appendChild(circle);
-  });
-
-  // City ranking list
-  const sorted = Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,20);
-  document.getElementById('cityRanking').innerHTML = sorted.map(([city, count], i) => `
+  const sorted=Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,20);
+  document.getElementById('cityRanking').innerHTML=sorted.map(([city,count],i)=>`
     <div class="map-city-row">
-      <div class="city-dot" style="background:${i===0?'#f39c12':i<3?'#e67e22':'#2ecc71'}"></div>
-      <span style="color:var(--textdim);font-size:12px">${city}</span>
+      <div class="city-dot" style="background:${i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71'}"></div>
+      <span style="color:var(--textdim)">${city}</span>
       <span class="city-count">${count}</span>
     </div>`).join('');
 }
 
-function showMapTooltipHTML(e, html) {
-  const tip = document.getElementById('mapTooltip');
-  tip.innerHTML = html;
-  tip.style.display = 'block';
-  tip.style.left = (e.pageX + 14) + 'px';
-  tip.style.top  = (e.pageY - 36) + 'px';
-}
-
-function showMapTooltip(e, cidade, count) {
-  const tip = document.getElementById('mapTooltip');
-  tip.innerHTML = `<strong>${cidade}</strong><br>${count} protocolo${count>1?'s':''}`;
-  tip.style.display = 'block';
-  tip.style.left = (e.pageX + 12) + 'px';
-  tip.style.top  = (e.pageY - 28) + 'px';
-}
-function hideMapTooltip() { document.getElementById('mapTooltip').style.display = 'none'; }
-
-// ── Proto table ───────────────────────────────────────────────────
+// ── PROTO TABLE ───────────────────────────────────────────────
 function renderProtoTable(rows) {
-  const sCls = s => !s?'':s.includes('Concluída')?'s-done':s.includes('Cancelado')?'s-cancel':s.includes('Pendente')||s.includes('validação')?'s-active':'s-pending';
-  document.getElementById('protoBody').innerHTML = rows.slice(0,200).map(r=>`
+  const sCls=s=>!s?'':s.includes('Concluída')?'s-done':s.includes('Cancelado')?'s-cancel':s.includes('Pendente')||s.includes('validação')?'s-active':'s-pending';
+  document.getElementById('protoBody').innerHTML=rows.slice(0,200).map(r=>`
     <tr>
-      <td>${shortName(r.cliente)}</td>
-      <td>${r.parceiro||'—'}</td>
-      <td>${r.cidade||'—'}</td>
+      <td>${sname(r.cliente)}</td><td>${r.parceiro||'—'}</td><td>${r.cidade||'—'}</td>
       <td style="font-family:monospace;color:var(--accent2)">${r.protocolo}</td>
       <td><span class="prod-chip">${r.produto||'—'}</span></td>
       <td><span class="status-chip ${sCls(r.status)}">${(r.status||'').replace(/^\d+\.\s*/,'')}</span></td>
@@ -950,46 +695,27 @@ function renderProtoTable(rows) {
     </tr>`).join('');
 }
 
-// ── Helpers ───────────────────────────────────────────────────────
-function slaBadge(v) {
-  const cls = v>40?'sla-bad':v>25?'sla-warn':'sla-ok';
-  return `<span class="sla-badge ${cls}">${v}d</span>`;
-}
-
-function shortName(name) {
-  if (!name) return '—';
-  const short = name.replace(/\s*\([^)]*\)/g,'').trim();
-  return `<span title="${name}">${short.length>28?short.slice(0,26)+'…':short}</span>`;
-}
-
-function sortMonths(arr) {
-  const order = {Out:10,Nov:11,Dez:12,Jan:1,Fev:2,Mar:3,Abr:4,Mai:5,Jun:6,Jul:7,Ago:8,Set:9};
-  return [...new Set(arr)].filter(Boolean).sort((a,b) => {
-    const [ma,ya]=a.split('/'), [mb,yb]=b.split('/');
-    const dy = parseInt(ya)-parseInt(yb);
-    return dy !== 0 ? dy : (order[ma]||0)-(order[mb]||0);
+// ── HELPERS ───────────────────────────────────────────────────
+function slaBadge(v){const cls=v>40?'sla-bad':v>25?'sla-warn':'sla-ok';return `<span class="sla-badge ${cls}">${v}d</span>`;}
+function sname(name){if(!name)return '—';const s=name.replace(/\s*\([^)]*\)/g,'').trim();return `<span title="${name}">${s.length>26?s.slice(0,24)+'…':s}</span>`;}
+function sortMonths(arr){
+  const o={Out:10,Nov:11,Dez:12,Jan:1,Fev:2,Mar:3,Abr:4,Mai:5,Jun:6,Jul:7,Ago:8,Set:9};
+  return [...new Set(arr)].filter(Boolean).sort((a,b)=>{
+    const[ma,ya]=a.split('/');const[mb,yb]=b.split('/');
+    const dy=parseInt(ya)-parseInt(yb);
+    return dy!==0?dy:(o[ma]||0)-(o[mb]||0);
   });
 }
-
-function darkOpts(extra={}) {
-  const base = {
-    responsive:true, maintainAspectRatio:false,
-    plugins:{
-      legend:{display:false},
-      tooltip:{ backgroundColor:'#1e2333', borderColor:'#2a3147', borderWidth:1, titleColor:'#e8ecf4', bodyColor:'#9aa3bd' }
-    },
-    scales:{
-      x:{ grid:{color:'#2a3147'}, ticks:{color:'#6b7a9f',font:{size:10}} },
-      y:{ grid:{color:'#2a3147'}, ticks:{color:'#6b7a9f',font:{size:10}} }
-    }
+function darkOpts(extra={}){
+  const base={
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#1e2333',borderColor:'#2a3147',borderWidth:1,titleColor:'#e8ecf4',bodyColor:'#9aa3bd'}},
+    scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}}
   };
-  // deep merge plugins.tooltip
-  if (extra.plugins?.tooltip) {
-    base.plugins.tooltip = {...base.plugins.tooltip, ...extra.plugins.tooltip};
-    delete extra.plugins.tooltip;
-  }
-  if (extra.plugins) { base.plugins = {...base.plugins, ...extra.plugins}; delete extra.plugins; }
-  return {...base, ...extra};
+  if(extra.plugins?.tooltip){base.plugins.tooltip={...base.plugins.tooltip,...extra.plugins.tooltip};delete extra.plugins.tooltip;}
+  if(extra.plugins){base.plugins={...base.plugins,...extra.plugins};delete extra.plugins;}
+  if(extra.scales){base.scales={...base.scales,...extra.scales};delete extra.scales;}
+  return {...base,...extra};
 }
 </script>
 </body>
