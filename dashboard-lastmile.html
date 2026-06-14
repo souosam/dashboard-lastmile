@@ -192,6 +192,7 @@
 
 <div id="loadingOverlay"><div class="spinner"></div><div id="loadMsg">Conectando ao Google Sheets…</div></div>
 
+<div id="errorBannerGlobal" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:rgba(231,76,60,.15);border:1px solid #e74c3c;color:#e74c3c;border-radius:8px;padding:12px 20px;font-size:13px;z-index:500;max-width:600px;text-align:center;"></div>
 <div id="appContent">
 <header>
   <div class="logo">
@@ -206,7 +207,7 @@
 </header>
 
 <main>
-  <div id="errorBanner_inline" style="display:none"></div>
+  <div id="errorBanner" style="display:none"></div>
 
   <!-- FILTROS -->
   <div class="filter-bar">
@@ -412,20 +413,26 @@ async function loadData(){
   const btn=document.getElementById('btnRefresh');
   const overlay=document.getElementById('loadingOverlay');
   const err=document.getElementById('errorBanner');
-  btn.disabled=true;overlay.style.display='flex';overlay.style.opacity='1';err.style.display='none';
-  document.getElementById('loadMsg').textContent='Conectando ao Google Sheets…';
+  if(btn)btn.disabled=true;
+  if(overlay){overlay.style.display='flex';overlay.style.opacity='1';}
+  if(err)err.style.display='none';
+  const msgEl=document.getElementById('loadMsg');
+  if(msgEl)msgEl.textContent='Conectando ao Google Sheets…';
   try{
     const resp=await fetch(CSV_URL+'&_='+Date.now());
     if(!resp.ok)throw new Error('HTTP '+resp.status);
-    document.getElementById('loadMsg').textContent='Processando dados…';
+    if(msgEl)msgEl.textContent='Processando dados…';
     allRows=parseCSV(await resp.text());
     filteredRows=[...allRows];
     buildFilters();render();
-    document.getElementById('lastUpdated').textContent='Atualizado: '+new Date().toLocaleTimeString('pt-BR');
+    const upd=document.getElementById('lastUpdated');
+    if(upd)upd.textContent='Atualizado: '+new Date().toLocaleTimeString('pt-BR');
   }catch(e){
-    err.textContent='⚠ Erro: '+e.message;err.style.display='block';
+    console.error(e);
+    if(err){err.textContent='⚠ Erro: '+e.message;err.style.display='block';}
   }finally{
-    overlay.style.opacity='0';setTimeout(()=>overlay.style.display='none',300);btn.disabled=false;
+    if(overlay){overlay.style.opacity='0';setTimeout(()=>{if(overlay)overlay.style.display='none';},300);}
+    if(btn)btn.disabled=false;
   }
 }
 
