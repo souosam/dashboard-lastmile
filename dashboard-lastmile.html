@@ -132,6 +132,38 @@
     .btn-logout{background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:11px;cursor:pointer;margin-left:6px;}
     .btn-logout:hover{border-color:var(--danger);color:var(--danger);}
     @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+    /* TOOLTIP ICON */
+    .tooltip-icon{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;background:var(--border);color:var(--muted);font-size:9px;cursor:help;margin-left:4px;position:relative;}
+    .tooltip-icon:hover::after{content:attr(title);position:absolute;top:120%;left:50%;transform:translateX(-50%);background:#1e2333;border:1px solid var(--border);color:var(--text);font-size:11px;padding:8px 12px;border-radius:8px;white-space:normal;width:240px;z-index:100;line-height:1.5;font-weight:400;letter-spacing:0;text-transform:none;}
+    /* ALERT TABLE */
+    .alert-table{width:100%;border-collapse:collapse;font-size:12px;}
+    .alert-table th{background:var(--surface);color:var(--muted);font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:7px 10px;text-align:left;}
+    .alert-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--textdim);}
+    .alert-table tr:hover td{background:var(--surface);}
+    .alert-table td:first-child{color:var(--text);font-weight:500;}
+    .sem-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:4px;}
+    .sem-green{background:#2ecc71;}.sem-yellow{background:#f39c12;}.sem-red{background:#e74c3c;}
+    /* GROWTH */
+    .growth-pos{color:#2ecc71;font-weight:700;font-size:10px;}
+    .growth-neg{color:#e74c3c;font-weight:700;font-size:10px;}
+    .growth-neu{color:var(--muted);font-weight:700;font-size:10px;}
+    /* SECTION TITLE */
+    .section-title{font-size:10px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:18px 0 10px;border-left:3px solid var(--accent);padding-left:10px;}
+    /* CONVERSION */
+    .conv-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+    .conv-label{font-size:11px;color:var(--textdim);min-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .conv-bar-wrap{flex:1;height:18px;background:var(--surface);border-radius:4px;overflow:hidden;}
+    .conv-bar{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-size:10px;color:#fff;font-weight:700;}
+    .conv-pct{font-size:11px;color:var(--accent);font-weight:700;min-width:34px;text-align:right;}
+    /* FILTER BAR */
+    .filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;}
+    .filter-bar label{font-size:11px;color:var(--muted);}
+    .filter-bar select,.filter-bar input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:5px 9px;outline:none;}
+    .filter-bar select:focus,.filter-bar input:focus{border-color:var(--accent);}
+    .filter-sep{width:1px;height:22px;background:var(--border);margin:0 2px;}
+    /* MAP 3-col */
+    .grid-3-map{display:grid;grid-template-columns:1.6fr 1fr 1fr;gap:18px;margin-bottom:18px;}
+    @media(max-width:1100px){.grid-3-map{grid-template-columns:1fr 1fr;}}
     /* META LINE INPUT */
     .meta-control{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);}
     .meta-control input{width:60px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;padding:3px 7px;outline:none;text-align:center;}
@@ -174,7 +206,7 @@
 </header>
 
 <main>
-  <div id="errorBanner"></div>
+  <div id="errorBanner_inline" style="display:none"></div>
 
   <!-- FILTROS -->
   <div class="filter-bar">
@@ -191,26 +223,29 @@
     <input type="month" id="filterAte" onchange="applyFilters()"/>
     <div class="filter-sep"></div>
     <label>Cliente</label>
-    <input type="text" id="filterCliente" placeholder="Buscar…" oninput="applyFilters()" style="width:140px;"/>
+    <input type="text" id="filterCliente" placeholder="Buscar…" oninput="applyFilters()" style="width:130px;"/>
     <span style="margin-left:auto;font-size:11px;color:var(--muted);" id="totalCount"></span>
-    <button class="btn" style="background:var(--surface);color:var(--muted);border:1px solid var(--border);" onclick="clearFilters()">✕ Limpar</button>
+    <button class="btn" style="background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;" onclick="clearFilters()">✕ Limpar</button>
   </div>
 
   <!-- KPIs -->
   <div class="kpi-row">
     <div class="kpi"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:20px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">avaliação de clientes</div></div>
+    <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">meta: 4,5 ★</div></div>
     <div class="kpi"><div class="kpi-label">SLA Médio GP</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">últimos 6 meses</div></div>
     <div class="kpi"><div class="kpi-label">Protocolos Ativos</div><div class="kpi-value" id="kpiAtivos">—</div><div class="kpi-sub" id="kpiAtivosSub"></div></div>
     <div class="kpi"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" id="kpiConcluidos" style="font-size:18px;">—</div><div class="kpi-sub" id="kpiAtivosDetalhe"></div></div>
     <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
   </div>
 
-  <!-- SEÇÃO: STATUS + PRODUTOS + SLA PRODUTO -->
-  <div class="section-title">Visão Geral</div>
+  <!-- SEÇÃO: STATUS + PRODUTOS -->
+  <div class="section-title">Pipeline & Produtos</div>
   <div class="grid-3">
     <div class="card" id="funnelCard">
-      <div class="card-title">Pipeline de Status <span style="font-size:10px;color:var(--accent);cursor:pointer;margin-left:4px;" onclick="clearStatusFilter()">(limpar)</span></div>
+      <div class="card-title">Pipeline de Status
+        <span style="font-size:10px;color:var(--accent);cursor:pointer;" onclick="clearStatusFilter()" title="Limpar filtro de status">(limpar)</span>
+        <span id="filterActiveLabel" style="color:var(--accent);font-size:10px;"></span>
+      </div>
       <div id="funnelList" style="display:flex;flex-direction:column;gap:0;"></div>
     </div>
     <div class="card">
@@ -221,17 +256,47 @@
       </div>
     </div>
     <div class="card">
-      <div class="card-title">Ticket Médio por Produto (R$)</div>
+      <div class="card-title">Ticket Médio por Produto (R$)
+        <span class="tooltip-icon" title="Valor médio por protocolo concluído de cada produto. Mostra quais produtos geram mais receita por entrega.">ℹ</span>
+      </div>
       <div class="chart-wrap"><canvas id="ticketMedio"></canvas></div>
+    </div>
+  </div>
+
+  <!-- SEÇÃO: ALERTAS -->
+  <div class="section-title">🚨 Alertas e Riscos</div>
+  <div class="grid-2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-title">Protocolos com SLA Crítico
+        <span class="tooltip-icon" title="Protocolos ativos ordenados pelo maior SLA GP. Semáforo: 🟢 dentro da meta · 🟡 acima da meta · 🔴 muito acima (1.5× meta). Clique na meta SLA para ajustar.">ℹ</span>
+      </div>
+      <div style="overflow-y:auto;max-height:250px;">
+        <table class="alert-table" id="slaAlertTable">
+          <thead><tr><th></th><th>Cliente</th><th>Produto</th><th>Status</th><th>SLA (dias)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Parados / Em andamento há mais tempo
+        <span class="tooltip-icon" title="Protocolos nos status Parado ou Em andamento, ordenados pelo maior SLA GP. Use para identificar quais precisam de atenção imediata.">ℹ</span>
+      </div>
+      <div style="overflow-y:auto;max-height:250px;">
+        <table class="alert-table" id="paradosTable">
+          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Status</th><th>SLA (dias)</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
   <!-- SEÇÃO: GRÁFICOS MENSAIS -->
   <div class="section-title">Evolução Mensal</div>
   <div style="display:flex;justify-content:flex-end;align-items:center;gap:12px;margin-bottom:10px;">
-    <div class="meta-control">
+    <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:var(--muted);">
       <span>Meta SLA:</span>
-      <input type="number" id="metaSLA" value="30" min="1" max="200" onchange="updateMetaLine()"/>
+      <input type="number" id="metaSLA" value="30" min="1" max="200" onchange="updateMetaLine()"
+        style="width:55px;background:var(--surface);border:1px solid var(--border);border-radius:5px;color:var(--text);font-size:12px;padding:3px 7px;outline:none;text-align:center;"/>
       <span>dias</span>
     </div>
   </div>
@@ -247,7 +312,7 @@
   </div>
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
-      <div class="card-title">Nota PRC por Mês</div>
+      <div class="card-title">Nota PRC por Mês <span style="font-size:10px;color:var(--muted);">(meta: 4,5)</span></div>
       <div class="chart-wrap"><canvas id="prcByMonth"></canvas></div>
     </div>
     <div class="card">
@@ -256,52 +321,33 @@
     </div>
   </div>
 
-  <!-- SEÇÃO: ALERTAS -->
-  <div class="section-title">🚨 Alertas e Riscos</div>
-  <div class="grid-2" style="margin-bottom:18px;">
-    <div class="card">
-      <div class="card-title">Protocolos com SLA Crítico</div>
-      <div style="overflow-y:auto;max-height:260px;">
-        <table class="alert-table" id="slaAlertTable">
-          <thead><tr><th></th><th>Cliente</th><th>Produto</th><th>Status</th><th>SLA (dias)</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Protocolos Parados / Em andamento há mais tempo</div>
-      <div style="overflow-y:auto;max-height:260px;">
-        <table class="alert-table" id="paradosTable">
-          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Status</th><th>SLA (dias)</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
   <!-- SEÇÃO: ANÁLISES -->
   <div class="section-title">📊 Análises</div>
   <div class="grid-3" style="margin-bottom:18px;">
     <div class="card">
-      <div class="card-title">Taxa de Conversão por Estágio</div>
-      <div id="conversionFunnel" style="display:flex;flex-direction:column;gap:3px;"></div>
+      <div class="card-title">Taxa de Conversão por Estágio
+        <span class="tooltip-icon" title="Mostra quantos protocolos passaram por cada estágio do pipeline em relação ao total. Ex: se 'Em andamento' mostra 15%, significa que 15% de todos os protocolos estão ou passaram por esse estágio. Útil para ver onde o processo gargala.">ℹ</span>
+      </div>
+      <div id="conversionFunnel" style="display:flex;flex-direction:column;gap:4px;"></div>
     </div>
     <div class="card">
-      <div class="card-title">SLA Médio por Parceiro vs Meta</div>
+      <div class="card-title">SLA Médio por Parceiro vs Meta
+        <span class="tooltip-icon" title="Ranking de parceiros pelo SLA médio GP dos protocolos que eles entregaram. Verde = abaixo da meta (bom) · Amarelo = acima da meta · Vermelho = muito acima (1.5× meta). Ordenado do mais rápido para o mais lento.">ℹ</span>
+      </div>
       <div style="overflow-y:auto;max-height:280px;" id="slaParcList"></div>
     </div>
+    <div class="card">
+      <div class="card-title">SLA Médio por Produto (dias)</div>
+      <div class="chart-wrap"><canvas id="slaByProduct"></canvas></div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
       <div class="card-title">Top Clientes · Valor Entregue</div>
       <table class="top-table" id="topValorTable">
         <thead><tr><th>#</th><th>Cliente</th><th>R$</th></tr></thead>
         <tbody></tbody>
       </table>
-    </div>
-  </div>
-  <div class="grid-2" style="margin-bottom:18px;">
-    <div class="card">
-      <div class="card-title">SLA Médio por Produto (dias)</div>
-      <div class="chart-wrap"><canvas id="slaByProduct"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title">Top Clientes · Quantidade</div>
@@ -312,22 +358,32 @@
     </div>
   </div>
 
-  <!-- SEÇÃO: MAPA -->
-  <div class="section-title">🗺 Distribuição Geográfica</div>
-  <div class="grid-map" style="margin-bottom:18px;">
-    <div class="card"><div class="card-title">Mapa de Cidades</div><div id="leafletMap"></div></div>
-    <div class="card"><div class="card-title">Ranking de Cidades</div><div class="map-city-list" id="cityRanking"></div></div>
-  </div>
-
   <!-- SEÇÃO: PARCEIROS -->
   <div class="section-title">Parceiros</div>
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card"><div class="card-title">Parceiros com Mais Protocolos</div><div class="chart-wrap"><canvas id="topParceiros"></canvas></div></div>
-    <div class="card"><div class="card-title">Distribuição de Status por Parceiro (Top 8)</div><div class="chart-wrap"><canvas id="parcStatusChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Status por Parceiro (Top 8)</div><div class="chart-wrap"><canvas id="parcStatusChart"></canvas></div></div>
+  </div>
+
+  <!-- SEÇÃO: MAPA -->
+  <div class="section-title">🗺 Distribuição Geográfica</div>
+  <div class="grid-3-map">
+    <div class="card">
+      <div class="card-title">Mapa de Cidades</div>
+      <div id="leafletMap" style="height:360px;border-radius:8px;overflow:hidden;"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Ranking de Cidades</div>
+      <div class="map-city-list" id="cityRanking"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Ranking de Estados</div>
+      <div class="map-city-list" id="stateRanking"></div>
+    </div>
   </div>
 
   <!-- SEÇÃO: TABELA DETALHADA -->
-  <div class="section-title">Protocolos Detalhados <span id="filterActiveLabel" style="color:var(--accent);font-size:10px;"></span></div>
+  <div class="section-title">Protocolos Detalhados</div>
   <div class="card" style="margin-bottom:20px;">
     <div class="proto-wrap" style="max-height:420px;overflow-y:auto;">
       <table class="proto-table">
@@ -579,7 +635,10 @@ function renderPRCByMonth(rows){
   const data=labels.map(l=>+(acc[l].reduce((a,b)=>a+b,0)/acc[l].length).toFixed(2));
   const counts=labels.map(l=>acc[l].length);
   if(charts.prcMon)charts.prcMon.destroy();
-  charts.prcMon=new Chart(document.getElementById('prcByMonth'),{type:'line',data:{labels,datasets:[{label:'Nota',data,borderColor:'#f39c12',backgroundColor:'rgba(243,156,18,.1)',tension:.3,pointBackgroundColor:'#f39c12',fill:true,pointRadius:5}]},options:darkOpts({scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{min:0,max:5.5,grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}},plugins:{tooltip:{callbacks:{label:(c)=>` Nota: ${c.raw} ★ (${counts[c.dataIndex]} aval.)`}}}})});
+  charts.prcMon=new Chart(document.getElementById('prcByMonth'),{type:'line',data:{labels,datasets:[
+    {label:'Nota',data,borderColor:'#f39c12',backgroundColor:'rgba(243,156,18,.1)',tension:.3,pointBackgroundColor:data.map(v=>v>=4.5?'#2ecc71':'#e74c3c'),fill:true,pointRadius:5,order:2},
+    {label:'Meta 4.5',data:labels.map(()=>4.5),borderColor:'#e74c3c',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+  ]},options:darkOpts({scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{min:0,max:5.5,grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}},plugins:{tooltip:{callbacks:{label:(c)=>c.dataset.label==='Meta 4.5'?' Meta: 4.5 ★':`Nota: ${c.raw} ★ (${counts[c.dataIndex]} aval.)`}}}})});
 }
 
 // ── SLA BY MONTH + META LINE ──────────────────────────────────────
@@ -700,6 +759,22 @@ function renderMap(rows){
   });
   const sorted=Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,20);
   document.getElementById('cityRanking').innerHTML=sorted.map(([city,count],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71'}"></div><span style="color:var(--textdim)">${city}</span><span class="city-count">${count}</span></div>`).join('');
+
+  // State ranking
+  const CITY_STATE={'São Paulo':'SP','Campinas':'SP','Santos':'SP','Guarulhos':'SP','Sorocaba':'SP','Piracicaba':'SP','Limeira':'SP','Jundiaí':'SP','Barueri':'SP','Cajamar':'SP','Salto':'SP','Indaiatuba':'SP','Porto Feliz':'SP','Cotia':'SP','São Carlos':'SP','São Roque':'SP','Bragança Paulista':'SP','Itapetininga':'SP','Assis':'SP','Araçatuba':'SP','Votuporanga':'SP','Presidente Prudente':'SP','Bauru':'SP','Marília':'SP','Franco da Rocha':'SP','Santo André':'SP','Vinhedo':'SP','Americana':'SP','Ribeirão Preto':'SP','Itu':'SP','Jaguariúna':'SP','Angatuba':'SP','Itaberá':'SP','Pederneiras':'SP','Bertioga':'SP','Itararé':'SP','Laranjal Paulista':'SP','Campina do Monte Alegre':'SP','Altinópolis':'SP','Valparaíso':'SP','Lins':'SP','Birigui':'SP','Botucatu':'SP','Jacareí':'SP','São José dos Campos':'SP','Taubaté':'SP','Mogi das Cruzes':'SP','Osasco':'SP','Extrema':'MG','Belo Horizonte':'MG','Uberlândia':'MG','Uberaba':'MG','Araxá':'MG','Timóteo':'MG','Dom Cavati':'MG','Andradas':'MG','Bambuí':'MG','Itapecerica':'MG','Cássia':'MG','Conceição do Mato Dentro':'MG','Tocantins':'MG','Recreio':'MG','Matipó':'MG','Laranjal':'MG','Campo Florido':'MG','Monte Azul':'MG','Catuti':'MG','Gameleiras':'MG','Mamonas':'MG','Uruana de Minas':'MG','Mato Verde':'MG','São Roque de Minas':'MG','Buritis':'MG','Iturama':'MG','Guanambi':'BA','Salvador':'BA','Curitiba':'PR','Londrina':'PR','Maringá':'PR','Porto Alegre':'RS','Vila Flores':'RS','São Luiz Gonzaga':'RS','Florianópolis':'SC','Joinville':'SC','Fortaleza':'CE','Recife':'PE','Rio de Janeiro':'RJ','Campo Grande':'MS','Cuiabá':'MT','Sinop':'MT','Manaus':'AM','Belém':'PA','Goiânia':'GO','Hidrolândia':'GO','São Luís':'MA','São Luiz':'MA','Palmas':'TO','Uirapuru':'GO'};
+  const stateCount={};
+  Object.entries(cityCount).forEach(([city,count])=>{
+    const uf=CITY_STATE[city];
+    if(uf) stateCount[uf]=(stateCount[uf]||0)+count;
+  });
+  const sortedStates=Object.entries(stateCount).sort((a,b)=>b[1]-a[1]);
+  const stateEl=document.getElementById('stateRanking');
+  if(stateEl) stateEl.innerHTML=sortedStates.map(([uf,count],i)=>`
+    <div class="map-city-row">
+      <div class="city-dot" style="background:${i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71'}"></div>
+      <span style="color:var(--textdim);font-weight:600;min-width:28px;">${uf}</span>
+      <span class="city-count">${count}</span>
+    </div>`).join('');
 }
 
 // ── PROTO TABLE ───────────────────────────────────────────────────
