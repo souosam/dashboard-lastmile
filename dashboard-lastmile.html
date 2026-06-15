@@ -124,10 +124,10 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
 .leaflet-control-zoom a{background:#1e2333 !important;color:#e8ecf4 !important;border-color:#2a3147 !important;}
 .leaflet-control-attribution{background:rgba(15,17,23,.8) !important;color:#6b7a9f !important;font-size:9px;}
 .leaflet-tooltip{background:#1e2333;border:1px solid #2a3147;color:#e8ecf4;font-size:12px;border-radius:6px;}
-.map-city-list{display:flex;flex-direction:column;gap:4px;max-height:340px;overflow-y:auto;}
+.map-city-list{display:flex;flex-direction:column;gap:4px;max-height:340px;overflow-y:auto;padding-right:8px;}
 .map-city-row{display:flex;align-items:center;gap:8px;font-size:12px;padding:4px 0;border-bottom:1px solid var(--border);}
 .city-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
-.city-count{margin-left:auto;color:var(--accent);font-weight:700;}
+.city-count{margin-left:auto;color:var(--accent);font-weight:700;min-width:28px;text-align:right;}
 /* TOOLTIP */
 .tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:var(--border);color:var(--muted);font-size:9px;cursor:help;position:relative;flex-shrink:0;}
 .tip:hover::after{content:attr(data-tip);position:absolute;top:120%;left:50%;transform:translateX(-50%);background:#1e2333;border:1px solid var(--border);color:var(--text);font-size:11px;padding:8px 12px;border-radius:8px;white-space:normal;width:230px;z-index:100;line-height:1.5;font-weight:400;letter-spacing:0;text-transform:none;pointer-events:none;}
@@ -203,8 +203,8 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
     <div class="kpi"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
     <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">meta: 4,5 ★</div></div>
     <div class="kpi"><div class="kpi-label">SLA Médio GP</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">últimos 6 meses</div></div>
-    <div class="kpi"><div class="kpi-label">Protocolos Ativos</div><div class="kpi-value" id="kpiAtivos">—</div><div class="kpi-sub" id="kpiAtivosSub"></div></div>
     <div class="kpi"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" id="kpiAberto" style="font-size:17px;">—</div><div class="kpi-sub" id="kpiAbertoSub"></div></div>
+    <div class="kpi"><div class="kpi-label">Protocolos Ativos</div><div class="kpi-value" id="kpiAtivos">—</div><div class="kpi-sub" id="kpiAtivosSub"></div></div>
     <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
   </div>
 
@@ -286,23 +286,23 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
 
   <!-- ANÁLISES -->
   <div class="section-title">📊 Análises</div>
-  <div class="grid-3" style="margin-bottom:18px;">
+  <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
-      <div class="card-title">Taxa de Conversão por Estágio
-        <span class="tip" data-tip="% de todos os protocolos que estão ou passaram por cada estágio. Mostra onde o processo concentra mais trabalho e possíveis gargalos.">ℹ</span>
+      <div class="card-title">SLA Médio por Estado (dias)
+        <span class="tip" data-tip="SLA GP médio de todos os protocolos por estado. Mostra em quais regiões o processo leva mais tempo.">ℹ</span>
       </div>
-      <div id="conversionFunnel" style="display:flex;flex-direction:column;gap:4px;"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">SLA Médio por Parceiro vs Meta
-        <span class="tip" data-tip="Ranking de parceiros pelo SLA GP médio. Verde = abaixo da meta (ótimo) · Amarelo = acima da meta · Vermelho = muito acima (1.5×). Ordenado do mais rápido ao mais lento.">ℹ</span>
-      </div>
-      <div style="overflow-y:auto;max-height:280px;" id="slaParcList"></div>
+      <div class="chart-wrap"><canvas id="slaByEstado"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title">SLA Médio por Produto (dias)</div>
       <div class="chart-wrap"><canvas id="slaByProduct"></canvas></div>
     </div>
+  </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">Protocolos por Mês × Estado
+      <span class="tip" data-tip="Mapa de calor: cada célula mostra quantos protocolos foram concluídos naquele mês e estado. Cores mais intensas = mais protocolos.">ℹ</span>
+    </div>
+    <div id="heatmapContainer" style="overflow-x:auto;"></div>
   </div>
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
@@ -388,8 +388,7 @@ window.addEventListener('DOMContentLoaded',()=>{
 });
 
 // ── CONFIG ───────────────────────────────────────────────────────
-const _d=[33,61,61,57,58,115,102,102,45,38,42,58,103,46,38,38,46,37,44,103,42,38,36,102,58,57,59,44,40,45,58,33,44,44,61,58,102,45,102,44,102,123,25,8,10,17,100,120,63,27,2,58,40,33,44,63,8,11,11,22,125,34,46,122,58,28,33,42,16,19,3,27,5,15,30,5,126,37,17,27,28,26,127,47,61,29,125,31,27,8,38,28,30,120,120,38,45,100,36,59,6,26,24,121,112,5,28,12,59,34,33,28,12,56,57,12,34,32,11,10,124,29,47,13,13,29,59,102,57,60,43,118,46,32,45,116,120,112,120,122,113,124,122,112,120,126,111,58,32,39,46,37,44,116,61,59,60,44,111,38,60,61,57,60,61,116,42,58,63];
-const CSV_URL=_d.map(c=>String.fromCharCode(c^73)).join('');
+const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRKsahevABB_4kg3sUhcYZJRLFWL7lXRUS6ftT4VRAoUW11od-mrOSQ09LUErkhUEqpEkiBC5TfDDTr/pub?gid=1913853917&single=true&output=csv';
 const PALETTE=['#2ecc71','#1abc9c','#3498db','#9b59b6','#f39c12','#e74c3c','#e67e22','#27ae60','#2980b9','#8e44ad','#16a085','#d35400'];
 const STATUS_COLORS={'Projeto Futuro':'#b0bec5','Em validação':'#f39c12','Assinatura LM':'#3498db','Compra de material':'#e67e22','Parado':'#e74c3c','Site Survey':'#8e44ad','Em andamento':'#f1c40f','Em configuração':'#5b8dd9','Agendado':'#1abc9c','Boas vindas':'#2ecc71','Ag. Faturamento':'#16a085','Concluída':'#27ae60','Cancelado':'#c0392b'};
 const FUNNEL_ORDER=['Projeto Futuro','Em validação','Assinatura LM','Compra de material','Parado','Site Survey','Em andamento','Em configuração','Agendado','Boas vindas','Ag. Faturamento'];
@@ -550,7 +549,7 @@ function render(){
   renderKPIs(r);renderFunnel(r);renderDonut(r);renderTicketMedio(r);
   renderSLAAlerts(r);renderParados(r);
   renderMonthlyCharts(r);renderPRCByMonth(r);renderSLAByMonth(r);
-  renderConversion(r);renderSLAParceiro(r);renderSLAByProduct(r);
+  renderSLAByEstado(r);renderHeatmap(r);renderSLAByProduct(r);
   renderTopClients(r);renderTopParceiros(r);renderEstadoChart(r);
   renderMap(r);renderProtoTable(r);
 }
@@ -744,7 +743,75 @@ function renderTopParceiros(rows){
   const top=Object.entries(acc).sort((a,b)=>b[1]-a[1]).slice(0,12);
   if(charts.topParc)charts.topParc.destroy();
   const ctx=document.getElementById('topParceiros');if(!ctx)return;
-  charts.topParc=new Chart(ctx,{type:'bar',data:{labels:top.map(t=>t[0]),datasets:[{label:'Protos',data:top.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y'})});
+  charts.topParc=new Chart(ctx,{type:'bar',data:{labels:top.map(t=>t[0]),datasets:[{label:'Protos',data:top.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y',scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10},callback:v=>v.length>14?v.slice(0,13)+'…':v}}}})});
+}
+
+// ── SLA BY ESTADO ────────────────────────────────────────────────
+function renderSLAByEstado(rows){
+  const acc={};rows.filter(r=>r.estado&&r.slaGP>0).forEach(r=>{if(!acc[r.estado])acc[r.estado]=[];acc[r.estado].push(r.slaGP);});
+  const sorted=Object.entries(acc).map(([e,v])=>({e,media:Math.round(v.reduce((a,b)=>a+b,0)/v.length),count:v.length})).sort((a,b)=>b.media-a.media);
+  const meta=parseInt(document.getElementById('metaSLA')?.value)||30;
+  if(charts.slaEstado)charts.slaEstado.destroy();
+  const ctx=document.getElementById('slaByEstado');if(!ctx)return;
+  charts.slaEstado=new Chart(ctx,{type:'bar',
+    data:{labels:sorted.map(s=>s.e),datasets:[{label:'SLA Médio',data:sorted.map(s=>s.media),backgroundColor:sorted.map(s=>s.media>meta*1.5?'#e74c3c':s.media>meta?'#f39c12':'#2ecc71'),borderRadius:5}]},
+    options:darkOpts({indexAxis:'y',plugins:{tooltip:{callbacks:{label:c=>` ${c.raw}d (${sorted[c.dataIndex]?.count} protos)`}}},scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}}})
+  });
+}
+
+// ── HEATMAP MÊS × ESTADO ─────────────────────────────────────────
+function renderHeatmap(rows){
+  const el=document.getElementById('heatmapContainer');if(!el)return;
+  // Only concluded protocols
+  const data=rows.filter(r=>r.status==='13. Concluída'&&r.mes&&r.estado);
+  if(!data.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:20px;">Sem dados de protocolos concluídos.</div>';return;}
+
+  const meses=sortMonths([...new Set(data.map(r=>r.mes))]);
+  const estados=[...new Set(data.map(r=>r.estado))].sort();
+
+  // Build matrix
+  const matrix={};
+  data.forEach(r=>{
+    if(!matrix[r.estado])matrix[r.estado]={};
+    matrix[r.estado][r.mes]=(matrix[r.estado][r.mes]||0)+1;
+  });
+  const allVals=Object.values(matrix).flatMap(m=>Object.values(m));
+  const maxVal=Math.max(...allVals,1);
+
+  function cellColor(val){
+    if(!val)return'#1a2030';
+    const i=val/maxVal;
+    if(i>0.7)return'#27ae60';
+    if(i>0.4)return'#2ecc71';
+    if(i>0.2)return'#1abc9c';
+    return'#16a085';
+  }
+
+  const thStyle='padding:6px 10px;font-size:10px;color:var(--muted);text-align:center;white-space:nowrap;font-weight:600;letter-spacing:.5px;';
+  const tdStyle='padding:5px 8px;text-align:center;font-size:11px;font-weight:700;border-radius:4px;min-width:44px;cursor:default;';
+
+  let table=`<table style="border-collapse:separate;border-spacing:3px;min-width:100%;">
+    <thead><tr>
+      <th style="${thStyle}text-align:left;min-width:40px;">Estado</th>
+      ${meses.map(m=>`<th style="${thStyle}">${m}</th>`).join('')}
+      <th style="${thStyle}">Total</th>
+    </tr></thead><tbody>`;
+
+  estados.forEach(est=>{
+    const row=matrix[est]||{};
+    const total=Object.values(row).reduce((a,b)=>a+b,0);
+    table+=`<tr><td style="padding:4px 8px;font-size:11px;color:var(--textdim);font-weight:600;white-space:nowrap;">${est}</td>`;
+    meses.forEach(m=>{
+      const v=row[m]||0;
+      const bg=cellColor(v);
+      const tc=v>0?'#fff':'#3a4560';
+      table+=`<td style="${tdStyle}background:${bg};color:${tc};" title="${est} · ${m}: ${v} protocolos">${v||''}</td>`;
+    });
+    table+=`<td style="${tdStyle}background:#2a3147;color:var(--accent);">${total}</td>`;
+    table+='</tr>';
+  });
+  table+='</tbody></table>';
+  el.innerHTML=table;
 }
 
 // ── ESTADO CHART ──────────────────────────────────────────────────
@@ -753,7 +820,7 @@ function renderEstadoChart(rows){
   const sorted=Object.entries(acc).sort((a,b)=>b[1]-a[1]).slice(0,15);
   if(charts.estado)charts.estado.destroy();
   const ctx=document.getElementById('estadoChart');if(!ctx)return;
-  charts.estado=new Chart(ctx,{type:'bar',data:{labels:sorted.map(t=>t[0]),datasets:[{label:'Protos',data:sorted.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y'})});
+  charts.estado=new Chart(ctx,{type:'bar',data:{labels:sorted.map(t=>t[0]),datasets:[{label:'Protos',data:sorted.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y',scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10},callback:v=>v.length>12?v.slice(0,11)+'…':v}}}})});
 }
 
 // ── MAP ───────────────────────────────────────────────────────────
