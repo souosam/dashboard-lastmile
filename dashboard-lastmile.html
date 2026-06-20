@@ -47,6 +47,8 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px;}
 .grid-3-map{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:18px;margin-bottom:18px;}
+.grid-pipeline{display:grid;grid-template-columns:1fr 1.3fr;gap:18px;margin-bottom:18px;}
+@media(max-width:900px){.grid-pipeline{grid-template-columns:1fr;}}
 @media(max-width:1100px){.grid-3,.grid-3-map{grid-template-columns:1fr 1fr;}}
 @media(max-width:720px){.grid-2,.grid-3,.grid-3-map{grid-template-columns:1fr;}}
 /* KPI */
@@ -202,31 +204,30 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
   <div class="kpi-row">
     <div class="kpi"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
     <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">meta: 4,5 ★</div></div>
-    <div class="kpi"><div class="kpi-label">SLA Médio GP</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">últimos 6 meses</div></div>
+    <div class="kpi"><div class="kpi-label">SLA de Contrato</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">últimos 6 meses</div></div>
     <div class="kpi"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" id="kpiAberto" style="font-size:17px;">—</div><div class="kpi-sub" id="kpiAbertoSub"></div></div>
     <div class="kpi"><div class="kpi-label">Protocolos Ativos</div><div class="kpi-value" id="kpiAtivos">—</div><div class="kpi-sub" id="kpiAtivosSub"></div></div>
     <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
   </div>
 
   <!-- PIPELINE -->
-  <div class="section-title">Pipeline & Produtos</div>
-  <div class="grid-3">
+  <div class="section-title">Pipeline & Protocolos</div>
+  <div class="grid-pipeline">
     <div class="card">
       <div class="card-title">Pipeline de Status <span id="filterActiveLabel" style="color:var(--accent);font-size:10px;font-weight:400;"></span></div>
       <div id="funnelList"></div>
     </div>
     <div class="card">
-      <div class="card-title">Distribuição por Produto</div>
-      <div class="donut-wrap">
-        <div class="donut-chart"><canvas id="donutChart"></canvas></div>
-        <div class="donut-legend" id="donutLegend"></div>
+      <div class="card-title">
+        <span id="pipelineListTitle">Protocolos · Todos os status</span>
+        <span id="pipelineClearBtn" style="display:none;font-size:10px;color:var(--accent);cursor:pointer;font-weight:400;margin-left:6px;" onclick="clearStatusFilter()">(limpar)</span>
       </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Ticket Médio por Produto
-        <span class="tip" data-tip="Valor médio por protocolo concluído de cada produto. Mostra quais produtos geram mais receita por entrega.">ℹ</span>
+      <div style="overflow-y:auto;max-height:420px;">
+        <table class="alert-table" id="pipelineListTable">
+          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Produto</th><th>SLA</th><th>Valor</th></tr></thead>
+          <tbody></tbody>
+        </table>
       </div>
-      <div class="chart-wrap"><canvas id="ticketMedio"></canvas></div>
     </div>
   </div>
 
@@ -234,12 +235,12 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
   <div class="section-title">🚨 Alertas e Riscos</div>
   <div class="grid-2">
     <div class="card">
-      <div class="card-title">SLA Crítico (ativos com maior SLA GP)
-        <span class="tip" data-tip="Protocolos ativos ordenados pelo maior SLA GP. 🟢 dentro da meta · 🟡 acima da meta · 🔴 acima de 1.5× meta.">ℹ</span>
+      <div class="card-title">SLA Crítico (ativos com maior SLA de Contrato)
+        <span class="tip" data-tip="Protocolos ativos ordenados pelo maior SLA de Contrato. 🟢 dentro da meta · 🟡 acima da meta · 🔴 acima de 1.5× meta.">ℹ</span>
       </div>
       <div style="overflow-y:auto;max-height:240px;">
         <table class="alert-table" id="slaAlertTable">
-          <thead><tr><th></th><th>Cliente</th><th>Produto</th><th>Status</th><th>SLA GP</th></tr></thead>
+          <thead><tr><th></th><th>Cliente</th><th>Produto</th><th>Status</th><th>SLA de Contrato</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -248,7 +249,7 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
       <div class="card-title">Parados / Em andamento há mais tempo</div>
       <div style="overflow-y:auto;max-height:240px;">
         <table class="alert-table" id="paradosTable">
-          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Status</th><th>SLA GP</th></tr></thead>
+          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Status</th><th>SLA de Contrato</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -279,7 +280,7 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
       <div class="chart-wrap"><canvas id="prcByMonth"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">SLA Médio por Mês <span style="font-size:10px;color:var(--muted);" id="metaLabel"></span></div>
+      <div class="card-title">SLA de Contrato por Mês <span style="font-size:10px;color:var(--muted);" id="metaLabel"></span></div>
       <div class="chart-wrap"><canvas id="slaByMonth"></canvas></div>
     </div>
   </div>
@@ -288,13 +289,13 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
   <div class="section-title">📊 Análises</div>
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
-      <div class="card-title">SLA Médio por Estado (dias)
-        <span class="tip" data-tip="SLA GP médio de todos os protocolos por estado. Mostra em quais regiões o processo leva mais tempo.">ℹ</span>
+      <div class="card-title">SLA de Contrato por Estado (dias)
+        <span class="tip" data-tip="SLA de Contrato médio de todos os protocolos por estado. Mostra em quais regiões o processo leva mais tempo.">ℹ</span>
       </div>
       <div class="chart-wrap"><canvas id="slaByEstado"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">SLA Médio por Produto (dias)</div>
+      <div class="card-title">SLA de Contrato por Produto (dias)</div>
       <div class="chart-wrap"><canvas id="slaByProduct"></canvas></div>
     </div>
   </div>
@@ -336,7 +337,7 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
   <div class="card" style="margin-bottom:20px;">
     <div class="proto-wrap" style="max-height:420px;overflow-y:auto;">
       <table class="proto-table">
-        <thead><tr><th>Cliente</th><th>Parceiro</th><th>Estado</th><th>Cidade</th><th>Protocolo</th><th>Produto</th><th>Status</th><th>SLA GP</th><th>Valor</th><th>Nota</th></tr></thead>
+        <thead><tr><th>Cliente</th><th>Parceiro</th><th>Estado</th><th>Cidade</th><th>Protocolo</th><th>Produto</th><th>Status</th><th>SLA de Contrato</th><th>Valor</th><th>Nota</th></tr></thead>
         <tbody id="protoBody"></tbody>
       </table>
     </div>
@@ -456,13 +457,14 @@ function parseCSV(text){
   // [0]Cliente [1]Parceiro [2]Estado [3]Cidade [4]Protocolo [5]Etiqueta
   // [6]Produto [7]Prio [8]Status [9]SLA [10]RA [11]StatusCorreios
   // [12]Valor [13]DataVenda [14]PrazoContrato [15]LiberadoGestão
-  // [16]DataLimite [17]DataConclusão [18]SLA GP [19]ObsePRC [20]Nota
+  // [16]DataLimite [17]DataConclusão [18]SLA de Contrato [19]ObsePRC [20]Nota
   const ci=name=>headers.findIndex(h=>h.toLowerCase().includes(name.toLowerCase()));
   const idx={
     cliente:ci('cliente'), parceiro:ci('parceiro'), estado:ci('estado'),
     cidade:ci('cidade'), protocolo:ci('protocolo'), produto:ci('produto'),
     status:ci('status'), valor:ci('valor'), nota:ci('nota'),
-    slaGP:ci('sla gp'), dataConclusao:ci('conclus'), dataVenda:ci('venda'),
+    slaGP:ci('sla gp'), slaContrato:ci('prazo contrato'), 
+    dataConclusao:ci('conclus'), dataVenda:ci('venda'),
     liberado:ci('liberado')
   };
   console.log('Indices:',idx);
@@ -491,9 +493,10 @@ function parseCSV(text){
       if(dateRef.includes('/')){const p=dateRef.split('/');const m=parseInt(p[1]);const y=parseInt(p[2]||'0');if(m>=1&&m<=12){mes=mNames[m]+'/'+(y%100).toString().padStart(2,'0');mesSort=y*100+m;}}
       else if(dateRef.includes('-')){const p=dateRef.split('-');const m=parseInt(p[1]);const y=parseInt(p[0]||'0');if(m>=1&&m<=12){mes=mNames[m]+'/'+(y%100).toString().padStart(2,'0');mesSort=y*100+m;}}
     }
+    const slaContrato=parseInt(get('slaContrato'))||0;
     return{cliente,parceiro:get('parceiro'),estado:get('estado'),cidade:get('cidade'),
       protocolo:get('protocolo'),produto:get('produto'),status:get('status'),
-      valor,nota,slaGP,mes,mesSort};
+      valor,nota,slaGP,slaContrato,mes,mesSort};
   }).filter(Boolean);
 }
 
@@ -539,14 +542,25 @@ function filterByStatus(status){
   activeStatusFilter=activeStatusFilter===status?null:status;
   const lbl=activeStatusFilter?'· filtrado: '+activeStatusFilter.replace(/^\d+\.\s*/,''):'';
   ['filterActiveLabel','filterActiveLabelTable'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=lbl;});
+  const titleEl=document.getElementById('pipelineListTitle');
+  const clearBtn=document.getElementById('pipelineClearBtn');
+  if(titleEl)titleEl.textContent=activeStatusFilter?'Protocolos · '+activeStatusFilter.replace(/^\d+\.\s*/,''):'Protocolos · Todos os status';
+  if(clearBtn)clearBtn.style.display=activeStatusFilter?'inline':'none';
   applyFilters();
 }
-function clearStatusFilter(){activeStatusFilter=null;applyFilters();}
+function clearStatusFilter(){
+  activeStatusFilter=null;
+  const titleEl=document.getElementById('pipelineListTitle');
+  const clearBtn=document.getElementById('pipelineClearBtn');
+  if(titleEl)titleEl.textContent='Protocolos · Todos os status';
+  if(clearBtn)clearBtn.style.display='none';
+  applyFilters();
+}
 
 // ── RENDER ────────────────────────────────────────────────────────
 function render(){
   const r=filteredRows;
-  renderKPIs(r);renderFunnel(r);renderDonut(r);renderTicketMedio(r);
+  renderKPIs(r);renderFunnel(r);renderPipelineList(r);
   renderSLAAlerts(r);renderParados(r);
   renderMonthlyCharts(r);renderPRCByMonth(r);renderSLAByMonth(r);
   renderSLAByEstado(r);renderHeatmap(r);renderSLAByProduct(r);
@@ -610,6 +624,26 @@ function renderFunnel(rows){
   el.innerHTML=main.map(([st,c])=>bar(st,c,mainMax2,false)).join('')
     +`<div style="height:12px;padding:0 4%;"><div style="width:100%;height:1px;border-top:1px dashed #3a4560;"></div></div>`
     +bottom.map(([st,c])=>bar(st,c,bottomMax,true)).join('');
+}
+
+// ── PIPELINE LIST (sidebar) ──────────────────────────────────────
+function renderPipelineList(rows){
+  const tb=document.querySelector('#pipelineListTable tbody');
+  if(!tb)return;
+  // If a status filter is active, rows is already filtered. If not, show all (capped).
+  const display=rows.slice(0,200);
+  if(!display.length){
+    tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Nenhum protocolo encontrado.</td></tr>';
+    return;
+  }
+  tb.innerHTML=display.map(r=>`
+    <tr>
+      <td>${sname(r.cliente)}</td>
+      <td style="font-size:11px;color:var(--muted);">${r.parceiro||'—'}</td>
+      <td><span class="prod-chip">${r.produto||'—'}</span></td>
+      <td>${r.slaGP>0?slaBadge(r.slaGP):'—'}</td>
+      <td style="text-align:right;color:var(--accent);font-weight:700;">${r.valor>0?'R$ '+r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—'}</td>
+    </tr>`).join('');
 }
 
 // ── DONUT ─────────────────────────────────────────────────────────
@@ -678,17 +712,31 @@ function renderPRCByMonth(rows){
 
 // ── SLA BY MONTH ──────────────────────────────────────────────────
 function renderSLAByMonth(rows){
-  const acc={};rows.filter(r=>r.mes&&r.slaGP>0).forEach(r=>{if(!acc[r.mes])acc[r.mes]=[];acc[r.mes].push(r.slaGP);});
-  const labels=sortMonths(Object.keys(acc));
-  const data=labels.map(l=>Math.round(acc[l].reduce((a,b)=>a+b,0)/acc[l].length));
+  // SLA GP (contrato)
+  const accGP={};rows.filter(r=>r.mes&&r.slaGP>0).forEach(r=>{if(!accGP[r.mes])accGP[r.mes]=[];accGP[r.mes].push(r.slaGP);});
+  // SLA Contrato (coluna Prazo contrato)
+  const accCont={};rows.filter(r=>r.mes&&r.slaContrato>0).forEach(r=>{if(!accCont[r.mes])accCont[r.mes]=[];accCont[r.mes].push(r.slaContrato);});
+  const allMes=[...new Set([...Object.keys(accGP),...Object.keys(accCont)])];
+  const labels=sortMonths(allMes);
+  const dataGP=labels.map(l=>accGP[l]?Math.round(accGP[l].reduce((a,b)=>a+b,0)/accGP[l].length):null);
+  const dataCont=labels.map(l=>accCont[l]?Math.round(accCont[l].reduce((a,b)=>a+b,0)/accCont[l].length):null);
   const meta=parseInt(document.getElementById('metaSLA')?.value)||30;
   s('metaLabel','(meta: '+meta+'d)');
   if(charts.slaMon)charts.slaMon.destroy();
   const ctx=document.getElementById('slaByMonth');if(!ctx)return;
-  charts.slaMon=new Chart(ctx,{type:'line',data:{labels,datasets:[
-    {label:'SLA',data,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.08)',tension:.3,pointBackgroundColor:data.map(v=>v>meta?'#e74c3c':'#2ecc71'),fill:true,order:2},
+  const datasets=[
+    {label:'SLA de Contrato (GP)',data:dataGP,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.08)',tension:.3,pointBackgroundColor:dataGP.map(v=>v&&v>meta?'#e74c3c':'#2ecc71'),fill:false,order:2,pointRadius:4},
     {label:'Meta',data:labels.map(()=>meta),borderColor:'#e74c3c',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
-  ]},options:darkOpts({plugins:{tooltip:{callbacks:{label:c=>c.dataset.label==='Meta'?` Meta: ${c.raw}d`:` ${c.raw}d`}}}})});
+  ];
+  if(dataCont.some(v=>v!==null)){
+    datasets.splice(1,0,{label:'SLA Contrato (prazo)',data:dataCont,borderColor:'#3498db',backgroundColor:'rgba(52,152,219,.06)',tension:.3,pointBackgroundColor:'#3498db',fill:false,order:3,pointRadius:4,borderDash:[3,2]});
+  }
+  charts.slaMon=new Chart(ctx,{type:'line',data:{labels,datasets},options:darkOpts({
+    plugins:{
+      legend:{display:true,labels:{color:'#9aa3bd',font:{size:10},boxWidth:12,padding:12}},
+      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}d`}}
+    }
+  })});
 }
 function updateMetaLine(){renderSLAByMonth(filteredRows);renderSLAAlerts(filteredRows);renderSLAParceiro(filteredRows);}
 
@@ -743,7 +791,7 @@ function renderTopParceiros(rows){
   const top=Object.entries(acc).sort((a,b)=>b[1]-a[1]).slice(0,12);
   if(charts.topParc)charts.topParc.destroy();
   const ctx=document.getElementById('topParceiros');if(!ctx)return;
-  charts.topParc=new Chart(ctx,{type:'bar',data:{labels:top.map(t=>t[0]),datasets:[{label:'Protos',data:top.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y',scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10},callback:v=>v.length>14?v.slice(0,13)+'…':v}}}})});
+  charts.topParc=new Chart(ctx,{type:'bar',data:{labels:top.map(t=>t[0]),datasets:[{label:'Protos',data:top.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y',scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10},callback:function(val,idx){const l=this.getLabelForValue(idx);return l&&l.length>16?l.slice(0,15)+'…':l;}}}}})}); 
 }
 
 // ── SLA BY ESTADO ────────────────────────────────────────────────
@@ -754,7 +802,7 @@ function renderSLAByEstado(rows){
   if(charts.slaEstado)charts.slaEstado.destroy();
   const ctx=document.getElementById('slaByEstado');if(!ctx)return;
   charts.slaEstado=new Chart(ctx,{type:'bar',
-    data:{labels:sorted.map(s=>s.e),datasets:[{label:'SLA Médio',data:sorted.map(s=>s.media),backgroundColor:sorted.map(s=>s.media>meta*1.5?'#e74c3c':s.media>meta?'#f39c12':'#2ecc71'),borderRadius:5}]},
+    data:{labels:sorted.map(s=>s.e),datasets:[{label:'SLA Contrato',data:sorted.map(s=>s.media),backgroundColor:sorted.map(s=>s.media>meta*1.5?'#e74c3c':s.media>meta?'#f39c12':'#2ecc71'),borderRadius:5}]},
     options:darkOpts({indexAxis:'y',plugins:{tooltip:{callbacks:{label:c=>` ${c.raw}d (${sorted[c.dataIndex]?.count} protos)`}}},scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}}})
   });
 }
@@ -820,7 +868,7 @@ function renderEstadoChart(rows){
   const sorted=Object.entries(acc).sort((a,b)=>b[1]-a[1]).slice(0,15);
   if(charts.estado)charts.estado.destroy();
   const ctx=document.getElementById('estadoChart');if(!ctx)return;
-  charts.estado=new Chart(ctx,{type:'bar',data:{labels:sorted.map(t=>t[0]),datasets:[{label:'Protos',data:sorted.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y',scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10},callback:v=>v.length>12?v.slice(0,11)+'…':v}}}})});
+  charts.estado=new Chart(ctx,{type:'bar',data:{labels:sorted.map(t=>t[0]),datasets:[{label:'Protos',data:sorted.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y',scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10},callback:function(val,idx){const l=this.getLabelForValue(idx);return l&&l.length>12?l.slice(0,11)+'…':l;}}}}})}); 
 }
 
 // ── MAP ───────────────────────────────────────────────────────────
