@@ -98,6 +98,7 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
 /* PROTO TABLE */
 .proto-wrap{overflow-x:auto;}
 .proto-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px;}
+.alert-table{min-width:850px;}
 .proto-table th{background:var(--surface);color:var(--muted);font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:8px 10px;text-align:left;position:sticky;top:0;}
 .proto-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--textdim);}
 .proto-table tr:hover td{background:var(--surface);}
@@ -222,9 +223,9 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
         <span id="pipelineListTitle">Protocolos · Todos os status</span>
         <span id="pipelineClearBtn" style="display:none;font-size:10px;color:var(--accent);cursor:pointer;font-weight:400;margin-left:6px;" onclick="clearStatusFilter()">(limpar)</span>
       </div>
-      <div style="overflow-y:auto;max-height:420px;">
+      <div style="overflow-y:auto;overflow-x:auto;max-height:420px;">
         <table class="alert-table" id="pipelineListTable">
-          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Produto</th><th>SLA</th><th>Valor</th></tr></thead>
+          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Estado</th><th>Cidade</th><th>Etiqueta</th><th>Produto</th><th>Prio</th><th>Status</th><th>SLA</th><th>Valor</th></tr></thead>
           <tbody></tbody>
         </table>
       </div>
@@ -461,7 +462,8 @@ function parseCSV(text){
   const ci=name=>headers.findIndex(h=>h.toLowerCase().includes(name.toLowerCase()));
   const idx={
     cliente:ci('cliente'), parceiro:ci('parceiro'), estado:ci('estado'),
-    cidade:ci('cidade'), protocolo:ci('protocolo'), produto:ci('produto'),
+    cidade:ci('cidade'), protocolo:ci('protocolo'), etiqueta:ci('etiqueta'),
+    produto:ci('produto'), prio:ci('prio'),
     status:ci('status'), valor:ci('valor'), nota:ci('nota'),
     slaGP:ci('sla gp'), slaContrato:ci('prazo contrato'), 
     dataConclusao:ci('conclus'), dataVenda:ci('venda'),
@@ -495,7 +497,8 @@ function parseCSV(text){
     }
     const slaContrato=parseInt(get('slaContrato'))||0;
     return{cliente,parceiro:get('parceiro'),estado:get('estado'),cidade:get('cidade'),
-      protocolo:get('protocolo'),produto:get('produto'),status:get('status'),
+      protocolo:get('protocolo'),etiqueta:get('etiqueta'),produto:get('produto'),
+      prio:get('prio'),status:get('status'),
       valor,nota,slaGP,slaContrato,mes,mesSort};
   }).filter(Boolean);
 }
@@ -609,15 +612,16 @@ function renderFunnel(rows){
   const mainMax=Math.max(...main.map(([,c])=>c),1);
   function bar(st,c,maxC,isBot){
     const color=getStatusColor(st);const label=st.replace(/^\d+\.\s*/,'').trim();
-    const minW=isBot?32:30;const maxW=isBot?65:92;
+    const minW=isBot?28:25;const maxW=isBot?55:78;
     const w=Math.round(minW+(c/maxC)*(maxW-minW));
     const isActive=activeStatusFilter===st;
-    return`<div style="display:flex;justify-content:center;width:100%;margin-bottom:3px;">
-      <div style="width:${w}%;background:${color};border-radius:5px;padding:5px 12px;display:flex;justify-content:space-between;align-items:center;min-height:27px;cursor:pointer;outline:${isActive?'2px solid #fff':'none'};opacity:${activeStatusFilter&&!isActive?.6:1};" onclick="filterByStatus('${st.replace(/'/g,"\\'")}')">
-        <span style="font-size:11px;color:#fff;font-weight:600;white-space:nowrap;">${label}</span>
-        <span style="font-size:12px;color:#fff;font-weight:800;margin-left:8px;">${c}</span>
+    return`<div style="display:flex;justify-content:center;width:100%;margin-bottom:2px;">
+      <div style="width:${w}%;background:${color};border-radius:4px;padding:3px 10px;display:flex;justify-content:space-between;align-items:center;min-height:20px;cursor:pointer;outline:${isActive?'2px solid #fff':'none'};opacity:${activeStatusFilter&&!isActive?.6:1};" onclick="filterByStatus('${st.replace(/'/g,"\\'")}')">
+        <span style="font-size:10px;color:#fff;font-weight:600;white-space:nowrap;">${label}</span>
+        <span style="font-size:11px;color:#fff;font-weight:800;margin-left:6px;">${c}</span>
       </div></div>`;
   }
+
   const mainMax2=Math.max(...main.map(([,c])=>c),1);
   const bottomMax=Math.max(...bottom.map(([,c])=>c),1);
   const el=document.getElementById('funnelList');if(!el)return;
@@ -630,17 +634,24 @@ function renderFunnel(rows){
 function renderPipelineList(rows){
   const tb=document.querySelector('#pipelineListTable tbody');
   if(!tb)return;
-  // If a status filter is active, rows is already filtered. If not, show all (capped).
-  const display=rows.slice(0,200);
+  // Ordenar do maior SLA para o menor
+  const sorted=[...rows].sort((a,b)=>(b.slaGP||0)-(a.slaGP||0));
+  const display=sorted.slice(0,200);
   if(!display.length){
-    tb.innerHTML='<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;">Nenhum protocolo encontrado.</td></tr>';
+    tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px;">Nenhum protocolo encontrado.</td></tr>';
     return;
   }
+  const sCls=st=>!st?'':st.includes('Concluída')?'s-done':st.includes('Cancelado')?'s-cancel':st.includes('Pendente')||st.includes('validação')?'s-active':'s-pending';
   tb.innerHTML=display.map(r=>`
     <tr>
       <td>${sname(r.cliente)}</td>
       <td style="font-size:11px;color:var(--muted);">${r.parceiro||'—'}</td>
+      <td style="font-size:11px;">${r.estado||'—'}</td>
+      <td style="font-size:11px;color:var(--textdim);">${r.cidade||'—'}</td>
+      <td style="font-size:11px;color:var(--muted);font-family:monospace;">${r.etiqueta||'—'}</td>
       <td><span class="prod-chip">${r.produto||'—'}</span></td>
+      <td style="font-size:11px;">${r.prio||'—'}</td>
+      <td><span class="status-chip ${sCls(r.status)}">${(r.status||'').replace(/^\d+\.\s*/,'')}</span></td>
       <td>${r.slaGP>0?slaBadge(r.slaGP):'—'}</td>
       <td style="text-align:right;color:var(--accent);font-weight:700;">${r.valor>0?'R$ '+r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—'}</td>
     </tr>`).join('');
