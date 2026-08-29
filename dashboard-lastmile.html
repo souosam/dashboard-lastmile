@@ -373,8 +373,8 @@ window.addEventListener('DOMContentLoaded',()=>{
 // ── CONFIG ───────────────────────────────────────────────────────
 const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRKsahevABB_4kg3sUhcYZJRLFWL7lXRUS6ftT4VRAoUW11od-mrOSQ09LUErkhUEqpEkiBC5TfDDTr/pub?gid=1913853917&single=true&output=csv';
 const PALETTE=['#2ecc71','#1abc9c','#3498db','#9b59b6','#f39c12','#e74c3c','#e67e22','#27ae60','#2980b9','#8e44ad','#16a085','#d35400'];
-const STATUS_COLORS={'Projeto Futuro':'#b0bec5','Em validação':'#f39c12','Assinatura LM':'#3498db','Compra de material':'#e67e22','Parado':'#e74c3c','Site Survey':'#8e44ad','Em andamento':'#f1c40f','Em configuração':'#5b8dd9','Agendado':'#1abc9c','Boas vindas':'#2ecc71','Ag. Faturamento':'#16a085','Concluída':'#27ae60','Cancelado':'#c0392b'};
-const FUNNEL_ORDER=['Projeto Futuro','Em validação','Assinatura LM','Compra de material','Parado','Site Survey','Em andamento','Em configuração','Agendado','Boas vindas','Ag. Faturamento'];
+const STATUS_COLORS={'Projeto Futuro':'#b0bec5','Em validação':'#f39c12','Assinatura LM':'#3498db','Compra de material':'#e67e22','Parado':'#e74c3c','Site Survey':'#8e44ad','Em configuração':'#e84393','Postar equipamento':'#f1c40f','Solicitar agendamento':'#a29bfe','Aceite agendamento':'#6c5ce7','Agendado':'#1abc9c','Boas vindas':'#2ecc71','Ag. Faturamento':'#16a085','Concluída':'#27ae60','Cancelado':'#c0392b'};
+const FUNNEL_ORDER=['Projeto Futuro','Em validação','Assinatura LM','Compra de material','Parado','Site Survey','Em configuração','Postar equipamento','Solicitar agendamento','Aceite agendamento','Agendado','Boas vindas','Ag. Faturamento'];
 const BOTTOM_ORDER=['Concluída','Cancelado'];
 // Valor conta como "entregue" a partir da etapa Boas vindas (inclui Ag. Faturamento e Concluída)
 const ENTREGUE_STATUSES=['Boas vindas','Ag. Faturamento','Concluída'];
@@ -566,7 +566,7 @@ function renderKPIs(rows){
   const mN=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   const recSlas=rows.filter(r=>{if(!r.slaGP||!r.mes)return false;const p=r.mes.split('/');const mi=mN.indexOf(p[0]);const yr=2000+parseInt(p[1]);return new Date(yr,mi-1,1)>=sixAgo;}).map(r=>r.slaGP);
   const sla=recSlas.length?Math.round(recSlas.reduce((a,b)=>a+b,0)/recSlas.length):0;
-  const LIBS=['compra de material','site survey','em andamento','em configuração','parado','agendado','boas vindas','ag. faturamento'];
+  const LIBS=['compra de material','site survey','em configuração','parado','postar equipamento','solicitar agendamento','aceite agendamento','agendado','boas vindas','ag. faturamento'];
   const liberados=rows.filter(r=>r.status&&LIBS.some(l=>r.status.toLowerCase().includes(l))).length;
   const valAberto=ativos.reduce((s,r)=>s+r.valor,0);
   s('kpiValor','R$ '+val.toLocaleString('pt-BR',{minimumFractionDigits:2}));
@@ -582,16 +582,18 @@ function renderKPIs(rows){
 function s(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
 
 // ── FUNNEL ────────────────────────────────────────────────────────
+function normLabel(status){return status.replace(/^\d+\.\s*/,'').split('/')[0].trim().toLowerCase();}
 function getStatusColor(status){
-  const st=status.replace(/^\d+\.\s*/,'').trim();
-  for(const[k,c]of Object.entries(STATUS_COLORS)){if(st.toLowerCase().includes(k.toLowerCase())||k.toLowerCase().includes(st.toLowerCase()))return c;}
+  const st=normLabel(status);
+  for(const[k,c]of Object.entries(STATUS_COLORS)){if(k.toLowerCase()===st)return c;}
+  for(const[k,c]of Object.entries(STATUS_COLORS)){if(st.includes(k.toLowerCase())||k.toLowerCase().includes(st))return c;}
   return'#6b7a9f';
 }
 function renderFunnel(rows){
   const counts={};rows.forEach(r=>{if(r.status)counts[r.status]=(counts[r.status]||0)+1;});
   const seen=new Set(),main=[],bottom=[];
-  FUNNEL_ORDER.forEach(o=>{Object.entries(counts).forEach(([st,c])=>{const n=st.replace(/^\d+\.\s*/,'').trim();if(!seen.has(st)&&(n.toLowerCase().includes(o.toLowerCase())||o.toLowerCase().includes(n.toLowerCase()))){main.push([st,c]);seen.add(st);}});});
-  BOTTOM_ORDER.forEach(o=>{Object.entries(counts).forEach(([st,c])=>{const n=st.replace(/^\d+\.\s*/,'').trim();if(!seen.has(st)&&(n.toLowerCase().includes(o.toLowerCase())||o.toLowerCase().includes(n.toLowerCase()))){bottom.push([st,c]);seen.add(st);}});});
+  FUNNEL_ORDER.forEach(o=>{const on=o.toLowerCase();Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)&&normLabel(st)===on){main.push([st,c]);seen.add(st);}});});
+  BOTTOM_ORDER.forEach(o=>{const on=o.toLowerCase();Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)&&normLabel(st)===on){bottom.push([st,c]);seen.add(st);}});});
   Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)){main.push([st,c]);seen.add(st);}});
 
   function stageCard(st,c,maxC){
