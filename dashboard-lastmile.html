@@ -213,48 +213,9 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
 
   <!-- PIPELINE -->
   <div class="section-title">Pipeline & Protocolos</div>
-  <div class="grid-pipeline">
-    <div class="card">
-      <div class="card-title">Pipeline de Status <span id="filterActiveLabel" style="color:var(--accent);font-size:10px;font-weight:400;"></span></div>
-      <div id="funnelList"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">
-        <span id="pipelineListTitle">Protocolos · Todos os status</span>
-        <span id="pipelineClearBtn" style="display:none;font-size:10px;color:var(--accent);cursor:pointer;font-weight:400;margin-left:6px;" onclick="clearStatusFilter()">(limpar)</span>
-      </div>
-      <div style="overflow-y:auto;overflow-x:auto;max-height:420px;">
-        <table class="alert-table" id="pipelineListTable">
-          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Estado</th><th>Cidade</th><th>Etiqueta</th><th>Produto</th><th>Prio</th><th>Status</th><th>SLA</th><th>Valor</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- ALERTAS -->
-  <div class="section-title">🚨 Alertas e Riscos</div>
-  <div class="grid-2">
-    <div class="card">
-      <div class="card-title">SLA Crítico (ativos com maior SLA de Contrato)
-        <span class="tip" data-tip="Protocolos ativos ordenados pelo maior SLA de Contrato. 🟢 dentro da meta · 🟡 acima da meta · 🔴 acima de 1.5× meta.">ℹ</span>
-      </div>
-      <div style="overflow-y:auto;max-height:240px;">
-        <table class="alert-table" id="slaAlertTable">
-          <thead><tr><th></th><th>Cliente</th><th>Produto</th><th>Status</th><th>SLA de Contrato</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-title">Parados / Em andamento há mais tempo</div>
-      <div style="overflow-y:auto;max-height:240px;">
-        <table class="alert-table" id="paradosTable">
-          <thead><tr><th>Cliente</th><th>Parceiro</th><th>Status</th><th>SLA de Contrato</th></tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-    </div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title">Pipeline de Status <span id="filterActiveLabel" style="color:var(--accent);font-size:10px;font-weight:400;"></span></div>
+    <div id="funnelList"></div>
   </div>
 
   <!-- GRÁFICOS MENSAIS -->
@@ -300,12 +261,6 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
       <div class="chart-wrap"><canvas id="slaByProduct"></canvas></div>
     </div>
   </div>
-  <div class="card" style="margin-bottom:18px;">
-    <div class="card-title">Protocolos por Mês × Estado
-      <span class="tip" data-tip="Mapa de calor: cada célula mostra quantos protocolos foram concluídos naquele mês e estado. Cores mais intensas = mais protocolos.">ℹ</span>
-    </div>
-    <div id="heatmapContainer" style="overflow-x:auto;"></div>
-  </div>
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
       <div class="card-title">Top Clientes · Valor Entregue</div>
@@ -333,16 +288,6 @@ main{padding:20px 28px;max-width:1700px;margin:0 auto;}
     <div class="card"><div class="card-title">Ranking de Estados</div><div class="map-city-list" id="stateRanking"></div></div>
   </div>
 
-  <!-- TABELA -->
-  <div class="section-title">Protocolos Detalhados <span id="filterActiveLabelTable" style="color:var(--accent);font-size:10px;"></span></div>
-  <div class="card" style="margin-bottom:20px;">
-    <div class="proto-wrap" style="max-height:420px;overflow-y:auto;">
-      <table class="proto-table">
-        <thead><tr><th>Cliente</th><th>Parceiro</th><th>Estado</th><th>Cidade</th><th>Protocolo</th><th>Produto</th><th>Status</th><th>SLA de Contrato</th><th>Valor</th><th>Nota</th></tr></thead>
-        <tbody id="protoBody"></tbody>
-      </table>
-    </div>
-  </div>
 </main>
 </div><!-- #appContent -->
 
