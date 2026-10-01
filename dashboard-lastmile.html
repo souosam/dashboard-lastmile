@@ -48,6 +48,7 @@ header{background:var(--surface);border-bottom:1px solid var(--border);box-shado
 .logo-text{font-size:16px;font-weight:700;font-family:var(--font-d);letter-spacing:-.2px;}.logo-sub{font-size:10.5px;color:var(--muted);letter-spacing:1.4px;text-transform:uppercase;}
 .header-right{display:flex;align-items:center;gap:10px;}
 #lastUpdated{font-size:11px;color:var(--muted);font-family:var(--font-m);}
+.hdr-dash-only{display:inline-flex;align-items:center;}
 .btn-primary{background:var(--accent);color:#081109;border:none;border-radius:7px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer;transition:filter .15s;}
 .btn-primary:hover{filter:brightness(1.1);}.btn-primary:disabled{opacity:.5;cursor:default;}
 .btn-logout{background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:7px;padding:5px 12px;font-size:11px;cursor:pointer;transition:border-color .15s,color .15s;}
@@ -178,6 +179,41 @@ main>.section-title:first-of-type{margin-top:0;}
 .conv-pct{font-size:11px;color:var(--accent);font-weight:700;min-width:34px;text-align:right;}
 /* ERROR */
 #errorBanner{display:none;background:rgba(231,76,60,.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;}
+/* APP SHELL / SIDEBAR */
+.app-shell{display:flex;align-items:flex-start;}
+.sidebar{width:208px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:18px 14px;display:flex;flex-direction:column;gap:4px;position:sticky;top:0;align-self:flex-start;height:100vh;}
+.sidebar-logo{display:flex;align-items:center;gap:10px;padding:2px 8px 18px;margin-bottom:8px;border-bottom:1px solid var(--border);}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:9px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;transition:background .15s,color .15s;user-select:none;}
+.nav-item:hover{background:var(--card);color:var(--text);}
+.nav-item.active{background:var(--card-hi);color:var(--accent);box-shadow:inset 0 0 0 1px var(--border);}
+.nav-ico{font-size:15px;width:18px;text-align:center;flex-shrink:0;}
+.content-col{flex:1;min-width:0;}
+.view{display:none;}
+.view.active{display:block;}
+@media(max-width:880px){
+  .app-shell{flex-direction:column;}
+  .sidebar{position:static;height:auto;width:100%;flex-direction:row;overflow-x:auto;padding:10px 14px;gap:6px;align-items:center;}
+  .sidebar-logo{display:none;}
+  .nav-item{flex-shrink:0;}
+}
+/* PDCA */
+.pdca-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--textdim);}
+.pdca-kv:last-child{border:0;}
+.pdca-kv b{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text);}
+.pdca-ok{color:var(--accent);}
+.pdca-bad{color:var(--danger);}
+.pdca-wa{color:var(--warn);}
+.pdca-table{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;min-width:900px;}
+.pdca-table th,.pdca-table td{padding:7px 9px;text-align:right;border-bottom:1px solid var(--border);white-space:nowrap;}
+.pdca-table th{background:var(--surface);color:var(--muted);font-weight:600;font-size:10px;letter-spacing:.6px;text-transform:uppercase;position:sticky;top:0;}
+.pdca-table td{color:var(--textdim);}
+.pdca-table th:nth-child(-n+2),.pdca-table td:nth-child(-n+2){text-align:left;}
+.pdca-table tr:hover td{background:var(--surface);}
+.pdca-table td:first-child{color:var(--text);font-weight:600;}
+.pdca-bar-row{margin:10px 0;}
+.pdca-bar-head{display:flex;justify-content:space-between;font-size:12px;color:var(--textdim);}
+.pdca-bar-head b{color:var(--text);font-variant-numeric:tabular-nums;}
+.pdca-bar-fill{display:block;height:7px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;margin-top:4px;}
 </style>
 </head>
 <body>
@@ -202,18 +238,29 @@ main>.section-title:first-of-type{margin-top:0;}
 </div>
 
 <div id="appContent">
+<div class="app-shell">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-dot">LM</div>
+      <div><div class="logo-text">Last Mile</div><div class="logo-sub">Suite</div></div>
+    </div>
+    <div class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><span class="nav-ico">📊</span>Dashboard</div>
+    <div class="nav-item" data-view="pdca" onclick="switchView('pdca')"><span class="nav-ico">🔁</span>PDCA</div>
+  </nav>
+  <div class="content-col">
 <header>
   <div class="logo">
     <div class="logo-dot">LM</div>
-    <div><div class="logo-text">Last Mile Dashboard</div><div class="logo-sub">GP · Samuel Almeida</div></div>
+    <div><div class="logo-text" id="headerTitle">Last Mile Dashboard</div><div class="logo-sub" id="headerSub">GP · Samuel Almeida</div></div>
   </div>
   <div class="header-right">
-    <span id="lastUpdated">—</span>
-    <button class="btn-primary" id="btnRefresh" onclick="loadData()">↻ Atualizar</button>
+    <span id="lastUpdated" class="hdr-dash-only">—</span>
+    <button class="btn-primary hdr-dash-only" id="btnRefresh" onclick="loadData()">↻ Atualizar</button>
     <button class="btn-logout" onclick="doLogout()">⏻ Sair</button>
   </div>
 </header>
 
+<div id="view-dashboard" class="view active">
 <main>
   <div id="errorBanner"></div>
 
@@ -325,6 +372,42 @@ main>.section-title:first-of-type{margin-top:0;}
   </div>
 
 </main>
+</div><!-- #view-dashboard -->
+
+<div id="view-pdca" class="view">
+<main>
+  <div class="section-title">PDCA · Coortes por Data de Entrada</div>
+  <div style="color:var(--muted);font-size:12px;margin-bottom:14px;" id="meta2">Lendo a planilha…</div>
+
+  <div class="filter-bar">
+    <label>Meta (dias desde a assinatura)</label>
+    <input type="number" id="meta" min="1" value="20" style="width:70px;"/>
+    <label>Data de entrada da coorte</label>
+    <select id="base">
+      <option value="lib">Liberado p/ gestão (ou venda)</option>
+      <option value="venda">Data da venda</option>
+    </select>
+    <button class="btn-primary" id="go" style="margin-left:4px;">Atualizar agora</button>
+    <span style="margin-left:auto;font-size:11px;color:var(--muted);" id="cov"></span>
+  </div>
+  <div id="msg" style="color:var(--danger);font-size:12px;margin:8px 0 4px;"></div>
+
+  <div class="section-title">Comparação Geral</div>
+  <div class="grid-2" id="cards" style="margin-bottom:18px;"></div>
+
+  <div class="section-title">Mês a Mês</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="proto-wrap"><table class="pdca-table" id="tb"></table></div>
+  </div>
+
+  <div class="section-title">Onde o Tempo Foi Consumido Antes do GP</div>
+  <div class="grid-2" id="mot" style="margin-bottom:10px;"></div>
+  <p style="color:var(--muted);font-size:11.5px;line-height:1.6;">Sem tempo hábil: quando o projeto chega à gestão (liberado) com a meta já consumida desde a assinatura. O motivo mostrado é a etapa que mais demorou. Se a planilha tiver uma coluna "Motivo do atraso", os motivos preenchidos nela aparecem aqui também.</p>
+</main>
+</div><!-- #view-pdca -->
+
+  </div><!-- .content-col -->
+</div><!-- .app-shell -->
 </div><!-- #appContent -->
 
 <script>
@@ -369,6 +452,22 @@ window.addEventListener('DOMContentLoaded',()=>{
     setTimeout(()=>document.getElementById('loginInput').focus(),100);
   }
 });
+
+// ── NAVIGATION (sidebar / views) ────────────────────────────────────
+let currentView='dashboard',pdcaStarted=false;
+function switchView(name){
+  currentView=name;
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===name));
+  document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='view-'+name));
+  document.querySelectorAll('.hdr-dash-only').forEach(el=>{el.style.display=name==='dashboard'?'':'none';});
+  const title=document.getElementById('headerTitle'),sub=document.getElementById('headerSub');
+  if(name==='pdca'){
+    title.textContent='PDCA Last Mile';sub.textContent='GP · Samuel Almeida · Coortes por entrada';
+    if(!pdcaStarted){pdcaStarted=true;window.PDCA&&window.PDCA.start();}
+  }else{
+    title.textContent='Last Mile Dashboard';sub.textContent='GP · Samuel Almeida';
+  }
+}
 
 // ── CONFIG ───────────────────────────────────────────────────────
 const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRKsahevABB_4kg3sUhcYZJRLFWL7lXRUS6ftT4VRAoUW11od-mrOSQ09LUErkhUEqpEkiBC5TfDDTr/pub?gid=1913853917&single=true&output=csv';
@@ -921,6 +1020,150 @@ function darkOpts(extra={}){
   if(extra.scales){base.scales={...base.scales,...extra.scales};delete extra.scales;}
   return{...base,...extra};
 }
+</script>
+
+<!-- ── PDCA MODULE (own scope, same CSV source) ─────────────────────── -->
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const DAY=864e5;
+const norm=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+let RAW=null,timer=null;
+
+function parseCSV(t){
+  const r=[];let row=[],f="",q=false;
+  for(let i=0;i<t.length;i++){
+    const c=t[i];
+    if(q){ if(c=='"'){ if(t[i+1]=='"'){f+='"';i++} else q=false } else f+=c }
+    else if(c=='"') q=true;
+    else if(c==','){row.push(f);f=""}
+    else if(c=='\n'||c=='\r'){ if(c=='\r'&&t[i+1]=='\n')i++; row.push(f);r.push(row);row=[];f="" }
+    else f+=c;
+  }
+  if(f||row.length){row.push(f);r.push(row)}
+  return r;
+}
+function D(s){
+  const m=/^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(s||"");
+  if(!m)return null;
+  const y=+m[3]; if(y<2025||y>2027)return null;
+  return Date.UTC(y,m[2]-1,m[1]);
+}
+const diff=(a,b)=>(a==null||b==null)?null:Math.round((a-b)/DAY);
+const ym=t=>{const d=new Date(t);return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")};
+const av=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):"-";
+const pc=(a,b)=>b?Math.round(100*a/b)+"%":"-";
+
+function build(rows,meta,base){
+  const H={};
+  rows[0].forEach((h,i)=>{const k=norm(h);if(!(k in H))H[k]=i});
+  const g=(r,k)=>(r[H[k]]||"").trim();
+  const now=new Date(), T=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+  const out=[];
+  for(const r of rows.slice(1)){
+    if(!g(r,"protocolo"))continue;
+    const n=parseInt(g(r,"status"));
+    const venda=D(g(r,"data da venda")), lib=D(g(r,"liberado para gestao")), conc=D(g(r,"data de conclusao"));
+    let ass=D(g(r,"assinatura cliente")); if(ass==null)ass=D(g(r,"assinatura do contrato (cliente)"));
+    if(ass!=null&&venda!=null){const d=diff(venda,ass); if(d<0||d>90)ass=null}
+    const ent=base==="venda"?venda:(lib!=null?lib:venda);
+    const S=ass!=null?ass:venda;
+    if(ent==null||S==null)continue;
+    const c=n==14, e=(n>=11&&n<=13&&conc!=null);
+    const inp=D(g(r,"input bko - entrou na validacao"))??venda;
+    const pre=lib!=null?diff(lib,S):null;
+    let motivo=null;
+    if(pre!=null&&pre>=meta){
+      const a=ass!=null?diff(inp,ass):-1, b=diff(lib,inp);
+      motivo=(b>a)?"Validação (Input BKO até a liberação)":(a>0?"Assinatura do cliente até o Input BKO":"Não identificado");
+    }
+    const lim=D(g(r,"data limite do contrato")), prz=parseInt(g(r,"prazo contrato"))>0;
+    out.push({
+      c,e,usouAss:ass!=null,mes:ym(ent),q:new Date(ent).getUTCDate()<=15?1:2,
+      mesC:conc!=null?ym(conc):null,dias:e?diff(conc,S):null,
+      gp:e&&lib!=null?diff(conc,lib):null,d30:e?diff(conc,ent):null,pre,motivo,
+      age:diff(T,S),ctr:(e&&prz&&lim!=null)?(conc<=lim?1:0):null,
+      mu:g(r,"motivo do atraso")||g(r,"motivo")
+    });
+  }
+  return out;
+}
+function agg(L,meta){
+  const B=L.filter(x=>!x.c), E=B.filter(x=>x.e), C=E.filter(x=>x.ctr!=null);
+  return{
+    n:L.length,canc:L.length-B.length,base:B.length,ent:E.length,
+    mes:E.filter(x=>x.mesC===x.mes).length,d30:E.filter(x=>x.d30<=30).length,
+    avg:av(E.map(x=>x.dias)),ok:E.filter(x=>x.dias<=meta).length,late:E.filter(x=>x.dias>meta).length,
+    sem:B.filter(x=>x.pre!=null&&x.pre>=meta).length,
+    ab:B.filter(x=>!x.e).length,abL:B.filter(x=>!x.e&&x.age>meta).length,
+    gp:av(E.filter(x=>x.gp!=null&&x.gp>=0).map(x=>x.gp)),
+    ctrOk:C.filter(x=>x.ctr==1).length,ctrN:C.length
+  };
+}
+function card(t,a,meta){
+  const k=[
+    ["Entradas (sem cancelados)",a.base],["Cancelados",a.canc],
+    ["Concluídos",a.ent+" ("+pc(a.ent,a.base)+")"],
+    ["Concluídos no mesmo mês da entrada",pc(a.mes,a.base)],
+    ["Concluídos em até 30 dias da entrada",pc(a.d30,a.base)],
+    ["Média da assinatura até a conclusão",a.avg+" dias"],
+    ["Dentro da meta de "+meta+" dias",a.ok+" ("+pc(a.ok,a.ent)+")"],
+    ["Entregues atrasados",'<span class="pdca-bad">'+a.late+" ("+pc(a.late,a.ent)+")</span>"],
+    ["Sem tempo hábil",'<span class="pdca-wa">'+a.sem+" ("+pc(a.sem,a.base)+")</span>"],
+    ["Em aberto (já passaram da meta)",a.ab+" ("+a.abL+")"],
+    ["Tempo com o GP, média (liberado até a conclusão)",a.gp+" dias"],
+    ["Dentro do prazo do contrato",a.ctrN?a.ctrOk+" de "+a.ctrN+" ("+pc(a.ctrOk,a.ctrN)+")":"-"]
+  ];
+  return '<div class="card"><div class="card-title">'+t+'</div>'+k.map(x=>'<div class="pdca-kv"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join("")+'</div>';
+}
+function motBlock(t,L){
+  const cnt={}, usr={};
+  L.filter(x=>!x.c).forEach(x=>{
+    if(x.motivo)cnt[x.motivo]=(cnt[x.motivo]||0)+1;
+    if(x.mu)usr[x.mu]=(usr[x.mu]||0)+1;
+  });
+  const bar=o=>{const e=Object.entries(o).sort((a,b)=>b[1]-a[1]),m=e.length?e[0][1]:1;
+    return e.length?e.map(([k,v])=>'<div class="pdca-bar-row"><div class="pdca-bar-head"><span>'+k+'</span><b>'+v+'</b></div><div class="pdca-bar-fill" style="width:'+(100*v/m)+'%"></div></div>').join(""):'<div style="color:var(--muted);font-size:12px;">Nenhum caso.</div>'};
+  let h='<div class="card"><div class="card-title">'+t+'</div>'+bar(cnt);
+  if(Object.keys(usr).length)h+='<div style="color:var(--muted);font-size:11px;margin:14px 0 6px;">Motivos preenchidos na planilha</div>'+bar(usr);
+  return h+'</div>';
+}
+function render(){
+  if(!RAW)return;
+  const meta=+$("meta").value||20, base=$("base").value;
+  const L=build(RAW,meta,base);
+  $("cov").textContent=L.filter(x=>x.usouAss).length+" com data de assinatura; "+L.filter(x=>!x.usouAss).length+" usando a venda como início.";
+  const q1=L.filter(x=>x.q==1), q2=L.filter(x=>x.q==2);
+  $("cards").innerHTML=card("Entrada do dia 1 ao 15",agg(q1,meta),meta)+card("Entrada do dia 16 ao fim do mês",agg(q2,meta),meta);
+  const meses=[...new Set(L.map(x=>x.mes))].sort();
+  let h="<tr><th>Mês</th><th>Coorte</th><th>Entradas</th><th>Concluídos</th><th>No mês</th><th>Em 30 d</th><th>Média (dias)</th><th>Na meta</th><th>Atrasados</th><th>Sem tempo</th><th>Em aberto</th><th>Tempo GP</th></tr>";
+  meses.forEach(m=>[1,2].forEach(q=>{
+    const a=agg(L.filter(x=>x.mes===m&&x.q==q),meta); if(!a.n)return;
+    h+="<tr><td>"+m+"</td><td>"+(q==1?"Dias 1 a 15":"Dias 16 a 31")+"</td><td>"+a.base+"</td><td>"+a.ent+"</td><td>"+pc(a.mes,a.base)+"</td><td>"+pc(a.d30,a.base)+"</td><td>"+a.avg+"</td><td class='pdca-ok'>"+a.ok+"</td><td class='pdca-bad'>"+a.late+"</td><td class='pdca-wa'>"+a.sem+"</td><td>"+a.ab+"</td><td>"+a.gp+"</td></tr>";
+  }));
+  $("tb").innerHTML=h;
+  $("mot").innerHTML=motBlock("Entrada do dia 1 ao 15",q1)+motBlock("Entrada do dia 16 ao fim do mês",q2);
+}
+async function load(){
+  try{
+    const res=await fetch(CSV_URL+"&_="+Date.now(),{cache:"no-store"});
+    if(!res.ok)throw new Error("HTTP "+res.status);
+    RAW=parseCSV(await res.text());
+    $("msg").textContent="";
+    $("meta2").textContent="Atualizado às "+new Date().toLocaleTimeString("pt-BR")+". Recarrega sozinho a cada 60 segundos.";
+    render();
+  }catch(err){
+    $("msg").textContent="Não consegui ler a planilha ("+err.message+"). Confira se o link continua publicado como CSV.";
+  }
+}
+function start(){
+  ["meta","base"].forEach(i=>$(i).addEventListener("input",render));
+  $("go").addEventListener("click",load);
+  load();
+  if(!timer)timer=setInterval(load,60000);
+}
+window.PDCA={start,load};
+})();
 </script>
 </body>
 </html>
