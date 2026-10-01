@@ -214,6 +214,9 @@ main>.section-title:first-of-type{margin-top:0;}
 .pdca-bar-head{display:flex;justify-content:space-between;font-size:12px;color:var(--textdim);}
 .pdca-bar-head b{color:var(--text);font-variant-numeric:tabular-nums;}
 .pdca-bar-fill{display:block;height:7px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;margin-top:4px;}
+.pdca-dl dt{font-weight:700;color:var(--text);margin-top:14px;font-size:12.5px;}
+.pdca-dl dt:first-child{margin-top:0;}
+.pdca-dl dd{margin:3px 0 0;color:var(--muted);font-size:12px;line-height:1.5;}
 </style>
 </head>
 <body>
@@ -380,11 +383,11 @@ main>.section-title:first-of-type{margin-top:0;}
   <div style="color:var(--muted);font-size:12px;margin-bottom:14px;" id="meta2">Lendo a planilha…</div>
 
   <div class="filter-bar">
-    <label>Meta (dias desde a assinatura)</label>
+    <label>Meta de entrega, em dias contados da assinatura do cliente</label>
     <input type="number" id="meta" min="1" value="20" style="width:70px;"/>
-    <label>Data de entrada da coorte</label>
+    <label>Data que define quando o projeto entrou</label>
     <select id="base">
-      <option value="lib">Liberado p/ gestão (ou venda)</option>
+      <option value="lib">Liberação para a gestão (se vazia, usa a data da venda)</option>
       <option value="venda">Data da venda</option>
     </select>
     <button class="btn-primary" id="go" style="margin-left:4px;">Atualizar agora</button>
@@ -392,17 +395,30 @@ main>.section-title:first-of-type{margin-top:0;}
   </div>
   <div id="msg" style="color:var(--danger);font-size:12px;margin:8px 0 4px;"></div>
 
-  <div class="section-title">Comparação Geral</div>
+  <div class="section-title">Resumo: dia 1 ao 15 × dia 16 ao fim do mês</div>
   <div class="grid-2" id="cards" style="margin-bottom:18px;"></div>
 
-  <div class="section-title">Mês a Mês</div>
+  <div class="section-title">Mês a Mês, pelo Mês de Entrada</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="proto-wrap"><table class="pdca-table" id="tb"></table></div>
   </div>
 
-  <div class="section-title">Onde o Tempo Foi Consumido Antes do GP</div>
-  <div class="grid-2" id="mot" style="margin-bottom:10px;"></div>
-  <p style="color:var(--muted);font-size:11.5px;line-height:1.6;">Sem tempo hábil: quando o projeto chega à gestão (liberado) com a meta já consumida desde a assinatura. O motivo mostrado é a etapa que mais demorou. Se a planilha tiver uma coluna "Motivo do atraso", os motivos preenchidos nela aparecem aqui também.</p>
+  <div class="section-title">Meta já Estourada na Entrada: Onde o Tempo foi Gasto</div>
+  <div class="grid-2" id="mot" style="margin-bottom:18px;"></div>
+
+  <div class="section-title">Como Ler Esta Página</div>
+  <div class="card" style="margin-bottom:18px;">
+    <dl class="pdca-dl">
+      <dt>Entrada</dt><dd>Data que define em qual mês, e em qual metade do mês, o projeto conta. Escolhida no seletor acima: liberação para a gestão ou data da venda.</dd>
+      <dt>Início da contagem da meta</dt><dd>Assinatura do cliente. Quando a planilha não tem essa data, usa a data da venda.</dd>
+      <dt>Concluído</dt><dd>Projeto com status de Boas vindas/PRC em diante (até Concluída) e data de conclusão preenchida. Cancelados ficam fora de todas as contas.</dd>
+      <dt>Dentro da meta e fora da meta</dt><dd>Dias entre o início da contagem e a data de conclusão: até a meta, ou acima dela.</dd>
+      <dt>Entraram na gestão com a meta já estourada</dt><dd>Quando o projeto foi liberado para o GP, já tinham passado a meta (campo acima) ou mais dias desde a assinatura do cliente. Mesmo uma entrega imediata ficaria fora da meta.</dd>
+      <dt>Em andamento</dt><dd>Projetos que ainda não foram concluídos nem cancelados.</dd>
+      <dt>Tempo com o GP</dt><dd>Dias entre a liberação para a gestão e a conclusão.</dd>
+      <dt>Dentro do prazo do contrato</dt><dd>Conclusão até a data limite do contrato (data da venda mais o prazo do contrato). Só entra na conta quem tem o prazo do contrato preenchido.</dd>
+    </dl>
+  </div>
 </main>
 </div><!-- #view-pdca -->
 
@@ -419,6 +435,8 @@ async function sha256(msg){
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
+let autoRefreshStarted=false;
+function startAutoRefresh(){if(!autoRefreshStarted){autoRefreshStarted=true;setInterval(loadData,60000);}}
 async function doLogin(){
   const input=document.getElementById('loginInput').value;
   const hash=await sha256(input);
@@ -428,7 +446,7 @@ async function doLogin(){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('appContent').classList.add('unlocked');
     errEl.style.display='none';
-    loadData();
+    loadData();startAutoRefresh();
   }else{
     errEl.style.display='block';
     document.getElementById('loginInput').value='';
@@ -447,14 +465,16 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(sessionStorage.getItem(SESSION_KEY)==='1'){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('appContent').classList.add('unlocked');
-    loadData();
+    loadData();startAutoRefresh();
   }else{
     setTimeout(()=>document.getElementById('loginInput').focus(),100);
   }
 });
 
 // ── NAVIGATION (sidebar / views) ────────────────────────────────────
-let currentView='dashboard',pdcaStarted=false;
+// Dados já carregados uma única vez (parser único); trocar de aba só alterna
+// a view visível — não refaz fetch nem reprocessa a planilha.
+let currentView='dashboard';
 function switchView(name){
   currentView=name;
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active',n.dataset.view===name));
@@ -463,7 +483,6 @@ function switchView(name){
   const title=document.getElementById('headerTitle'),sub=document.getElementById('headerSub');
   if(name==='pdca'){
     title.textContent='PDCA Last Mile';sub.textContent='GP · Samuel Almeida · Coortes por entrada';
-    if(!pdcaStarted){pdcaStarted=true;window.PDCA&&window.PDCA.start();}
   }else{
     title.textContent='Last Mile Dashboard';sub.textContent='GP · Samuel Almeida';
   }
@@ -491,17 +510,23 @@ async function loadData(){
   if(overlay){overlay.style.display='flex';overlay.style.opacity='1';}
   if(btn)btn.disabled=true;
   if(err)err.style.display='none';
+  const pdcaMsg=document.getElementById('msg');if(pdcaMsg)pdcaMsg.textContent='';
   try{
     const resp=await fetch(CSV_URL+'&_='+Date.now());
     if(!resp.ok)throw new Error('HTTP '+resp.status);
-    allRows=parseCSV(await resp.text());
+    allRows=parseSheet(await resp.text());
     filteredRows=[...allRows];
     buildFilters();render();
+    const now=new Date().toLocaleTimeString('pt-BR');
     const upd=document.getElementById('lastUpdated');
-    if(upd)upd.textContent='Atualizado: '+new Date().toLocaleTimeString('pt-BR');
+    if(upd)upd.textContent='Atualizado: '+now;
+    const pdcaMeta=document.getElementById('meta2');
+    if(pdcaMeta)pdcaMeta.textContent='Atualizado às '+now+'. Recarrega sozinho a cada 60 segundos.';
+    if(window.PDCA)window.PDCA.render();
   }catch(e){
     console.error(e);
     if(err){err.textContent='⚠ Erro: '+e.message;err.style.display='block';}
+    if(pdcaMsg)pdcaMsg.textContent='Não consegui ler a planilha ('+e.message+'). Confira se o link continua publicado como CSV.';
   }finally{
     if(overlay){overlay.style.opacity='0';setTimeout(()=>{if(overlay)overlay.style.display='none';},300);}
     if(btn)btn.disabled=false;
@@ -509,6 +534,16 @@ async function loadData(){
 }
 
 // ── CSV ───────────────────────────────────────────────────────────
+const DAY=864e5;
+const norm=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+function parseDateBR(s){
+  const m=/^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(s||"");
+  if(!m)return null;
+  const y=+m[3]; if(y<2025||y>2027)return null;
+  return Date.UTC(y,m[2]-1,m[1]);
+}
+const diff=(a,b)=>(a==null||b==null)?null:Math.round((a-b)/DAY);
+const ym=t=>{const d=new Date(t);return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")};
 function parseCSVLines(text){
   const lines=[];let cur='',inQ=false;
   for(let i=0;i<text.length;i++){
@@ -529,7 +564,7 @@ function parseLine(line,sep){
   }
   res.push(cur);return res;
 }
-function parseCSV(text){
+function parseSheet(text){
   const normalized=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n');
   const lines=parseCSVLines(normalized.trim());
   if(lines.length<2)return[];
@@ -548,11 +583,14 @@ function parseCSV(text){
     cidade:ci('cidade'), protocolo:ci('protocolo'), etiqueta:ci('etiqueta'),
     produto:ci('produto'), prio:ci('prio'),
     status:ci('status'), valor:ci('valor'), nota:ci('nota'),
-    slaGP:ci('sla gp'), slaContrato:ci('prazo contrato'), 
+    slaGP:ci('sla gp'), slaContrato:ci('prazo contrato'),
     dataConclusao:ci('conclus'), dataVenda:ci('venda'),
     liberado:ci('liberado')
   };
   console.log('Indices:',idx);
+  // Mapa por nome normalizado (sem acento), usado para colunas cujo nome exato
+  // precisa de match exato/alternativo (ex.: duas variações possíveis de coluna)
+  const H={};headers.forEach((h,i)=>{const k=norm(h);if(!(k in H))H[k]=i;});
 
   const mNames=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
   return lines.slice(1).map(line=>{
@@ -560,6 +598,11 @@ function parseCSV(text){
     const cols=parseLine(line,sep);
     const get=key=>{
       const i=idx[key];
+      if(i===undefined||i<0||i>=cols.length)return'';
+      return(cols[i]||'').trim().replace(/^"|"$/g,'');
+    };
+    const getN=key=>{
+      const i=H[key];
       if(i===undefined||i<0||i>=cols.length)return'';
       return(cols[i]||'').trim().replace(/^"|"$/g,'');
     };
@@ -579,10 +622,28 @@ function parseCSV(text){
       else if(dateRef.includes('-')){const p=dateRef.split('-');const m=parseInt(p[1]);const y=parseInt(p[0]||'0');if(m>=1&&m<=12){mes=mNames[m]+'/'+(y%100).toString().padStart(2,'0');mesSort=y*100+m;}}
     }
     const slaContrato=parseInt(get('slaContrato'))||0;
+    const status=get('status');
+    const statusNum=parseInt(status);
+
+    // Campos "crus" (datas/UTC) usados pelo módulo PDCA — extraídos na mesma
+    // passada para que exista UMA única fonte normalizada de dados.
+    const dataVenda=parseDateBR(get('dataVenda'));
+    const liberado=parseDateBR(get('liberado'));
+    const dataConclusao=parseDateBR(get('dataConclusao'));
+    let assinatura=parseDateBR(getN('assinatura cliente'));
+    if(assinatura==null)assinatura=parseDateBR(getN('assinatura do contrato (cliente)'));
+    if(assinatura!=null&&dataVenda!=null){const d=diff(dataVenda,assinatura);if(d<0||d>90)assinatura=null;}
+    let inputBKO=parseDateBR(getN('input bko - entrou na validacao'));
+    if(inputBKO==null)inputBKO=dataVenda;
+    const dataLimite=parseDateBR(getN('data limite do contrato'));
+    const motivoAtraso=getN('motivo do atraso')||getN('motivo');
+
     return{cliente,parceiro:get('parceiro'),estado:get('estado'),cidade:get('cidade'),
       protocolo:get('protocolo'),etiqueta:get('etiqueta'),produto:get('produto'),
-      prio:get('prio'),status:get('status'),
-      valor,nota,slaGP,slaContrato,mes,mesSort};
+      prio:get('prio'),status,statusNum,
+      valor,nota,slaGP,slaContrato,mes,mesSort,
+      dataVenda,liberado,dataConclusao,assinatura,inputBKO,dataLimite,
+      prazoContratoDias:slaContrato,motivoAtraso};
   }).filter(Boolean);
 }
 
@@ -1022,68 +1083,41 @@ function darkOpts(extra={}){
 }
 </script>
 
-<!-- ── PDCA MODULE (own scope, same CSV source) ─────────────────────── -->
+<!-- ── PDCA MODULE — consome o mesmo array normalizado do parser único ── -->
 <script>
 (function(){
 const $=id=>document.getElementById(id);
-const DAY=864e5;
-const norm=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
-let RAW=null,timer=null;
-
-function parseCSV(t){
-  const r=[];let row=[],f="",q=false;
-  for(let i=0;i<t.length;i++){
-    const c=t[i];
-    if(q){ if(c=='"'){ if(t[i+1]=='"'){f+='"';i++} else q=false } else f+=c }
-    else if(c=='"') q=true;
-    else if(c==','){row.push(f);f=""}
-    else if(c=='\n'||c=='\r'){ if(c=='\r'&&t[i+1]=='\n')i++; row.push(f);r.push(row);row=[];f="" }
-    else f+=c;
-  }
-  if(f||row.length){row.push(f);r.push(row)}
-  return r;
-}
-function D(s){
-  const m=/^\s*(\d{1,2})\/(\d{1,2})\/(\d{4})\s*$/.exec(s||"");
-  if(!m)return null;
-  const y=+m[3]; if(y<2025||y>2027)return null;
-  return Date.UTC(y,m[2]-1,m[1]);
-}
-const diff=(a,b)=>(a==null||b==null)?null:Math.round((a-b)/DAY);
-const ym=t=>{const d=new Date(t);return d.getUTCFullYear()+"-"+String(d.getUTCMonth()+1).padStart(2,"0")};
 const av=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):"-";
 const pc=(a,b)=>b?Math.round(100*a/b)+"%":"-";
 
-function build(rows,meta,base){
-  const H={};
-  rows[0].forEach((h,i)=>{const k=norm(h);if(!(k in H))H[k]=i});
-  const g=(r,k)=>(r[H[k]]||"").trim();
+// Deriva, a partir do array normalizado (allRows), as métricas específicas do
+// PDCA — depende de "meta" e "base", por isso é recalculada aqui, não na
+// hora do parse.
+function derive(meta,base){
   const now=new Date(), T=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
   const out=[];
-  for(const r of rows.slice(1)){
-    if(!g(r,"protocolo"))continue;
-    const n=parseInt(g(r,"status"));
-    const venda=D(g(r,"data da venda")), lib=D(g(r,"liberado para gestao")), conc=D(g(r,"data de conclusao"));
-    let ass=D(g(r,"assinatura cliente")); if(ass==null)ass=D(g(r,"assinatura do contrato (cliente)"));
-    if(ass!=null&&venda!=null){const d=diff(venda,ass); if(d<0||d>90)ass=null}
+  for(const r of (window.allRows||[])){
+    if(!r.protocolo)continue;
+    const venda=r.dataVenda, lib=r.liberado, conc=r.dataConclusao, ass=r.assinatura;
     const ent=base==="venda"?venda:(lib!=null?lib:venda);
     const S=ass!=null?ass:venda;
     if(ent==null||S==null)continue;
-    const c=n==14, e=(n>=11&&n<=13&&conc!=null);
-    const inp=D(g(r,"input bko - entrou na validacao"))??venda;
+    const n=r.statusNum;
+    const c=n===14, e=(n>=11&&n<=13&&conc!=null);
+    const inp=r.inputBKO;
     const pre=lib!=null?diff(lib,S):null;
     let motivo=null;
     if(pre!=null&&pre>=meta){
       const a=ass!=null?diff(inp,ass):-1, b=diff(lib,inp);
-      motivo=(b>a)?"Validação (Input BKO até a liberação)":(a>0?"Assinatura do cliente até o Input BKO":"Não identificado");
+      motivo=(b>a)?"Da entrada na validação (Input BKO) até a liberação para a gestão":(a>0?"Da assinatura do cliente até o Input no BKO":"Etapa não identificada nos dados");
     }
-    const lim=D(g(r,"data limite do contrato")), prz=parseInt(g(r,"prazo contrato"))>0;
+    const prz=r.prazoContratoDias>0, lim=r.dataLimite;
     out.push({
       c,e,usouAss:ass!=null,mes:ym(ent),q:new Date(ent).getUTCDate()<=15?1:2,
       mesC:conc!=null?ym(conc):null,dias:e?diff(conc,S):null,
       gp:e&&lib!=null?diff(conc,lib):null,d30:e?diff(conc,ent):null,pre,motivo,
       age:diff(T,S),ctr:(e&&prz&&lim!=null)?(conc<=lim?1:0):null,
-      mu:g(r,"motivo do atraso")||g(r,"motivo")
+      mu:r.motivoAtraso
     });
   }
   return out;
@@ -1094,7 +1128,7 @@ function agg(L,meta){
     n:L.length,canc:L.length-B.length,base:B.length,ent:E.length,
     mes:E.filter(x=>x.mesC===x.mes).length,d30:E.filter(x=>x.d30<=30).length,
     avg:av(E.map(x=>x.dias)),ok:E.filter(x=>x.dias<=meta).length,late:E.filter(x=>x.dias>meta).length,
-    sem:B.filter(x=>x.pre!=null&&x.pre>=meta).length,
+    sem:B.filter(x=>x.pre!=null&&x.pre>=meta).length,libN:B.filter(x=>x.pre!=null).length,
     ab:B.filter(x=>!x.e).length,abL:B.filter(x=>!x.e&&x.age>meta).length,
     gp:av(E.filter(x=>x.gp!=null&&x.gp>=0).map(x=>x.gp)),
     ctrOk:C.filter(x=>x.ctr==1).length,ctrN:C.length
@@ -1102,17 +1136,19 @@ function agg(L,meta){
 }
 function card(t,a,meta){
   const k=[
-    ["Entradas (sem cancelados)",a.base],["Cancelados",a.canc],
-    ["Concluídos",a.ent+" ("+pc(a.ent,a.base)+")"],
-    ["Concluídos no mesmo mês da entrada",pc(a.mes,a.base)],
-    ["Concluídos em até 30 dias da entrada",pc(a.d30,a.base)],
-    ["Média da assinatura até a conclusão",a.avg+" dias"],
-    ["Dentro da meta de "+meta+" dias",a.ok+" ("+pc(a.ok,a.ent)+")"],
-    ["Entregues atrasados",'<span class="pdca-bad">'+a.late+" ("+pc(a.late,a.ent)+")</span>"],
-    ["Sem tempo hábil",'<span class="pdca-wa">'+a.sem+" ("+pc(a.sem,a.base)+")</span>"],
-    ["Em aberto (já passaram da meta)",a.ab+" ("+a.abL+")"],
-    ["Tempo com o GP, média (liberado até a conclusão)",a.gp+" dias"],
-    ["Dentro do prazo do contrato",a.ctrN?a.ctrOk+" de "+a.ctrN+" ("+pc(a.ctrOk,a.ctrN)+")":"-"]
+    ["Projetos que entraram (sem os cancelados)",a.base],
+    ["Cancelados (ficam fora das contas abaixo)",a.canc],
+    ["Já concluídos",a.ent+" ("+pc(a.ent,a.base)+" dos que entraram)"],
+    ["Concluídos no mesmo mês em que entraram",a.mes+" ("+pc(a.mes,a.base)+" dos que entraram)"],
+    ["Concluídos em até 30 dias após a entrada",a.d30+" ("+pc(a.d30,a.base)+" dos que entraram)"],
+    ["Média de dias, da assinatura do cliente à conclusão (só concluídos)",a.avg+" dias"],
+    ["Concluídos dentro da meta de "+meta+" dias",a.ok+" ("+pc(a.ok,a.ent)+" dos concluídos)"],
+    ["Concluídos fora da meta (acima de "+meta+" dias)",'<span class="pdca-bad">'+a.late+" ("+pc(a.late,a.ent)+" dos concluídos)</span>"],
+    ["Entraram na gestão com a meta já estourada",'<span class="pdca-wa">'+a.sem+" ("+pc(a.sem,a.libN)+" dos que têm data de liberação)</span>"],
+    ["Ainda em andamento",a.ab],
+    ["Em andamento há mais de "+meta+" dias desde a assinatura",a.abL],
+    ["Tempo médio com o GP, da liberação à conclusão (só concluídos)",a.gp+" dias"],
+    ["Concluídos dentro do prazo do contrato (só com prazo preenchido)",a.ctrN?a.ctrOk+" de "+a.ctrN+" ("+pc(a.ctrOk,a.ctrN)+")":"-"]
   ];
   return '<div class="card"><div class="card-title">'+t+'</div>'+k.map(x=>'<div class="pdca-kv"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join("")+'</div>';
 }
@@ -1123,46 +1159,32 @@ function motBlock(t,L){
     if(x.mu)usr[x.mu]=(usr[x.mu]||0)+1;
   });
   const bar=o=>{const e=Object.entries(o).sort((a,b)=>b[1]-a[1]),m=e.length?e[0][1]:1;
-    return e.length?e.map(([k,v])=>'<div class="pdca-bar-row"><div class="pdca-bar-head"><span>'+k+'</span><b>'+v+'</b></div><div class="pdca-bar-fill" style="width:'+(100*v/m)+'%"></div></div>').join(""):'<div style="color:var(--muted);font-size:12px;">Nenhum caso.</div>'};
-  let h='<div class="card"><div class="card-title">'+t+'</div>'+bar(cnt);
-  if(Object.keys(usr).length)h+='<div style="color:var(--muted);font-size:11px;margin:14px 0 6px;">Motivos preenchidos na planilha</div>'+bar(usr);
+    return e.length?e.map(([k,v])=>'<div class="pdca-bar-row"><div class="pdca-bar-head"><span>'+k+'</span><b>'+v+'</b></div><div class="pdca-bar-fill" style="width:'+(100*v/m)+'%"></div></div>').join(""):'<div style="color:var(--muted);font-size:12px;">Nenhum projeto nesta situação.</div>'};
+  let h='<div class="card"><div class="card-title">'+t+'</div><div style="color:var(--muted);font-size:11px;margin-bottom:8px;">Etapa que mais demorou entre a assinatura do cliente e a liberação para a gestão</div>'+bar(cnt);
+  if(Object.keys(usr).length)h+='<div style="color:var(--muted);font-size:11px;margin:14px 0 6px;">Motivos informados na coluna Motivo do atraso da planilha</div>'+bar(usr);
   return h+'</div>';
 }
 function render(){
-  if(!RAW)return;
-  const meta=+$("meta").value||20, base=$("base").value;
-  const L=build(RAW,meta,base);
-  $("cov").textContent=L.filter(x=>x.usouAss).length+" com data de assinatura; "+L.filter(x=>!x.usouAss).length+" usando a venda como início.";
+  if(!window.allRows||!window.allRows.length)return;
+  const metaEl=$("meta"),baseEl=$("base");
+  if(!metaEl||!baseEl)return;
+  const meta=+metaEl.value||20, base=baseEl.value;
+  const L=derive(meta,base);
+  $("cov").textContent="Início da contagem da meta: assinatura do cliente em "+L.filter(x=>x.usouAss).length+" protocolos; data da venda em "+L.filter(x=>!x.usouAss).length+" (sem assinatura registrada na planilha).";
   const q1=L.filter(x=>x.q==1), q2=L.filter(x=>x.q==2);
-  $("cards").innerHTML=card("Entrada do dia 1 ao 15",agg(q1,meta),meta)+card("Entrada do dia 16 ao fim do mês",agg(q2,meta),meta);
+  $("cards").innerHTML=card("Entraram do dia 1 ao 15",agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês",agg(q2,meta),meta);
   const meses=[...new Set(L.map(x=>x.mes))].sort();
-  let h="<tr><th>Mês</th><th>Coorte</th><th>Entradas</th><th>Concluídos</th><th>No mês</th><th>Em 30 d</th><th>Média (dias)</th><th>Na meta</th><th>Atrasados</th><th>Sem tempo</th><th>Em aberto</th><th>Tempo GP</th></tr>";
+  let h="<tr><th>Mês de entrada</th><th>Entraram em</th><th>Entradas</th><th>Concluídos</th><th>Concluídos no mês da entrada (% das entradas)</th><th>Concluídos em até 30 dias (% das entradas)</th><th>Média da assinatura à conclusão (dias)</th><th>Concluídos na meta</th><th>Concluídos fora da meta</th><th>Entraram com a meta já estourada</th><th>Em andamento</th><th>Média com o GP (dias)</th></tr>";
   meses.forEach(m=>[1,2].forEach(q=>{
     const a=agg(L.filter(x=>x.mes===m&&x.q==q),meta); if(!a.n)return;
-    h+="<tr><td>"+m+"</td><td>"+(q==1?"Dias 1 a 15":"Dias 16 a 31")+"</td><td>"+a.base+"</td><td>"+a.ent+"</td><td>"+pc(a.mes,a.base)+"</td><td>"+pc(a.d30,a.base)+"</td><td>"+a.avg+"</td><td class='pdca-ok'>"+a.ok+"</td><td class='pdca-bad'>"+a.late+"</td><td class='pdca-wa'>"+a.sem+"</td><td>"+a.ab+"</td><td>"+a.gp+"</td></tr>";
+    h+="<tr><td>"+m+"</td><td>"+(q==1?"Dias 1 a 15":"Dia 16 ao fim do mês")+"</td><td>"+a.base+"</td><td>"+a.ent+"</td><td>"+pc(a.mes,a.base)+"</td><td>"+pc(a.d30,a.base)+"</td><td>"+a.avg+"</td><td class='pdca-ok'>"+a.ok+"</td><td class='pdca-bad'>"+a.late+"</td><td class='pdca-wa'>"+a.sem+"</td><td>"+a.ab+"</td><td>"+a.gp+"</td></tr>";
   }));
   $("tb").innerHTML=h;
-  $("mot").innerHTML=motBlock("Entrada do dia 1 ao 15",q1)+motBlock("Entrada do dia 16 ao fim do mês",q2);
+  $("mot").innerHTML=motBlock("Entraram do dia 1 ao 15",q1)+motBlock("Entraram do dia 16 ao fim do mês",q2);
 }
-async function load(){
-  try{
-    const res=await fetch(CSV_URL+"&_="+Date.now(),{cache:"no-store"});
-    if(!res.ok)throw new Error("HTTP "+res.status);
-    RAW=parseCSV(await res.text());
-    $("msg").textContent="";
-    $("meta2").textContent="Atualizado às "+new Date().toLocaleTimeString("pt-BR")+". Recarrega sozinho a cada 60 segundos.";
-    render();
-  }catch(err){
-    $("msg").textContent="Não consegui ler a planilha ("+err.message+"). Confira se o link continua publicado como CSV.";
-  }
-}
-function start(){
-  ["meta","base"].forEach(i=>$(i).addEventListener("input",render));
-  $("go").addEventListener("click",load);
-  load();
-  if(!timer)timer=setInterval(load,60000);
-}
-window.PDCA={start,load};
+["meta","base"].forEach(i=>{const el=$(i);if(el)el.addEventListener("input",render);});
+const goBtn=$("go");if(goBtn)goBtn.addEventListener("click",()=>{if(typeof loadData==='function')loadData();});
+window.PDCA={render};
 })();
 </script>
 </body>
