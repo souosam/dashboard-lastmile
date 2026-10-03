@@ -411,7 +411,7 @@ main>.section-title:first-of-type{margin-top:0;}
     <dl class="pdca-dl">
       <dt>Entrada</dt><dd>Data que define em qual mês, e em qual metade do mês, o projeto conta. Escolhida no seletor acima: liberação para a gestão ou data da venda.</dd>
       <dt>Início da contagem da meta</dt><dd>Assinatura do cliente. Quando a planilha não tem essa data, usa a data da venda.</dd>
-      <dt>Concluído</dt><dd>Projeto com status de Boas vindas/PRC em diante (até Concluída) e data de conclusão preenchida. Cancelados ficam fora de todas as contas.</dd>
+      <dt>Concluído</dt><dd>Projeto com status de Boas vindas/PRC em diante (até Entregue/Concluída, status 11 a 13) e data de conclusão preenchida. Cancelados ficam fora de todas as contas.</dd>
       <dt>Dentro da meta e fora da meta</dt><dd>Dias entre o início da contagem e a data de conclusão: até a meta, ou acima dela.</dd>
       <dt>Entraram na gestão com a meta já estourada</dt><dd>Quando o projeto foi liberado para o GP, já tinham passado a meta (campo acima) ou mais dias desde a assinatura do cliente. Mesmo uma entrega imediata ficaria fora da meta.</dd>
       <dt>Em andamento</dt><dd>Projetos que ainda não foram concluídos nem cancelados.</dd>
@@ -491,12 +491,16 @@ function switchView(name){
 // ── CONFIG ───────────────────────────────────────────────────────
 const CSV_URL='https://docs.google.com/spreadsheets/d/e/2PACX-1vRKsahevABB_4kg3sUhcYZJRLFWL7lXRUS6ftT4VRAoUW11od-mrOSQ09LUErkhUEqpEkiBC5TfDDTr/pub?gid=1913853917&single=true&output=csv';
 const PALETTE=['#2ecc71','#1abc9c','#3498db','#9b59b6','#f39c12','#e74c3c','#e67e22','#27ae60','#2980b9','#8e44ad','#16a085','#d35400'];
-const STATUS_COLORS={'Projeto Futuro':'#b0bec5','Em validação':'#f39c12','Assinatura LM':'#3498db','Compra de material':'#e67e22','Parado':'#e74c3c','Site Survey':'#8e44ad','Em configuração':'#e84393','Postar equipamento':'#f1c40f','Solicitar agendamento':'#a29bfe','Aceite agendamento':'#6c5ce7','Agendado':'#1abc9c','Boas vindas':'#2ecc71','Ag. Faturamento':'#16a085','Concluída':'#27ae60','Cancelado':'#c0392b'};
+const STATUS_COLORS={'Projeto Futuro':'#b0bec5','Em validação':'#f39c12','Assinatura LM':'#3498db','Compra de material':'#e67e22','Parado':'#e74c3c','Site Survey':'#8e44ad','Em configuração':'#e84393','Postar equipamento':'#f1c40f','Solicitar agendamento':'#a29bfe','Aceite agendamento':'#6c5ce7','Agendado':'#1abc9c','Boas vindas':'#2ecc71','Ag. Faturamento':'#16a085','Entregue':'#27ae60','Concluída':'#27ae60','Cancelado':'#c0392b'};
 const FUNNEL_ORDER=['Projeto Futuro','Em validação','Assinatura LM','Compra de material','Parado','Site Survey','Em configuração','Postar equipamento','Solicitar agendamento','Aceite agendamento','Agendado','Boas vindas','Ag. Faturamento'];
-const BOTTOM_ORDER=['Concluída','Cancelado'];
-// Valor conta como "entregue" a partir da etapa Boas vindas (inclui Ag. Faturamento e Concluída)
-const ENTREGUE_STATUSES=['Boas vindas','Ag. Faturamento','Concluída'];
-function isEntregue(status){return!!status&&ENTREGUE_STATUSES.some(s=>status.includes(s));}
+const BOTTOM_ORDER=['Entregue','Concluída','Cancelado'];
+// Valor conta como "entregue" a partir da etapa Boas vindas (status 11 a 13: Boas vindas, Ag. Faturamento, Entregue/Concluída)
+// Baseado no número do status (statusNum), não no texto — resiste a mudanças de rótulo na planilha (ex.: "Concluída" → "Entregue")
+function isEntregue(r){
+  if(r==null)return false;
+  const n=typeof r==='object'?r.statusNum:parseInt(r);
+  return n>=11&&n<=13;
+}
 const CITY_COORDS={'São Paulo':[-23.55,-46.63],'Campinas':[-22.91,-47.06],'Santos':[-23.96,-46.33],'Guarulhos':[-23.46,-46.53],'Sorocaba':[-23.50,-47.46],'Piracicaba':[-22.72,-47.65],'Limeira':[-22.56,-47.40],'Jundiaí':[-23.19,-46.88],'Barueri':[-23.51,-46.88],'Cajamar':[-23.35,-46.88],'Salto':[-23.20,-47.29],'Indaiatuba':[-23.09,-47.22],'Porto Feliz':[-23.21,-47.52],'Cotia':[-23.60,-46.92],'São Carlos':[-21.99,-47.89],'São Roque':[-23.53,-47.14],'Bragança Paulista':[-22.95,-46.54],'Itapetininga':[-23.60,-48.05],'Assis':[-22.66,-50.41],'Araçatuba':[-21.21,-50.43],'Votuporanga':[-20.42,-49.97],'Presidente Prudente':[-22.12,-51.39],'Bauru':[-22.31,-49.07],'Marília':[-22.21,-49.95],'Extrema':[-22.86,-46.32],'Franco da Rocha':[-23.32,-46.72],'Santo André':[-23.66,-46.53],'Vinhedo':[-23.03,-46.97],'Americana':[-22.74,-47.33],'Ribeirão Preto':[-21.17,-47.81],'Itu':[-23.27,-47.30],'Jaguariúna':[-22.70,-47.00],'Angatuba':[-23.49,-48.41],'Itaberá':[-23.86,-49.14],'Pederneiras':[-22.35,-48.77],'Bertioga':[-23.85,-46.14],'Itararé':[-24.11,-49.33],'Laranjal Paulista':[-23.04,-47.84],'Lins':[-21.68,-49.74],'Birigui':[-21.28,-50.34],'Botucatu':[-22.89,-48.44],'Extrema':[-22.86,-46.32],'Altinópolis':[-21.02,-47.37],'Belo Horizonte':[-19.92,-43.94],'Uberlândia':[-18.92,-48.28],'Uberaba':[-19.75,-47.93],'Araxá':[-19.59,-46.94],'Timóteo':[-19.58,-42.65],'Dom Cavati':[-19.35,-42.07],'Andradas':[-22.07,-46.57],'Bambuí':[-20.01,-45.98],'Itapecerica':[-20.48,-45.12],'Cássia':[-20.58,-46.92],'Conceição do Mato Dentro':[-19.04,-43.42],'Tocantins':[-21.18,-43.02],'Recreio':[-21.36,-42.46],'Matipó':[-20.28,-42.34],'Laranjal':[-21.37,-42.67],'Campo Florido':[-19.78,-48.57],'Monte Azul':[-15.15,-42.87],'Guanambi':[-14.22,-42.78],'Uruana de Minas':[-16.26,-46.15],'Mato Verde':[-15.41,-42.87],'Iturama':[-19.73,-50.20],'Curitiba':[-25.43,-49.27],'Londrina':[-23.31,-51.17],'Porto Alegre':[-30.03,-51.22],'Vila Flores':[-28.87,-51.57],'Florianópolis':[-27.60,-48.55],'Salvador':[-12.97,-38.50],'Fortaleza':[-3.72,-38.54],'Recife':[-8.05,-34.88],'Rio de Janeiro':[-22.91,-43.17],'Campo Grande':[-20.44,-54.65],'Cuiabá':[-15.60,-56.10],'Manaus':[-3.10,-60.02],'Belém':[-1.46,-48.50],'Goiânia':[-16.69,-49.25],'Sinop':[-11.86,-55.51],'São Luís':[-2.53,-44.30],'Palmas':[-10.18,-48.33]};
 
 // ── STATE ─────────────────────────────────────────────────────────
@@ -522,7 +526,13 @@ async function loadData(){
     if(upd)upd.textContent='Atualizado: '+now;
     const pdcaMeta=document.getElementById('meta2');
     if(pdcaMeta)pdcaMeta.textContent='Atualizado às '+now+'. Recarrega sozinho a cada 60 segundos.';
-    if(window.PDCA)window.PDCA.render();
+    if(window.PDCA){
+      try{window.PDCA.render();}
+      catch(pdcaErr){
+        console.error('PDCA render error:',pdcaErr);
+        if(pdcaMsg)pdcaMsg.textContent='Erro ao calcular o PDCA: '+pdcaErr.message+' (os dados do dashboard continuam normais).';
+      }
+    }
   }catch(e){
     console.error(e);
     if(err){err.textContent='⚠ Erro: '+e.message;err.style.display='block';}
@@ -717,8 +727,8 @@ function render(){
 
 // ── KPIs ──────────────────────────────────────────────────────────
 function renderKPIs(rows){
-  const conc=rows.filter(r=>isEntregue(r.status));
-  const ativos=rows.filter(r=>r.status&&!r.status.includes('Cancelado')&&!r.status.includes('Projeto Futuro')&&!isEntregue(r.status));
+  const conc=rows.filter(r=>isEntregue(r));
+  const ativos=rows.filter(r=>r.status&&!r.status.includes('Cancelado')&&!r.status.includes('Projeto Futuro')&&!isEntregue(r));
   const val=conc.reduce((s,r)=>s+r.valor,0);
   const notas=rows.filter(r=>r.nota>0).map(r=>r.nota);
   const nota=notas.length?notas.reduce((a,b)=>a+b,0)/notas.length:0;
@@ -788,7 +798,7 @@ function renderPipelineList(rows){
     tb.innerHTML='<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:20px;">Nenhum protocolo encontrado.</td></tr>';
     return;
   }
-  const sCls=st=>!st?'':st.includes('Concluída')?'s-done':st.includes('Cancelado')?'s-cancel':st.includes('Pendente')||st.includes('validação')?'s-active':'s-pending';
+  const sCls=st=>!st?'':(st.includes('Concluída')||st.includes('Entregue'))?'s-done':st.includes('Cancelado')?'s-cancel':st.includes('Pendente')||st.includes('validação')?'s-active':'s-pending';
   tb.innerHTML=display.map(r=>`
     <tr>
       <td>${sname(r.cliente)}</td>
@@ -818,7 +828,7 @@ function renderDonut(rows){
 
 // ── TICKET MÉDIO ──────────────────────────────────────────────────
 function renderTicketMedio(rows){
-  const acc={};rows.filter(r=>r.produto&&r.valor>0&&r.status==='13. Concluída').forEach(r=>{if(!acc[r.produto])acc[r.produto]={s:0,c:0};acc[r.produto].s+=r.valor;acc[r.produto].c++;});
+  const acc={};rows.filter(r=>r.produto&&r.valor>0&&r.statusNum===13).forEach(r=>{if(!acc[r.produto])acc[r.produto]={s:0,c:0};acc[r.produto].s+=r.valor;acc[r.produto].c++;});
   const sorted=Object.entries(acc).map(([p,v])=>({p,t:Math.round(v.s/v.c)})).sort((a,b)=>b.t-a.t);
   if(charts.ticket)charts.ticket.destroy();
   const ctx=document.getElementById('ticketMedio');if(!ctx)return;
@@ -828,7 +838,7 @@ function renderTicketMedio(rows){
 // ── SLA ALERTS ────────────────────────────────────────────────────
 function renderSLAAlerts(rows){
   const meta=parseInt(document.getElementById('metaSLA')?.value)||30;
-  const ativos=rows.filter(r=>r.slaGP>0&&r.status&&!r.status.includes('Concluída')&&!r.status.includes('Cancelado')).sort((a,b)=>b.slaGP-a.slaGP).slice(0,15);
+  const ativos=rows.filter(r=>r.slaGP>0&&r.status&&!isEntregue(r)&&!r.status.includes('Cancelado')).sort((a,b)=>b.slaGP-a.slaGP).slice(0,15);
   const tb=document.querySelector('#slaAlertTable tbody');if(!tb)return;
   tb.innerHTML=ativos.map(r=>{const cls=r.slaGP>meta*1.5?'sem-red':r.slaGP>meta?'sem-yellow':'sem-green';return`<tr><td><span class="sem-dot ${cls}"></span></td><td>${sname(r.cliente)}</td><td><span class="prod-chip">${r.produto||'—'}</span></td><td style="font-size:10px;color:var(--muted)">${(r.status||'').replace(/^\d+\.\s*/,'')}</td><td>${slaBadge(r.slaGP)}</td></tr>`;}).join('');
 }
@@ -843,7 +853,7 @@ function renderParados(rows){
 // ── MONTHLY CHARTS ────────────────────────────────────────────────
 function renderMonthlyCharts(rows){
   const vAcc={},qAcc={};
-  rows.filter(r=>isEntregue(r.status)&&r.mes).forEach(r=>{vAcc[r.mes]=(vAcc[r.mes]||0)+r.valor;qAcc[r.mes]=(qAcc[r.mes]||0)+1;});
+  rows.filter(r=>isEntregue(r)&&r.mes).forEach(r=>{vAcc[r.mes]=(vAcc[r.mes]||0)+r.valor;qAcc[r.mes]=(qAcc[r.mes]||0)+1;});
   const labels=sortMonths([...new Set([...Object.keys(vAcc),...Object.keys(qAcc)])]);
   const vData=labels.map(l=>vAcc[l]||0),qData=labels.map(l=>qAcc[l]||0);
   function growthLabel(data,id){if(data.length>=2){const last=data[data.length-1],prev=data[data.length-2];if(prev>0){const pct=Math.round((last-prev)/prev*100);const el=document.getElementById(id);if(el){el.textContent=(pct>=0?'▲ +':'▼ ')+Math.abs(pct)+'% vs mês ant.';el.className=pct>=0?'growth-pos':'growth-neg';}}}}
@@ -935,7 +945,7 @@ function renderSLAByProduct(rows){
 
 // ── TOP CLIENTES ──────────────────────────────────────────────────
 function renderTopClients(rows){
-  const vMap={};rows.filter(r=>isEntregue(r.status)).forEach(r=>{vMap[r.cliente]=(vMap[r.cliente]||0)+r.valor;});
+  const vMap={};rows.filter(r=>isEntregue(r)).forEach(r=>{vMap[r.cliente]=(vMap[r.cliente]||0)+r.valor;});
   const topV=Object.entries(vMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
   const tv=document.getElementById('topValorTable');if(tv)tv.querySelector('tbody').innerHTML=topV.map(([c,v],i)=>`<tr><td><span class="rank">${i+1}</span></td><td>${sname(c)}</td><td>R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('');
   const qMap={};rows.forEach(r=>{qMap[r.cliente]=(qMap[r.cliente]||0)+1;});
@@ -969,7 +979,7 @@ function renderSLAByEstado(rows){
 function renderHeatmap(rows){
   const el=document.getElementById('heatmapContainer');if(!el)return;
   // Protocolos já entregues (Boas vindas em diante)
-  const data=rows.filter(r=>isEntregue(r.status)&&r.mes&&r.estado);
+  const data=rows.filter(r=>isEntregue(r)&&r.mes&&r.estado);
   if(!data.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;padding:20px;">Sem dados de protocolos concluídos.</div>';return;}
 
   const meses=sortMonths([...new Set(data.map(r=>r.mes))]);
@@ -1053,7 +1063,7 @@ function renderMap(rows){
 
 // ── PROTO TABLE ───────────────────────────────────────────────────
 function renderProtoTable(rows){
-  const sCls=st=>!st?'':st.includes('Concluída')?'s-done':st.includes('Cancelado')?'s-cancel':st.includes('Pendente')||st.includes('validação')?'s-active':'s-pending';
+  const sCls=st=>!st?'':(st.includes('Concluída')||st.includes('Entregue'))?'s-done':st.includes('Cancelado')?'s-cancel':st.includes('Pendente')||st.includes('validação')?'s-active':'s-pending';
   const el=document.getElementById('protoBody');if(!el)return;
   el.innerHTML=rows.slice(0,250).map(r=>`
     <tr onclick="filterByStatus('${(r.status||'').replace(/'/g,"\\'")}')">
