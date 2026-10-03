@@ -161,6 +161,11 @@ main>.section-title:first-of-type{margin-top:0;}
 /* SLA parceiro */
 .parc-bar-wrap{width:100%;height:12px;background:var(--surface);border-radius:4px;overflow:hidden;margin:2px 0;}
 .parc-bar{height:100%;border-radius:4px;transition:width .5s;}
+.sla-rank-row{padding:6px 2px;border-bottom:1px solid var(--border);}
+.sla-rank-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:11.5px;margin-bottom:3px;}
+.sla-rank-name{color:var(--textdim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sla-rank-val{flex-shrink:0;font-weight:700;color:var(--accent);font-family:var(--font-m);}
+.sla-rank-val span{color:var(--muted);font-weight:400;}
 /* MAP */
 #leafletMap{height:360px;border-radius:8px;overflow:hidden;}
 .leaflet-container{background:#0f1117 !important;}
@@ -352,15 +357,15 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
       <div class="card-title">SLA Médio por Cliente (dias)
-        <span class="tip" data-tip="SLA real de entrega (data da venda → data de conclusão), médio por cliente.">ℹ</span>
+        <span class="tip" data-tip="SLA real de entrega (data da venda → data de conclusão), médio por cliente. Ordenado do maior para o menor SLA.">ℹ</span>
       </div>
-      <div class="chart-wrap" id="slaByClienteWrap"><canvas id="slaByCliente"></canvas></div>
+      <div class="map-city-list" id="slaByCliente"></div>
     </div>
     <div class="card">
       <div class="card-title">SLA Médio por Parceiro (dias)
-        <span class="tip" data-tip="SLA real de entrega (data da venda → data de conclusão), médio por parceiro.">ℹ</span>
+        <span class="tip" data-tip="SLA real de entrega (data da venda → data de conclusão), médio por parceiro. Ordenado do maior para o menor SLA.">ℹ</span>
       </div>
-      <div class="chart-wrap" id="slaByParceiroWrap"><canvas id="slaByParceiro"></canvas></div>
+      <div class="map-city-list" id="slaByParceiro"></div>
     </div>
   </div>
   <div class="grid-2" style="margin-bottom:18px;">
@@ -999,6 +1004,13 @@ function renderTopParceiros(rows){
 
 // ── SLA MÉDIO POR CLIENTE / POR PARCEIRO ───────────────────────────
 // Usa o SLA real de entrega (data da venda → data de conclusão), mesma base do KPI do topo.
+function renderSLARankList(elId,sorted,maxM){
+  const el=document.getElementById(elId);if(!el)return;
+  el.innerHTML=sorted.map(s=>{
+    const pct=Math.round(s.media/maxM*100);
+    return`<div class="sla-rank-row"><div class="sla-rank-top"><span class="sla-rank-name" title="${s.l}">${s.l}</span><span class="sla-rank-val">${s.media}d <span>(${s.count})</span></span></div><div class="parc-bar-wrap"><div class="parc-bar" style="width:${pct}%;background:#2ecc71"></div></div></div>`;
+  }).join('')||'<div style="color:var(--muted);font-size:12px;padding:10px 0;">Sem dados.</div>';
+}
 function renderSLAByCliente(rows){
   const acc={},name={};
   rows.filter(r=>r.slaContrato>0).forEach(r=>{
@@ -1007,25 +1019,15 @@ function renderSLAByCliente(rows){
     if(!name[k])name[k]=r.cliente.trim();
   });
   const sorted=Object.entries(acc).map(([k,v])=>({l:name[k],media:Math.round(v.reduce((a,b)=>a+b,0)/v.length),count:v.length})).sort((a,b)=>b.media-a.media);
-  const wrap=document.getElementById('slaByClienteWrap');if(wrap)wrap.style.height=Math.max(210,sorted.length*22)+'px';
-  if(charts.slaCliente)charts.slaCliente.destroy();
-  const ctx=document.getElementById('slaByCliente');if(!ctx)return;
-  charts.slaCliente=new Chart(ctx,{type:'bar',
-    data:{labels:sorted.map(s=>s.l),datasets:[{label:'SLA do Contrato',data:sorted.map(s=>s.media),backgroundColor:'#2ecc71',borderRadius:5}]},
-    options:darkOpts({indexAxis:'y',plugins:{tooltip:{callbacks:{label:c=>` ${c.raw}d (${sorted[c.dataIndex]?.count} protos)`}}},scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}}})
-  });
+  const maxM=Math.max(...sorted.map(s=>s.media),1);
+  renderSLARankList('slaByCliente',sorted,maxM);
 }
 function renderSLAByParceiroChart(rows){
   const acc={};
   rows.filter(r=>r.parceiro&&r.slaContrato>0).forEach(r=>{if(!acc[r.parceiro])acc[r.parceiro]=[];acc[r.parceiro].push(r.slaContrato);});
-  const sorted=Object.entries(acc).map(([p,v])=>({p,media:Math.round(v.reduce((a,b)=>a+b,0)/v.length),count:v.length})).sort((a,b)=>b.media-a.media);
-  const wrap=document.getElementById('slaByParceiroWrap');if(wrap)wrap.style.height=Math.max(210,sorted.length*26)+'px';
-  if(charts.slaParceiro)charts.slaParceiro.destroy();
-  const ctx=document.getElementById('slaByParceiro');if(!ctx)return;
-  charts.slaParceiro=new Chart(ctx,{type:'bar',
-    data:{labels:sorted.map(s=>s.p),datasets:[{label:'SLA do Contrato',data:sorted.map(s=>s.media),backgroundColor:'#2ecc71',borderRadius:5}]},
-    options:darkOpts({indexAxis:'y',plugins:{tooltip:{callbacks:{label:c=>` ${c.raw}d (${sorted[c.dataIndex]?.count} protos)`}}},scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}}})
-  });
+  const sorted=Object.entries(acc).map(([p,v])=>({l:p,media:Math.round(v.reduce((a,b)=>a+b,0)/v.length),count:v.length})).sort((a,b)=>b.media-a.media);
+  const maxM=Math.max(...sorted.map(s=>s.media),1);
+  renderSLARankList('slaByParceiro',sorted,maxM);
 }
 
 // ── HEATMAP MÊS × ESTADO ─────────────────────────────────────────
