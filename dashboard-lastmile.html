@@ -625,14 +625,12 @@ function parseSheet(text){
     let nota=0;
     if(nRaw.includes('\u2605'))nota=nRaw.split('').filter(c=>c==='\u2605').length;
     else{const n=parseFloat(nRaw.replace(',','.'));if(!isNaN(n)&&n>=0&&n<=5)nota=Math.round(n);}
-    const slaGP=parseInt(get('slaGP'))||0;
     const dateRef=get('dataConclusao')||get('dataVenda');
     let mes='',mesSort=0;
     if(dateRef){
       if(dateRef.includes('/')){const p=dateRef.split('/');const m=parseInt(p[1]);const y=parseInt(p[2]||'0');if(m>=1&&m<=12){mes=mNames[m]+'/'+(y%100).toString().padStart(2,'0');mesSort=y*100+m;}}
       else if(dateRef.includes('-')){const p=dateRef.split('-');const m=parseInt(p[1]);const y=parseInt(p[0]||'0');if(m>=1&&m<=12){mes=mNames[m]+'/'+(y%100).toString().padStart(2,'0');mesSort=y*100+m;}}
     }
-    const slaContrato=parseInt(get('slaContrato'))||0; // coluna "SLA Contratual"
     const prazoContrato=parseInt(get('prazoContrato'))||0; // coluna "Prazo contrato"
     const status=get('status');
     const statusNum=parseInt(status);
@@ -649,6 +647,12 @@ function parseSheet(text){
     if(inputBKO==null)inputBKO=dataVenda;
     const dataLimite=parseDateBR(getN('data limite do contrato'));
     const motivoAtraso=getN('motivo do atraso')||getN('motivo');
+
+    // SLA real de entrega (dias corridos), calculado pelas datas — não pela coluna bruta da planilha:
+    // SLA do Contrato = data da venda → data de conclusão
+    // SLA do GP        = data de liberação para gestão → data de conclusão
+    const slaContrato=(dataVenda!=null&&dataConclusao!=null)?diff(dataConclusao,dataVenda):0;
+    const slaGP=(liberado!=null&&dataConclusao!=null)?diff(dataConclusao,liberado):0;
 
     return{cliente,parceiro:get('parceiro'),estado:get('estado'),cidade:get('cidade'),
       protocolo:get('protocolo'),etiqueta:get('etiqueta'),produto:get('produto'),
