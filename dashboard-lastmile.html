@@ -594,7 +594,7 @@ function parseSheet(text){
     cidade:ci('cidade'), protocolo:ci('protocolo'), etiqueta:ci('etiqueta'),
     produto:ci('produto'), prio:ci('prio'),
     status:ci('status'), valor:ci('valor'), nota:ci('nota'),
-    slaGP:ci('sla gp'), slaContrato:ci('prazo contrato'),
+    slaGP:ci('sla gp'), slaContrato:ci('sla contratual'), prazoContrato:ci('prazo contrato'),
     dataConclusao:ci('conclus'), dataVenda:ci('venda'),
     liberado:ci('liberado')
   };
@@ -632,7 +632,8 @@ function parseSheet(text){
       if(dateRef.includes('/')){const p=dateRef.split('/');const m=parseInt(p[1]);const y=parseInt(p[2]||'0');if(m>=1&&m<=12){mes=mNames[m]+'/'+(y%100).toString().padStart(2,'0');mesSort=y*100+m;}}
       else if(dateRef.includes('-')){const p=dateRef.split('-');const m=parseInt(p[1]);const y=parseInt(p[0]||'0');if(m>=1&&m<=12){mes=mNames[m]+'/'+(y%100).toString().padStart(2,'0');mesSort=y*100+m;}}
     }
-    const slaContrato=parseInt(get('slaContrato'))||0;
+    const slaContrato=parseInt(get('slaContrato'))||0; // coluna "SLA Contratual"
+    const prazoContrato=parseInt(get('prazoContrato'))||0; // coluna "Prazo contrato"
     const status=get('status');
     const statusNum=parseInt(status);
 
@@ -652,9 +653,9 @@ function parseSheet(text){
     return{cliente,parceiro:get('parceiro'),estado:get('estado'),cidade:get('cidade'),
       protocolo:get('protocolo'),etiqueta:get('etiqueta'),produto:get('produto'),
       prio:get('prio'),status,statusNum,
-      valor,nota,slaGP,slaContrato,mes,mesSort,
+      valor,nota,slaGP,slaContrato,prazoContrato,mes,mesSort,
       dataVenda,liberado,dataConclusao,assinatura,inputBKO,dataLimite,
-      prazoContratoDias:slaContrato,motivoAtraso};
+      prazoContratoDias:prazoContrato,motivoAtraso};
   }).filter(Boolean);
 }
 
@@ -729,16 +730,18 @@ function render(){
 // ── KPIs ──────────────────────────────────────────────────────────
 function renderKPIs(rows){
   const conc=rows.filter(r=>isEntregue(r));
-  const ativos=rows.filter(r=>r.status&&!r.status.includes('Cancelado')&&!r.status.includes('Projeto Futuro')&&!isEntregue(r));
+  // "Ativos" = protocolos em gestão, da etapa 02. Assinatura LM até 10. Agendado
+  // (00 Projeto Futuro e 01 Em validação ainda não estão com a gestão; 11-13 já é considerado entregue; 14 é cancelado)
+  const ativos=rows.filter(r=>r.statusNum>=2&&r.statusNum<=10);
   const val=conc.reduce((s,r)=>s+r.valor,0);
   const notas=rows.filter(r=>r.nota>0).map(r=>r.nota);
   const nota=notas.length?notas.reduce((a,b)=>a+b,0)/notas.length:0;
-  const now=new Date();const sixAgo=new Date(now.getFullYear(),now.getMonth()-6,1);
-  const mN=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const recSlas=rows.filter(r=>{if(!r.slaGP||!r.mes)return false;const p=r.mes.split('/');const mi=mN.indexOf(p[0]);const yr=2000+parseInt(p[1]);return new Date(yr,mi-1,1)>=sixAgo;}).map(r=>r.slaGP);
+  // SLA de Contrato (coluna "SLA Contratual"), média simples, janela fixada pela data da venda
+  const now=new Date();const sixAgo=Date.UTC(now.getFullYear(),now.getMonth()-6,1);
+  const recSlas=rows.filter(r=>r.slaContrato>0&&r.dataVenda!=null&&r.dataVenda>=sixAgo).map(r=>r.slaContrato);
   const sla=recSlas.length?Math.round(recSlas.reduce((a,b)=>a+b,0)/recSlas.length):0;
-  const LIBS=['compra de material','site survey','em configuração','parado','postar equipamento','solicitar agendamento','aceite agendamento','agendado','boas vindas','ag. faturamento'];
-  const liberados=rows.filter(r=>r.status&&LIBS.some(l=>r.status.toLowerCase().includes(l))).length;
+  // mesma definição de "ativos" acima — elimina a divergência entre os dois números
+  const liberados=ativos.length;
   const valAberto=ativos.reduce((s,r)=>s+r.valor,0);
   s('kpiValor','R$ '+val.toLocaleString('pt-BR',{minimumFractionDigits:2}));
   s('kpiValorSub',conc.length+' protocolos entregues');
@@ -884,7 +887,7 @@ function renderSLAByMonth(rows){
   // SLA GP (contrato)
   const accGP={};rows.filter(r=>r.mes&&r.slaGP>0).forEach(r=>{if(!accGP[r.mes])accGP[r.mes]=[];accGP[r.mes].push(r.slaGP);});
   // SLA Contrato (coluna Prazo contrato)
-  const accCont={};rows.filter(r=>r.mes&&r.slaContrato>0).forEach(r=>{if(!accCont[r.mes])accCont[r.mes]=[];accCont[r.mes].push(r.slaContrato);});
+  const accCont={};rows.filter(r=>r.mes&&r.prazoContrato>0).forEach(r=>{if(!accCont[r.mes])accCont[r.mes]=[];accCont[r.mes].push(r.prazoContrato);});
   const allMes=[...new Set([...Object.keys(accGP),...Object.keys(accCont)])];
   const labels=sortMonths(allMes);
   const dataGP=labels.map(l=>accGP[l]?Math.round(accGP[l].reduce((a,b)=>a+b,0)/accGP[l].length):null);
