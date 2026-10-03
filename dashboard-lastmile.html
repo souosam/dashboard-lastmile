@@ -884,25 +884,30 @@ function renderPRCByMonth(rows){
 
 // ── SLA BY MONTH ──────────────────────────────────────────────────
 function renderSLAByMonth(rows){
-  // SLA GP (contrato)
-  const accGP={};rows.filter(r=>r.mes&&r.slaGP>0).forEach(r=>{if(!accGP[r.mes])accGP[r.mes]=[];accGP[r.mes].push(r.slaGP);});
-  // SLA Contrato (coluna Prazo contrato)
-  const accCont={};rows.filter(r=>r.mes&&r.prazoContrato>0).forEach(r=>{if(!accCont[r.mes])accCont[r.mes]=[];accCont[r.mes].push(r.prazoContrato);});
-  const allMes=[...new Set([...Object.keys(accGP),...Object.keys(accCont)])];
+  // Mês de referência = mês da DATA DA VENDA (mesma base do KPI "SLA de Contrato" no topo)
+  const mNames=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const mesVenda=r=>{
+    if(r.dataVenda==null)return null;
+    const d=new Date(r.dataVenda);
+    return mNames[d.getUTCMonth()+1]+'/'+(d.getUTCFullYear()%100).toString().padStart(2,'0');
+  };
+  // SLA do Contrato (coluna "SLA Contratual")
+  const accCont={};rows.forEach(r=>{const m=mesVenda(r);if(m&&r.slaContrato>0){(accCont[m]=accCont[m]||[]).push(r.slaContrato);}});
+  // SLA do GP, para efeito comparativo (mesmo mês de venda)
+  const accGP={};rows.forEach(r=>{const m=mesVenda(r);if(m&&r.slaGP>0){(accGP[m]=accGP[m]||[]).push(r.slaGP);}});
+  const allMes=[...new Set([...Object.keys(accCont),...Object.keys(accGP)])];
   const labels=sortMonths(allMes);
-  const dataGP=labels.map(l=>accGP[l]?Math.round(accGP[l].reduce((a,b)=>a+b,0)/accGP[l].length):null);
   const dataCont=labels.map(l=>accCont[l]?Math.round(accCont[l].reduce((a,b)=>a+b,0)/accCont[l].length):null);
+  const dataGP=labels.map(l=>accGP[l]?Math.round(accGP[l].reduce((a,b)=>a+b,0)/accGP[l].length):null);
   const meta=parseInt(document.getElementById('metaSLA')?.value)||30;
   s('metaLabel','(meta: '+meta+'d)');
   if(charts.slaMon)charts.slaMon.destroy();
   const ctx=document.getElementById('slaByMonth');if(!ctx)return;
   const datasets=[
-    {label:'SLA de Contrato (GP)',data:dataGP,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.08)',tension:.3,pointBackgroundColor:dataGP.map(v=>v&&v>meta?'#e74c3c':'#2ecc71'),fill:false,order:2,pointRadius:4},
-    {label:'Meta',data:labels.map(()=>meta),borderColor:'#e74c3c',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0}
+    {label:'SLA do Contrato',data:dataCont,borderColor:'#2ecc71',backgroundColor:'rgba(46,204,113,.08)',tension:.3,pointBackgroundColor:dataCont.map(v=>v&&v>meta?'#e74c3c':'#2ecc71'),fill:false,order:2,pointRadius:4},
+    {label:'Meta',data:labels.map(()=>meta),borderColor:'#e74c3c',borderWidth:2,borderDash:[6,4],pointRadius:0,fill:false,order:1,tension:0},
+    {label:'SLA do GP (comparativo)',data:dataGP,borderColor:'#3498db',backgroundColor:'rgba(52,152,219,.06)',tension:.3,pointBackgroundColor:'#3498db',fill:false,order:3,pointRadius:3,borderDash:[3,2]}
   ];
-  if(dataCont.some(v=>v!==null)){
-    datasets.splice(1,0,{label:'SLA Contrato (prazo)',data:dataCont,borderColor:'#3498db',backgroundColor:'rgba(52,152,219,.06)',tension:.3,pointBackgroundColor:'#3498db',fill:false,order:3,pointRadius:4,borderDash:[3,2]});
-  }
   charts.slaMon=new Chart(ctx,{type:'line',data:{labels,datasets},options:darkOpts({
     plugins:{
       legend:{display:true,labels:{color:'#9aa3bd',font:{size:10},boxWidth:12,padding:12}},
