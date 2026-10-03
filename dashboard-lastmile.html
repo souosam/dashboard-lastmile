@@ -108,6 +108,12 @@ main>.section-title:first-of-type{margin-top:0;}
 .filter-bar select,.filter-bar input{background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:5px 9px;outline:none;}
 .filter-bar select:focus,.filter-bar input:focus{border-color:var(--accent);}
 .filter-sep{width:1px;height:22px;background:var(--border);margin:0 2px;}
+/* SCOPE SWITCH (NET TURBO vs demais parceiros) */
+.scope-bar{display:flex;gap:6px;margin-bottom:12px;align-items:center;}
+.scope-btn{background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s,color .15s,border-color .15s;}
+.scope-btn:hover{color:var(--text);}
+.scope-btn.active{background:var(--card-hi);color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
+.scope-hint{font-size:11px;color:var(--muted);margin-left:4px;}
 /* DONUT */
 .donut-wrap{display:flex;gap:16px;align-items:center;}
 .donut-chart{flex:0 0 130px;height:130px;}
@@ -266,6 +272,14 @@ main>.section-title:first-of-type{margin-top:0;}
 <div id="view-dashboard" class="view active">
 <main>
   <div id="errorBanner"></div>
+
+  <!-- ESCOPO: NET TURBO (rede própria) vs demais parceiros (Last Mile real) -->
+  <div class="scope-bar">
+    <button class="scope-btn active" data-scope="all" onclick="setScope('all')">Visão Geral</button>
+    <button class="scope-btn" data-scope="net" onclick="setScope('net')">NET TURBO</button>
+    <button class="scope-btn" data-scope="partners" onclick="setScope('partners')">Demais Parceiros (Last Mile)</button>
+    <span class="scope-hint" id="scopeHint"></span>
+  </div>
 
   <!-- FILTROS -->
   <div class="filter-bar">
@@ -505,6 +519,16 @@ const CITY_COORDS={'São Paulo':[-23.55,-46.63],'Campinas':[-22.91,-47.06],'Sant
 
 // ── STATE ─────────────────────────────────────────────────────────
 let allRows=[],filteredRows=[],charts={},leafletMap=null,markersLayer=null,activeStatusFilter=null;
+// Escopo: 'all' = tudo | 'net' = só NET TURBO (projetos dentro da própria rede) | 'partners' = demais parceiros (Last Mile real)
+let scope='all';
+const isNetTurbo=r=>(r.parceiro||'').trim().toLowerCase()==='net turbo';
+function setScope(sc){
+  scope=sc;
+  document.querySelectorAll('.scope-btn').forEach(b=>b.classList.toggle('active',b.dataset.scope===sc));
+  const hint=document.getElementById('scopeHint');
+  if(hint)hint.textContent=sc==='net'?'Projetos atendidos dentro da própria rede (NET TURBO)':sc==='partners'?'Projetos atendidos por parceiros externos (Last Mile)':'';
+  applyFilters();
+}
 
 // ── LOAD ──────────────────────────────────────────────────────────
 async function loadData(){
@@ -688,6 +712,8 @@ function applyFilters(){
     if(cli&&!r.cliente.toLowerCase().includes(cli))return false;
     if(de&&r.mesSort){const[y,m]=de.split('-');if(r.mesSort<parseInt(y)*100+parseInt(m))return false;}
     if(ate&&r.mesSort){const[y,m]=ate.split('-');if(r.mesSort>parseInt(y)*100+parseInt(m))return false;}
+    if(scope==='net'&&!isNetTurbo(r))return false;
+    if(scope==='partners'&&isNetTurbo(r))return false;
     return true;
   });
   const tc=document.getElementById('totalCount');if(tc)tc.textContent=filteredRows.length+' protocolos';
