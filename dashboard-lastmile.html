@@ -354,11 +354,11 @@ main>.section-title:first-of-type{margin-top:0;}
       <div class="card-title">SLA de Contrato por Estado (dias)
         <span class="tip" data-tip="SLA de Contrato médio de todos os protocolos por estado. Mostra em quais regiões o processo leva mais tempo.">ℹ</span>
       </div>
-      <div class="chart-wrap"><canvas id="slaByEstado"></canvas></div>
+      <div class="chart-wrap" id="slaByEstadoWrap"><canvas id="slaByEstado"></canvas></div>
     </div>
     <div class="card">
       <div class="card-title">SLA de Contrato por Produto (dias)</div>
-      <div class="chart-wrap"><canvas id="slaByProduct"></canvas></div>
+      <div class="chart-wrap" id="slaByProductWrap"><canvas id="slaByProduct"></canvas></div>
     </div>
   </div>
   <div class="grid-2" style="margin-bottom:18px;">
@@ -977,19 +977,32 @@ function renderSLAParceiro(rows){
 function renderSLAByProduct(rows){
   const acc={};rows.filter(r=>r.produto&&r.slaGP>0).forEach(r=>{if(!acc[r.produto])acc[r.produto]=[];acc[r.produto].push(r.slaGP);});
   const sorted=Object.entries(acc).map(([l,v])=>({l,media:Math.round(v.reduce((a,b)=>a+b,0)/v.length)})).sort((a,b)=>b.media-a.media);
+  const wrap=document.getElementById('slaByProductWrap');if(wrap)wrap.style.height=Math.max(210,sorted.length*26)+'px';
   if(charts.slaProd)charts.slaProd.destroy();
   const ctx=document.getElementById('slaByProduct');if(!ctx)return;
   charts.slaProd=new Chart(ctx,{type:'bar',data:{labels:sorted.map(s=>s.l),datasets:[{label:'Dias',data:sorted.map(s=>s.media),backgroundColor:'#2ecc71',borderRadius:5}]},options:darkOpts({indexAxis:'y'})});
 }
 
 // ── TOP CLIENTES ──────────────────────────────────────────────────
+// Normaliza o nome do cliente para agrupar (espaços duplicados/trailing e caixa não devem contar como clientes diferentes)
+const clienteKey=c=>(c||'').replace(/[\u0000-\u001F\u007F​-‍﻿]/g,'').trim().replace(/\s+/g,' ').toUpperCase();
 function renderTopClients(rows){
-  const vMap={};rows.filter(r=>isEntregue(r)).forEach(r=>{vMap[r.cliente]=(vMap[r.cliente]||0)+r.valor;});
+  const vMap={},vName={};
+  rows.filter(r=>isEntregue(r)).forEach(r=>{
+    const k=clienteKey(r.cliente);if(!k)return;
+    vMap[k]=(vMap[k]||0)+r.valor;
+    if(!vName[k])vName[k]=r.cliente.trim();
+  });
   const topV=Object.entries(vMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const tv=document.getElementById('topValorTable');if(tv)tv.querySelector('tbody').innerHTML=topV.map(([c,v],i)=>`<tr><td><span class="rank">${i+1}</span></td><td>${sname(c)}</td><td>R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('');
-  const qMap={};rows.forEach(r=>{qMap[r.cliente]=(qMap[r.cliente]||0)+1;});
+  const tv=document.getElementById('topValorTable');if(tv)tv.querySelector('tbody').innerHTML=topV.map(([k,v],i)=>`<tr><td><span class="rank">${i+1}</span></td><td>${sname(vName[k])}</td><td>R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('');
+  const qMap={},qName={};
+  rows.forEach(r=>{
+    const k=clienteKey(r.cliente);if(!k)return;
+    qMap[k]=(qMap[k]||0)+1;
+    if(!qName[k])qName[k]=r.cliente.trim();
+  });
   const topQ=Object.entries(qMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const tq=document.getElementById('topQtdTable');if(tq)tq.querySelector('tbody').innerHTML=topQ.map(([c,n],i)=>`<tr><td><span class="rank">${i+1}</span></td><td>${sname(c)}</td><td>${n}</td></tr>`).join('');
+  const tq=document.getElementById('topQtdTable');if(tq)tq.querySelector('tbody').innerHTML=topQ.map(([k,n],i)=>`<tr><td><span class="rank">${i+1}</span></td><td>${sname(qName[k])}</td><td>${n}</td></tr>`).join('');
 }
 
 // ── TOP PARCEIROS ─────────────────────────────────────────────────
@@ -1005,11 +1018,11 @@ function renderTopParceiros(rows){
 function renderSLAByEstado(rows){
   const acc={};rows.filter(r=>r.estado&&r.slaGP>0).forEach(r=>{if(!acc[r.estado])acc[r.estado]=[];acc[r.estado].push(r.slaGP);});
   const sorted=Object.entries(acc).map(([e,v])=>({e,media:Math.round(v.reduce((a,b)=>a+b,0)/v.length),count:v.length})).sort((a,b)=>b.media-a.media);
-  const meta=parseInt(document.getElementById('metaSLA')?.value)||30;
+  const wrap=document.getElementById('slaByEstadoWrap');if(wrap)wrap.style.height=Math.max(210,sorted.length*26)+'px';
   if(charts.slaEstado)charts.slaEstado.destroy();
   const ctx=document.getElementById('slaByEstado');if(!ctx)return;
   charts.slaEstado=new Chart(ctx,{type:'bar',
-    data:{labels:sorted.map(s=>s.e),datasets:[{label:'SLA Contrato',data:sorted.map(s=>s.media),backgroundColor:sorted.map(s=>s.media>meta*1.5?'#e74c3c':s.media>meta?'#f39c12':'#2ecc71'),borderRadius:5}]},
+    data:{labels:sorted.map(s=>s.e),datasets:[{label:'SLA Contrato',data:sorted.map(s=>s.media),backgroundColor:'#2ecc71',borderRadius:5}]},
     options:darkOpts({indexAxis:'y',plugins:{tooltip:{callbacks:{label:c=>` ${c.raw}d (${sorted[c.dataIndex]?.count} protos)`}}},scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}}})
   });
 }
@@ -1079,13 +1092,19 @@ function renderEstadoChart(rows){
 }
 
 // ── MAP ───────────────────────────────────────────────────────────
-function renderMap(rows){
+function renderMap(allRowsIn){
+  // Mapa só considera protocolos em andamento de fato: da 01. Em validação até 13. Entregue/Concluída
+  // (exclui 00. Projeto Futuro, que ainda nem começou, e 14. Cancelado)
+  const rows=allRowsIn.filter(r=>r.statusNum>=1&&r.statusNum<=13);
   const cityCount={},stateCount={};
   rows.forEach(r=>{if(r.cidade)cityCount[r.cidade]=(cityCount[r.cidade]||0)+1;if(r.estado)stateCount[r.estado]=(stateCount[r.estado]||0)+1;});
   const maxC=Math.max(...Object.values(cityCount),1);
   if(!leafletMap){
     leafletMap=L.map('leafletMap',{center:[-15.8,-47.9],zoom:4});
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'© CARTO',subdomains:'abcd',maxZoom:19}).addTo(leafletMap);
+    // Tiles do OpenStreetMap (não exigem API key) com filtro CSS para combinar com o tema escuro
+    const tileLayer=L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{attribution:'© OpenStreetMap',subdomains:'abc',maxZoom:19});
+    tileLayer.on('add',()=>{const pane=leafletMap.getPane('tilePane');if(pane)pane.style.filter='invert(1) hue-rotate(180deg) brightness(.85) contrast(.95) saturate(.6)';});
+    tileLayer.addTo(leafletMap);
     markersLayer=L.layerGroup().addTo(leafletMap);
   }else{markersLayer.clearLayers();}
   Object.entries(cityCount).forEach(([cidade,count])=>{
