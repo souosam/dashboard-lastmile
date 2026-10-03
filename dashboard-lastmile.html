@@ -519,6 +519,7 @@ async function loadData(){
     const resp=await fetch(CSV_URL+'&_='+Date.now());
     if(!resp.ok)throw new Error('HTTP '+resp.status);
     allRows=parseSheet(await resp.text());
+    window.allRows=allRows; // expõe para o módulo PDCA (let de topo de <script> não vira propriedade de window)
     filteredRows=[...allRows];
     buildFilters();render();
     const now=new Date().toLocaleTimeString('pt-BR');
