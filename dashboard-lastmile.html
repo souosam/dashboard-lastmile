@@ -65,6 +65,10 @@ main{padding:22px 28px 40px;max-width:1700px;margin:0 auto;}
 /* KPI */
 .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px;}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
+.kpi-main{grid-column:span 2;background:var(--card-hi);}
+.kpi-main .kpi-value{font-size:28px!important;}
+.kpi-main .kpi-label{color:var(--accent);}
+@media (max-width:900px){.kpi-main{grid-column:span 1;}}
 .kpi:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.35);border-color:#2f3750;}
 .kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
 .kpi:nth-child(2)::before{background:linear-gradient(90deg,var(--warn),#ffcf6b);}
@@ -304,16 +308,17 @@ main>.section-title:first-of-type{margin-top:0;}
     <input type="text" id="filterCliente" placeholder="Buscar…" oninput="applyFilters()" style="width:130px;"/>
     <span style="margin-left:auto;font-size:11px;color:var(--muted);" id="totalCount"></span>
     <button style="background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;" onclick="clearFilters()">✕ Limpar</button>
+    <button style="background:var(--accent);color:#06261a;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;" onclick="exportFilteredCSV()">⬇ Exportar CSV</button>
   </div>
 
   <!-- KPIs -->
   <div class="kpi-row">
-    <div class="kpi"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
+    <div class="kpi kpi-main"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
+    <div class="kpi kpi-main"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
     <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">meta: 4,5 ★</div></div>
     <div class="kpi"><div class="kpi-label">SLA de Contrato</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">últimos 6 meses</div></div>
     <div class="kpi"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" id="kpiAberto" style="font-size:17px;">—</div><div class="kpi-sub" id="kpiAbertoSub"></div></div>
     <div class="kpi"><div class="kpi-label">Protocolos Ativos</div><div class="kpi-value" id="kpiAtivos">—</div><div class="kpi-sub" id="kpiAtivosSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
   </div>
 
   <!-- PIPELINE -->
@@ -371,20 +376,16 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
       <div class="card-title">Top Clientes · Valor Entregue</div>
-      <table class="top-table" id="topValorTable">
-        <thead><tr><th>#</th><th>Cliente</th><th>R$</th></tr></thead><tbody></tbody>
-      </table>
+      <div class="map-city-list" id="topValorList"></div>
     </div>
     <div class="card">
       <div class="card-title">Top Clientes · Quantidade</div>
-      <table class="top-table" id="topQtdTable">
-        <thead><tr><th>#</th><th>Cliente</th><th>Protos</th></tr></thead><tbody></tbody>
-      </table>
+      <div class="map-city-list" id="topQtdList"></div>
     </div>
   </div>
   <div class="grid-2" style="margin-bottom:18px;">
-    <div class="card"><div class="card-title">Parceiros com Mais Protocolos</div><div class="chart-wrap" id="topParceirosWrap"><canvas id="topParceiros"></canvas></div></div>
-    <div class="card"><div class="card-title">Distribuição por Estado</div><div class="chart-wrap" id="estadoChartWrap"><canvas id="estadoChart"></canvas></div></div>
+    <div class="card"><div class="card-title">Parceiros com Mais Protocolos</div><div class="map-city-list" id="topParceirosList"></div></div>
+    <div class="card"><div class="card-title">Distribuição por Estado</div><div class="map-city-list" id="estadoList"></div></div>
   </div>
 
   <!-- MAPA -->
@@ -403,6 +404,14 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="section-title">PDCA · Coortes por Data de Entrada</div>
   <div style="color:var(--muted);font-size:12px;margin-bottom:14px;" id="meta2">Lendo a planilha…</div>
 
+  <!-- ESCOPO: mesmo recorte NET TURBO x demais parceiros do Dashboard -->
+  <div class="scope-bar">
+    <button class="scope-btn active" data-pdca-scope="all" onclick="setPdcaScope('all')">Visão Geral</button>
+    <button class="scope-btn" data-pdca-scope="net" onclick="setPdcaScope('net')">NET TURBO</button>
+    <button class="scope-btn" data-pdca-scope="partners" onclick="setPdcaScope('partners')">Demais Parceiros (Last Mile)</button>
+    <span class="scope-hint" id="pdcaScopeHint"></span>
+  </div>
+
   <div class="filter-bar">
     <label>Meta de entrega, em dias contados da assinatura do cliente</label>
     <input type="number" id="meta" min="1" value="20" style="width:70px;"/>
@@ -411,6 +420,9 @@ main>.section-title:first-of-type{margin-top:0;}
       <option value="lib">Liberação para a gestão (se vazia, usa a data da venda)</option>
       <option value="venda">Data da venda</option>
     </select>
+    <div class="filter-sep"></div>
+    <label>De</label><input type="month" id="pdcaDe"/>
+    <label>Até</label><input type="month" id="pdcaAte"/>
     <button class="btn-primary" id="go" style="margin-left:4px;">Atualizar agora</button>
     <span style="margin-left:auto;font-size:11px;color:var(--muted);" id="cov"></span>
   </div>
@@ -528,13 +540,24 @@ const CITY_COORDS={'São Paulo':[-23.55,-46.63],'Campinas':[-22.91,-47.06],'Sant
 let allRows=[],filteredRows=[],charts={},leafletMap=null,markersLayer=null,activeStatusFilter=null;
 // Escopo: 'all' = tudo | 'net' = só NET TURBO (projetos dentro da própria rede) | 'partners' = demais parceiros (Last Mile real)
 let scope='all';
-const isNetTurbo=r=>(r.parceiro||'').trim().toLowerCase()==='net turbo';
+// Normaliza nome de parceiro para agrupar (ignora espaços/caixa — cobre "NET TURBO" vs "NETTURBO")
+const parceiroKey=p=>(p||'').replace(/[\u0000-\u001F\u007F​-‍﻿]/g,'').trim().replace(/\s+/g,'').toUpperCase();
+const isNetTurbo=r=>parceiroKey(r.parceiro)==='NETTURBO';
 function setScope(sc){
   scope=sc;
   document.querySelectorAll('.scope-btn').forEach(b=>b.classList.toggle('active',b.dataset.scope===sc));
   const hint=document.getElementById('scopeHint');
   if(hint)hint.textContent=sc==='net'?'Projetos atendidos dentro da própria rede (NET TURBO)':sc==='partners'?'Projetos atendidos por parceiros externos (Last Mile)':'';
   applyFilters();
+}
+// Mesmo escopo, aplicado na aba PDCA
+let pdcaScope='all';
+function setPdcaScope(sc){
+  pdcaScope=sc;
+  document.querySelectorAll('[data-pdca-scope]').forEach(b=>b.classList.toggle('active',b.dataset.pdcaScope===sc));
+  const hint=document.getElementById('pdcaScopeHint');
+  if(hint)hint.textContent=sc==='net'?'Projetos atendidos dentro da própria rede (NET TURBO)':sc==='partners'?'Projetos atendidos por parceiros externos (Last Mile)':'';
+  if(window.PDCA)window.PDCA.render();
 }
 
 // ── LOAD ──────────────────────────────────────────────────────────
@@ -733,6 +756,20 @@ function clearFilters(){
   filteredRows=[...allRows];
   const tc=document.getElementById('totalCount');if(tc)tc.textContent=allRows.length+' protocolos';
   render();
+}
+function exportFilteredCSV(){
+  const cols=[['cliente','Cliente'],['parceiro','Parceiro'],['estado','Estado'],['cidade','Cidade'],['protocolo','Protocolo'],['produto','Produto'],['status','Status'],['valor','Valor'],['slaContrato','SLA do Contrato (dias)'],['slaGP','SLA do GP (dias)'],['mes','Mês']];
+  const esc=v=>{const s=(v==null?'':String(v)).replace(/"/g,'""');return/[;",\n]/.test(s)?`"${s}"`:s;};
+  const header=cols.map(c=>c[1]).join(';');
+  const lines=filteredRows.map(r=>cols.map(c=>esc(r[c[0]])).join(';'));
+  const csv='﻿'+[header,...lines].join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const now=new Date().toISOString().slice(0,10);
+  a.href=url;a.download=`last-mile_${now}.csv`;
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 function filterByStatus(status){
   activeStatusFilter=activeStatusFilter===status?null:status;
@@ -973,6 +1010,12 @@ function renderConversion(rows){
 // ── TOP CLIENTES ──────────────────────────────────────────────────
 // Normaliza o nome do cliente para agrupar (espaços duplicados/trailing e caixa não devem contar como clientes diferentes)
 const clienteKey=c=>(c||'').replace(/[\u0000-\u001F\u007F​-‍﻿]/g,'').trim().replace(/\s+/g,' ').toUpperCase();
+// Rank list genérico (mesmo padrão do Ranking de Cidades/Estados do mapa)
+function rankDot(i){return i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71';}
+function renderRankList(elId,entries,fmt){
+  const el=document.getElementById(elId);if(!el)return;
+  el.innerHTML=entries.map(([label,val],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${rankDot(i)}"></div><span style="color:var(--textdim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${label}">${label}</span><span class="city-count">${fmt?fmt(val):val}</span></div>`).join('')||'<div style="color:var(--muted);font-size:12px;padding:10px 0;">Sem dados.</div>';
+}
 function renderTopClients(rows){
   const vMap={},vName={};
   rows.filter(r=>isEntregue(r)).forEach(r=>{
@@ -980,26 +1023,28 @@ function renderTopClients(rows){
     vMap[k]=(vMap[k]||0)+r.valor;
     if(!vName[k])vName[k]=r.cliente.trim();
   });
-  const topV=Object.entries(vMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const tv=document.getElementById('topValorTable');if(tv)tv.querySelector('tbody').innerHTML=topV.map(([k,v],i)=>`<tr><td><span class="rank">${i+1}</span></td><td>${sname(vName[k])}</td><td>R$ ${v.toLocaleString('pt-BR',{minimumFractionDigits:2})}</td></tr>`).join('');
+  const topV=Object.entries(vMap).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([k,v])=>[vName[k],v]);
+  renderRankList('topValorList',topV,v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:2}));
   const qMap={},qName={};
   rows.forEach(r=>{
     const k=clienteKey(r.cliente);if(!k)return;
     qMap[k]=(qMap[k]||0)+1;
     if(!qName[k])qName[k]=r.cliente.trim();
   });
-  const topQ=Object.entries(qMap).sort((a,b)=>b[1]-a[1]).slice(0,10);
-  const tq=document.getElementById('topQtdTable');if(tq)tq.querySelector('tbody').innerHTML=topQ.map(([k,n],i)=>`<tr><td><span class="rank">${i+1}</span></td><td>${sname(qName[k])}</td><td>${n}</td></tr>`).join('');
+  const topQ=Object.entries(qMap).sort((a,b)=>b[1]-a[1]).slice(0,15).map(([k,n])=>[qName[k],n]);
+  renderRankList('topQtdList',topQ);
 }
 
 // ── TOP PARCEIROS ─────────────────────────────────────────────────
 function renderTopParceiros(rows){
-  const acc={};rows.forEach(r=>{if(r.parceiro)acc[r.parceiro]=(acc[r.parceiro]||0)+1;});
-  const top=Object.entries(acc).sort((a,b)=>b[1]-a[1]);
-  const wrap=document.getElementById('topParceirosWrap');if(wrap)wrap.style.height=Math.max(210,top.length*26)+'px';
-  if(charts.topParc)charts.topParc.destroy();
-  const ctx=document.getElementById('topParceiros');if(!ctx)return;
-  charts.topParc=new Chart(ctx,{type:'bar',data:{labels:top.map(t=>t[0]),datasets:[{label:'Protos',data:top.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y',scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10},callback:function(val,idx){const l=this.getLabelForValue(idx);return l&&l.length>16?l.slice(0,15)+'…':l;}}}}})});
+  const acc={},name={};
+  rows.forEach(r=>{
+    const k=parceiroKey(r.parceiro);if(!k)return;
+    acc[k]=(acc[k]||0)+1;
+    if(!name[k])name[k]=r.parceiro.trim();
+  });
+  const top=Object.entries(acc).sort((a,b)=>b[1]-a[1]).map(([k,n])=>[name[k],n]);
+  renderRankList('topParceirosList',top);
 }
 
 // ── SLA MÉDIO POR CLIENTE / POR PARCEIRO ───────────────────────────
@@ -1089,10 +1134,7 @@ function renderHeatmap(rows){
 function renderEstadoChart(rows){
   const acc={};rows.forEach(r=>{if(r.estado)acc[r.estado]=(acc[r.estado]||0)+1;});
   const sorted=Object.entries(acc).sort((a,b)=>b[1]-a[1]);
-  const wrap=document.getElementById('estadoChartWrap');if(wrap)wrap.style.height=Math.max(210,sorted.length*26)+'px';
-  if(charts.estado)charts.estado.destroy();
-  const ctx=document.getElementById('estadoChart');if(!ctx)return;
-  charts.estado=new Chart(ctx,{type:'bar',data:{labels:sorted.map(t=>t[0]),datasets:[{label:'Protos',data:sorted.map(t=>t[1]),backgroundColor:PALETTE,borderRadius:5}]},options:darkOpts({indexAxis:'y',scales:{x:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},y:{grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10},callback:function(val,idx){const l=this.getLabelForValue(idx);return l&&l.length>12?l.slice(0,11)+'…':l;}}}}})}); 
+  renderRankList('estadoList',sorted);
 }
 
 // ── MAP ───────────────────────────────────────────────────────────
@@ -1111,12 +1153,16 @@ function renderMap(allRowsIn){
     tileLayer.addTo(leafletMap);
     markersLayer=L.layerGroup().addTo(leafletMap);
   }else{markersLayer.clearLayers();}
+  const bounds=[];
   Object.entries(cityCount).forEach(([cidade,count])=>{
     const coords=CITY_COORDS[cidade];if(!coords)return;
+    bounds.push(coords);
     const radius=5+(count/maxC)*22;const intensity=count/maxC;
     const color=intensity>0.6?'#e74c3c':intensity>0.3?'#f39c12':'#2ecc71';
     L.circleMarker(coords,{radius,fillColor:color,color:'#fff',weight:1,opacity:.9,fillOpacity:.78}).bindTooltip(`<strong>${cidade}</strong>: ${count} protocolo${count>1?'s':''}`,{sticky:true}).bindPopup(`<div style="font-family:system-ui;min-width:130px"><b>${cidade}</b><br><span style="color:#aaa;font-size:12px">${count} protocolo${count>1?'s':''}</span></div>`).addTo(markersLayer);
   });
+  // Enquadra o mapa nos pontos reais em vez de ficar com zoom fixo e bordas vazias
+  if(bounds.length)leafletMap.fitBounds(bounds,{padding:[24,24],maxZoom:11});
   const cr=document.getElementById('cityRanking');
   if(cr)cr.innerHTML=Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([city,count],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71'}"></div><span style="color:var(--textdim)">${city}</span><span class="city-count">${count}</span></div>`).join('');
   const sr=document.getElementById('stateRanking');
@@ -1167,13 +1213,25 @@ const pc=(a,b)=>b?Math.round(100*a/b)+"%":"-";
 // hora do parse.
 function derive(meta,base){
   const now=new Date(), T=Date.UTC(now.getFullYear(),now.getMonth(),now.getDate());
+  // Mesmo escopo (NET TURBO x demais parceiros) e período (De/Até) do Dashboard
+  const deVal=$("pdcaDe")?.value,ateVal=$("pdcaAte")?.value;
+  const deYM=deVal?+deVal.replace('-',''):null, ateYM=ateVal?+ateVal.replace('-',''):null;
   const out=[];
   for(const r of (window.allRows||[])){
     if(!r.protocolo)continue;
+    if(typeof pdcaScope!=='undefined'){
+      if(pdcaScope==='net'&&!isNetTurbo(r))continue;
+      if(pdcaScope==='partners'&&isNetTurbo(r))continue;
+    }
     const venda=r.dataVenda, lib=r.liberado, conc=r.dataConclusao, ass=r.assinatura;
     const ent=base==="venda"?venda:(lib!=null?lib:venda);
     const S=ass!=null?ass:venda;
     if(ent==null||S==null)continue;
+    if(deYM!=null||ateYM!=null){
+      const d=new Date(ent);const entYM=d.getUTCFullYear()*100+(d.getUTCMonth()+1);
+      if(deYM!=null&&entYM<deYM)continue;
+      if(ateYM!=null&&entYM>ateYM)continue;
+    }
     const n=r.statusNum;
     const c=n===14, e=(n>=11&&n<=13&&conc!=null);
     const inp=r.inputBKO;
@@ -1254,7 +1312,7 @@ function render(){
   $("tb").innerHTML=h;
   $("mot").innerHTML=motBlock("Entraram do dia 1 ao 15",q1)+motBlock("Entraram do dia 16 ao fim do mês",q2);
 }
-["meta","base"].forEach(i=>{const el=$(i);if(el)el.addEventListener("input",render);});
+["meta","base","pdcaDe","pdcaAte"].forEach(i=>{const el=$(i);if(el)el.addEventListener("input",render);});
 const goBtn=$("go");if(goBtn)goBtn.addEventListener("click",()=>{if(typeof loadData==='function')loadData();});
 window.PDCA={render};
 })();
