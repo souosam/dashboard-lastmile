@@ -102,8 +102,13 @@ main>.section-title:first-of-type{margin-top:0;}
 .stage-dot{width:8px;height:8px;border-radius:50%;margin:0 auto 9px;}
 .stage-count{font-family:var(--font-d);font-size:21px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
 .stage-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--textdim);line-height:1.3;min-height:24px;margin-top:5px;}
+.stage-time{font-size:10px;font-weight:700;color:var(--muted);margin-top:4px;font-variant-numeric:tabular-nums;}
+.stage-time.is-hot{color:#ff6b6b;}
 .stage-bar-track{height:3px;background:var(--border);border-radius:2px;margin-top:11px;overflow:hidden;}
 .stage-bar-fill{height:100%;border-radius:2px;transition:width .3s ease;}
+.funnel-metric-toggle{display:flex;gap:6px;margin-left:auto;}
+.funnel-metric-toggle button{background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-size:10px;font-weight:600;cursor:pointer;}
+.funnel-metric-toggle button.active{background:var(--card-hi);color:var(--accent);border-color:var(--accent);}
 .funnel-divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
 .funnel-divider::before,.funnel-divider::after{content:'';flex:1;height:1px;background:var(--border);}
 /* FILTER BAR */
@@ -324,7 +329,12 @@ main>.section-title:first-of-type{margin-top:0;}
   <!-- PIPELINE -->
   <div class="section-title">Pipeline & Protocolos</div>
   <div class="card" style="margin-bottom:18px;">
-    <div class="card-title">Pipeline de Status <span id="filterActiveLabel" style="color:var(--accent);font-size:10px;font-weight:400;"></span></div>
+    <div class="card-title">Pipeline de Status <span id="filterActiveLabel" style="color:var(--accent);font-size:10px;font-weight:400;"></span>
+      <span class="funnel-metric-toggle">
+        <button id="funnelMetricQtd" class="active" onclick="setFunnelMetric('qtd')">Quantidade</button>
+        <button id="funnelMetricTempo" onclick="setFunnelMetric('tempo')">Tempo médio parado</button>
+      </span>
+    </div>
     <div id="funnelList"></div>
   </div>
 
@@ -428,8 +438,20 @@ main>.section-title:first-of-type{margin-top:0;}
   </div>
   <div id="msg" style="color:var(--danger);font-size:12px;margin:8px 0 4px;"></div>
 
-  <div class="section-title">Resumo: dia 1 ao 15 × dia 16 ao fim do mês</div>
+  <div class="section-title" id="cardsTitle">Resumo: dia 1 ao 15 × dia 16 ao fim do mês</div>
+  <div style="display:flex;justify-content:flex-end;margin:-8px 0 10px;">
+    <span class="funnel-metric-toggle" style="margin:0;">
+      <button id="pdcaCutQuinzenal" class="active" onclick="setPdcaCut('quinzenal')">Quinzenal (1-15 / 16-fim)</button>
+      <button id="pdcaCutMensal" onclick="setPdcaCut('mensal')">Mensal (mês completo)</button>
+    </span>
+  </div>
   <div class="grid-2" id="cards" style="margin-bottom:18px;"></div>
+
+  <div class="section-title">Entradas × Entregues no Mesmo Mês</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="chart-wrap" style="height:260px;"><canvas id="entradasEntreguesChart"></canvas></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Barras: quantos projetos entraram na esteira em cada mês (coluna cheia) e quantos desses mesmos projetos já foram entregues ainda dentro do mês de entrada (coluna clara). A diferença é o que "vazou" para os meses seguintes.</div>
+  </div>
 
   <div class="section-title">Mês a Mês, pelo Mês de Entrada</div>
   <div class="card" style="margin-bottom:18px;">
@@ -468,8 +490,6 @@ async function sha256(msg){
   const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(msg));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
 }
-let autoRefreshStarted=false;
-function startAutoRefresh(){if(!autoRefreshStarted){autoRefreshStarted=true;setInterval(loadData,60000);}}
 async function doLogin(){
   const input=document.getElementById('loginInput').value;
   const hash=await sha256(input);
@@ -479,7 +499,7 @@ async function doLogin(){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('appContent').classList.add('unlocked');
     errEl.style.display='none';
-    loadData();startAutoRefresh();
+    loadData();
   }else{
     errEl.style.display='block';
     document.getElementById('loginInput').value='';
@@ -498,7 +518,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(sessionStorage.getItem(SESSION_KEY)==='1'){
     document.getElementById('loginScreen').style.display='none';
     document.getElementById('appContent').classList.add('unlocked');
-    loadData();startAutoRefresh();
+    loadData();
   }else{
     setTimeout(()=>document.getElementById('loginInput').focus(),100);
   }
@@ -559,6 +579,17 @@ function setPdcaScope(sc){
   if(hint)hint.textContent=sc==='net'?'Projetos atendidos dentro da própria rede (NET TURBO)':sc==='partners'?'Projetos atendidos por parceiros externos (Last Mile)':'';
   if(window.PDCA)window.PDCA.render();
 }
+// Corte do resumo/tabela do PDCA: quinzenal (1-15 / 16-fim) ou mensal (mês completo)
+let pdcaCut='quinzenal';
+function setPdcaCut(c){
+  pdcaCut=c;
+  const bq=document.getElementById('pdcaCutQuinzenal'),bm=document.getElementById('pdcaCutMensal');
+  if(bq)bq.classList.toggle('active',c==='quinzenal');
+  if(bm)bm.classList.toggle('active',c==='mensal');
+  const t=document.getElementById('cardsTitle');
+  if(t)t.textContent=c==='mensal'?'Resumo: mês completo':'Resumo: dia 1 ao 15 × dia 16 ao fim do mês';
+  if(window.PDCA)window.PDCA.render();
+}
 
 // ── LOAD ──────────────────────────────────────────────────────────
 async function loadData(){
@@ -580,7 +611,7 @@ async function loadData(){
     const upd=document.getElementById('lastUpdated');
     if(upd)upd.textContent='Atualizado: '+now;
     const pdcaMeta=document.getElementById('meta2');
-    if(pdcaMeta)pdcaMeta.textContent='Atualizado às '+now+'. Recarrega sozinho a cada 60 segundos.';
+    if(pdcaMeta)pdcaMeta.textContent='Atualizado às '+now+'.';
     if(window.PDCA){
       try{window.PDCA.render();}
       catch(pdcaErr){
@@ -837,28 +868,72 @@ function getStatusColor(status){
   for(const[k,c]of Object.entries(STATUS_COLORS)){if(st.includes(k.toLowerCase())||k.toLowerCase().includes(st))return c;}
   return'#6b7a9f';
 }
+let funnelMetric='qtd';
+function setFunnelMetric(m){
+  funnelMetric=m;
+  const bq=document.getElementById('funnelMetricQtd'),bt=document.getElementById('funnelMetricTempo');
+  if(bq)bq.classList.toggle('active',m==='qtd');
+  if(bt)bt.classList.toggle('active',m==='tempo');
+  if(window.allRows)renderFunnel(applyFilters());
+}
+// Tempo parado "até agora" para status ainda em aberto (ancorado na data mais recente
+// de evento conhecido do protocolo: liberado > assinatura > dataVenda), e tempo médio
+// até concluir para os status finalizados — dá uma noção de gargalo por etapa.
+function stageAnchorDate(r){return r.liberado||r.assinatura||r.dataVenda||null;}
+function diasParadoNaEtapa(r){
+  if(r.statusNum>=11&&r.statusNum<=14)return null; // finalizados/cancelados não "estão parados"
+  const anchor=stageAnchorDate(r);
+  if(anchor==null)return null;
+  return diff(Date.now(),anchor);
+}
+function tempoMedioPorStatus(rows){
+  const acc={};
+  rows.forEach(r=>{
+    if(!r.status)return;
+    let d;
+    if(r.statusNum===13){d=r.slaContrato>0?r.slaContrato:null;} // Entregue: SLA até concluir
+    else if(r.statusNum===14){d=null;} // Cancelado: sem métrica de tempo parado
+    else{d=diasParadoNaEtapa(r);}
+    if(d==null||d<0)return;
+    if(!acc[r.status])acc[r.status]={s:0,c:0};
+    acc[r.status].s+=d;acc[r.status].c++;
+  });
+  const out={};
+  Object.entries(acc).forEach(([st,v])=>{out[st]=Math.round(v.s/v.c);});
+  return out;
+}
 function renderFunnel(rows){
   const counts={};rows.forEach(r=>{if(r.status)counts[r.status]=(counts[r.status]||0)+1;});
+  const avgTime=tempoMedioPorStatus(rows);
   const seen=new Set(),main=[],bottom=[];
   FUNNEL_ORDER.forEach(o=>{const on=o.toLowerCase();Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)&&normLabel(st)===on){main.push([st,c]);seen.add(st);}});});
   BOTTOM_ORDER.forEach(o=>{const on=o.toLowerCase();Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)&&normLabel(st)===on){bottom.push([st,c]);seen.add(st);}});});
   Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)){main.push([st,c]);seen.add(st);}});
 
-  function stageCard(st,c,maxC){
+  const metricOf=(st,c)=>funnelMetric==='tempo'?(avgTime[st]??0):c;
+
+  function stageCard(st,c,maxMetric){
     const color=getStatusColor(st);const label=st.replace(/^\d+\.\s*/,'').trim();
-    const pct=Math.max(6,Math.round((c/maxC)*100));
+    const m=metricOf(st,c);
+    const pct=Math.max(6,Math.round((m/maxMetric)*100));
     const isActive=activeStatusFilter===st;
     const dim=activeStatusFilter&&!isActive;
+    const hot=funnelMetric==='tempo'&&m>=15;
+    const mainLabel=funnelMetric==='tempo'?(avgTime[st]!=null?'~'+avgTime[st]+'d':'—'):c;
+    const subLine=funnelMetric==='tempo'
+      ?`<div class="stage-time${hot?' is-hot':''}">${c} protocolo${c===1?'':'s'}</div>`
+      :(avgTime[st]!=null?`<div class="stage-time">~${avgTime[st]}d</div>`:'');
     return`<div class="stage-card${isActive?' is-active':''}${dim?' is-dim':''}" onclick="filterByStatus('${st.replace(/'/g,"\\'")}')">
       <div class="stage-dot" style="background:${color}"></div>
-      <div class="stage-count" style="color:${color}">${c}</div>
+      <div class="stage-count" style="color:${color}">${mainLabel}</div>
       <div class="stage-label">${label}</div>
+      ${subLine}
       <div class="stage-bar-track"><div class="stage-bar-fill" style="width:${pct}%;background:${color}"></div></div>
     </div>`;
   }
 
-  const mainMax=Math.max(...main.map(([,c])=>c),1);
-  const bottomMax=Math.max(...bottom.map(([,c])=>c),1);
+  const mainMax=Math.max(...main.map(([st,c])=>metricOf(st,c)),1);
+  const bottomMax=Math.max(...bottom.map(([st,c])=>metricOf(st,c)),1);
   const el=document.getElementById('funnelList');if(!el)return;
   el.innerHTML=`<div class="funnel-track">${main.map(([st,c])=>stageCard(st,c,mainMax)).join('')}</div>`
     +`<div class="funnel-divider">Finalizados</div>`
@@ -1294,6 +1369,17 @@ function motBlock(t,L){
   if(Object.keys(usr).length)h+='<div style="color:var(--muted);font-size:11px;margin:14px 0 6px;">Motivos informados na coluna Motivo do atraso da planilha</div>'+bar(usr);
   return h+'</div>';
 }
+function renderEntradasEntregues(L){
+  const meses=[...new Set(L.map(x=>x.mes))].sort();
+  const entraram=meses.map(m=>L.filter(x=>x.mes===m&&!x.c).length);
+  const entreguesMesmoMes=meses.map(m=>L.filter(x=>x.mes===m&&x.mesC===x.mes).length);
+  if(charts.pdcaEntrada)charts.pdcaEntrada.destroy();
+  const ctx=document.getElementById('entradasEntreguesChart');if(!ctx)return;
+  charts.pdcaEntrada=new Chart(ctx,{type:'bar',data:{labels:meses,datasets:[
+    {label:'Entraram na esteira',data:entraram,backgroundColor:'#3498db',borderRadius:5},
+    {label:'Entregues no mesmo mês',data:entreguesMesmoMes,backgroundColor:'#2ecc71',borderRadius:5}
+  ]},options:darkOpts({plugins:{legend:{display:true,labels:{color:'#9aa6c3',font:{size:10}}}}})});
+}
 function render(){
   if(!window.allRows||!window.allRows.length)return;
   const metaEl=$("meta"),baseEl=$("base");
@@ -1302,13 +1388,30 @@ function render(){
   const L=derive(meta,base);
   $("cov").textContent="Início da contagem da meta: assinatura do cliente em "+L.filter(x=>x.usouAss).length+" protocolos; data da venda em "+L.filter(x=>!x.usouAss).length+" (sem assinatura registrada na planilha).";
   const q1=L.filter(x=>x.q==1), q2=L.filter(x=>x.q==2);
-  $("cards").innerHTML=card("Entraram do dia 1 ao 15",agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês",agg(q2,meta),meta);
+  const cardsEl=$("cards");
+  if(pdcaCut==='mensal'){
+    if(cardsEl)cardsEl.style.gridTemplateColumns='1fr';
+    $("cards").innerHTML=card("Entraram no mês (dia 1 ao fim do mês)",agg(L,meta),meta);
+  }else{
+    if(cardsEl)cardsEl.style.gridTemplateColumns='1fr 1fr';
+    $("cards").innerHTML=card("Entraram do dia 1 ao 15",agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês",agg(q2,meta),meta);
+  }
   const meses=[...new Set(L.map(x=>x.mes))].sort();
-  let h="<tr><th>Mês de entrada</th><th>Entraram em</th><th>Entradas</th><th>Concluídos</th><th>Concluídos no mês da entrada (% das entradas)</th><th>Concluídos em até 30 dias (% das entradas)</th><th>Média da assinatura à conclusão (dias)</th><th>Concluídos na meta</th><th>Concluídos fora da meta</th><th>Entraram com a meta já estourada</th><th>Em andamento</th><th>Média com o GP (dias)</th></tr>";
-  meses.forEach(m=>[1,2].forEach(q=>{
-    const a=agg(L.filter(x=>x.mes===m&&x.q==q),meta); if(!a.n)return;
-    h+="<tr><td>"+m+"</td><td>"+(q==1?"Dias 1 a 15":"Dia 16 ao fim do mês")+"</td><td>"+a.base+"</td><td>"+a.ent+"</td><td>"+pc(a.mes,a.base)+"</td><td>"+pc(a.d30,a.base)+"</td><td>"+a.avg+"</td><td class='pdca-ok'>"+a.ok+"</td><td class='pdca-bad'>"+a.late+"</td><td class='pdca-wa'>"+a.sem+"</td><td>"+a.ab+"</td><td>"+a.gp+"</td></tr>";
-  }));
+  renderEntradasEntregues(L);
+  let h;
+  if(pdcaCut==='mensal'){
+    h="<tr><th>Mês de entrada</th><th>Entradas</th><th>Concluídos</th><th>Concluídos no mês da entrada (% das entradas)</th><th>Concluídos em até 30 dias (% das entradas)</th><th>Média da assinatura à conclusão (dias)</th><th>Concluídos na meta</th><th>Concluídos fora da meta</th><th>Entraram com a meta já estourada</th><th>Em andamento</th><th>Média com o GP (dias)</th></tr>";
+    meses.forEach(m=>{
+      const a=agg(L.filter(x=>x.mes===m),meta); if(!a.n)return;
+      h+="<tr><td>"+m+"</td><td>"+a.base+"</td><td>"+a.ent+"</td><td>"+pc(a.mes,a.base)+"</td><td>"+pc(a.d30,a.base)+"</td><td>"+a.avg+"</td><td class='pdca-ok'>"+a.ok+"</td><td class='pdca-bad'>"+a.late+"</td><td class='pdca-wa'>"+a.sem+"</td><td>"+a.ab+"</td><td>"+a.gp+"</td></tr>";
+    });
+  }else{
+    h="<tr><th>Mês de entrada</th><th>Entraram em</th><th>Entradas</th><th>Concluídos</th><th>Concluídos no mês da entrada (% das entradas)</th><th>Concluídos em até 30 dias (% das entradas)</th><th>Média da assinatura à conclusão (dias)</th><th>Concluídos na meta</th><th>Concluídos fora da meta</th><th>Entraram com a meta já estourada</th><th>Em andamento</th><th>Média com o GP (dias)</th></tr>";
+    meses.forEach(m=>[1,2].forEach(q=>{
+      const a=agg(L.filter(x=>x.mes===m&&x.q==q),meta); if(!a.n)return;
+      h+="<tr><td>"+m+"</td><td>"+(q==1?"Dias 1 a 15":"Dia 16 ao fim do mês")+"</td><td>"+a.base+"</td><td>"+a.ent+"</td><td>"+pc(a.mes,a.base)+"</td><td>"+pc(a.d30,a.base)+"</td><td>"+a.avg+"</td><td class='pdca-ok'>"+a.ok+"</td><td class='pdca-bad'>"+a.late+"</td><td class='pdca-wa'>"+a.sem+"</td><td>"+a.ab+"</td><td>"+a.gp+"</td></tr>";
+    }));
+  }
   $("tb").innerHTML=h;
   $("mot").innerHTML=motBlock("Entraram do dia 1 ao 15",q1)+motBlock("Entraram do dia 16 ao fim do mês",q2);
 }
