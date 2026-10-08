@@ -438,11 +438,11 @@ main>.section-title:first-of-type{margin-top:0;}
   </div>
   <div id="msg" style="color:var(--danger);font-size:12px;margin:8px 0 4px;"></div>
 
-  <div class="section-title" id="cardsTitle">Resumo: dia 1 ao 15 × dia 16 ao fim do mês</div>
+  <div class="section-title" id="cardsTitle">Resumo: mês completo</div>
   <div style="display:flex;justify-content:flex-end;margin:-8px 0 10px;">
     <span class="funnel-metric-toggle" style="margin:0;">
-      <button id="pdcaCutQuinzenal" class="active" onclick="setPdcaCut('quinzenal')">Quinzenal (1-15 / 16-fim)</button>
-      <button id="pdcaCutMensal" onclick="setPdcaCut('mensal')">Mensal (mês completo)</button>
+      <button id="pdcaCutMensal" class="active" onclick="setPdcaCut('mensal')">Mensal (mês completo)</button>
+      <button id="pdcaCutQuinzenal" onclick="setPdcaCut('quinzenal')">Quinzenal (1-15 / 16-fim)</button>
     </span>
   </div>
   <div class="grid-2" id="cards" style="margin-bottom:18px;"></div>
@@ -575,7 +575,7 @@ function setPdcaScope(sc){
   if(window.PDCA)window.PDCA.render();
 }
 // Corte do resumo/tabela do PDCA: quinzenal (1-15 / 16-fim) ou mensal (mês completo)
-let pdcaCut='quinzenal';
+let pdcaCut='mensal';
 function setPdcaCut(c){
   pdcaCut=c;
   const bq=document.getElementById('pdcaCutQuinzenal'),bm=document.getElementById('pdcaCutMensal');
@@ -1364,6 +1364,12 @@ function motBlock(t,L){
   if(Object.keys(usr).length)h+='<div style="color:var(--muted);font-size:11px;margin:14px 0 6px;">Motivos informados na coluna Motivo do atraso da planilha</div>'+bar(usr);
   return h+'</div>';
 }
+const MESES_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+function mesLabel(ym){
+  const m=/^(\d{4})-(\d{2})$/.exec(ym||'');
+  if(!m)return ym;
+  return MESES_PT[+m[2]-1]+' '+m[1];
+}
 function renderEntradasEntregues(L){
   const meses=[...new Set(L.map(x=>x.mes))].sort();
   const entraram=meses.map(m=>L.filter(x=>x.mes===m&&!x.c).length);
@@ -1384,7 +1390,7 @@ function renderEntradasEntregues(L){
   });
   if(charts.pdcaEntrada)charts.pdcaEntrada.destroy();
   const ctx=document.getElementById('entradasEntreguesChart');if(!ctx)return;
-  charts.pdcaEntrada=new Chart(ctx,{type:'bar',data:{labels:meses,datasets:[
+  charts.pdcaEntrada=new Chart(ctx,{type:'bar',data:{labels:meses.map(mesLabel),datasets:[
     {label:'Entraram na esteira',data:entraram,backgroundColor:'#3498db',borderRadius:5},
     {label:'Entregues no mesmo mês',data:entreguesMesmoMes,backgroundColor:'#2ecc71',borderRadius:5}
   ]},options:darkOpts({plugins:{
@@ -1394,8 +1400,8 @@ function renderEntradasEntregues(L){
       const idx=items[0].dataIndex;
       const b=breakdown[idx];
       if(!b.length)return[];
-      return['',"Quando foram entregues os que entraram em "+meses[idx]+":"]
-        .concat(b.map(([k,v])=>'  '+(k==='ainda não entregue'?'Ainda não entregue':'Entregue em '+k)+': '+v));
+      return['',"Quando foram entregues os que entraram em "+mesLabel(meses[idx])+":"]
+        .concat(b.map(([k,v])=>'  '+(k==='ainda não entregue'?'Ainda não entregue':'Entregue em '+mesLabel(k))+': '+v));
     }}}
   }})});
 }
