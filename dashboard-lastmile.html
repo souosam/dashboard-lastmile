@@ -423,7 +423,7 @@ main>.section-title:first-of-type{margin-top:0;}
   </div>
 
   <div class="filter-bar">
-    <label>Meta de entrega, em dias contados da assinatura do cliente</label>
+    <label>Meta de entrega, em dias contados da data da venda</label>
     <input type="number" id="meta" min="1" value="20" style="width:70px;"/>
     <label>Data que define quando o projeto entrou</label>
     <select id="base">
@@ -460,10 +460,10 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="card" style="margin-bottom:18px;">
     <dl class="pdca-dl">
       <dt>Entrada</dt><dd>Data que define em qual mês, e em qual metade do mês, o projeto conta. Escolhida no seletor acima: liberação para a gestão ou data da venda.</dd>
-      <dt>Início da contagem da meta</dt><dd>Assinatura do cliente. Quando a planilha não tem essa data, usa a data da venda.</dd>
+      <dt>Início da contagem da meta</dt><dd>Data da venda.</dd>
       <dt>Concluído</dt><dd>Projeto com status de Boas vindas/PRC em diante (até Entregue/Concluída, status 11 a 13) e data de conclusão preenchida. Cancelados ficam fora de todas as contas.</dd>
       <dt>Dentro da meta e fora da meta</dt><dd>Dias entre o início da contagem e a data de conclusão: até a meta, ou acima dela.</dd>
-      <dt>Entraram na gestão com a meta já estourada</dt><dd>Quando o projeto foi liberado para o GP, já tinham passado a meta (campo acima) ou mais dias desde a assinatura do cliente. Mesmo uma entrega imediata ficaria fora da meta.</dd>
+      <dt>Entraram na gestão com a meta já estourada</dt><dd>Quando o projeto foi liberado para o GP, já tinham passado a meta (campo acima) ou mais dias desde a data da venda. Mesmo uma entrega imediata ficaria fora da meta.</dd>
       <dt>Em andamento</dt><dd>Projetos que ainda não foram concluídos nem cancelados.</dd>
       <dt>Tempo com o GP</dt><dd>Dias entre a liberação para a gestão e a conclusão.</dd>
       <dt>Dentro do prazo do contrato</dt><dd>Conclusão até a data limite do contrato (data da venda mais o prazo do contrato). Só entra na conta quem tem o prazo do contrato preenchido.</dd>
@@ -1293,9 +1293,11 @@ function derive(meta,base){
       if(pdcaScope==='net'&&!isNetTurbo(r))continue;
       if(pdcaScope==='partners'&&isNetTurbo(r))continue;
     }
-    const venda=r.dataVenda, lib=r.liberado, conc=r.dataConclusao, ass=r.assinatura;
+    // Assinatura do cliente e data da venda são o mesmo evento no processo — a venda
+    // é a data confiável (sempre preenchida), por isso é a única usada como início da meta.
+    const venda=r.dataVenda, lib=r.liberado, conc=r.dataConclusao;
     const ent=base==="venda"?venda:(lib!=null?lib:venda);
-    const S=ass!=null?ass:venda;
+    const S=venda;
     if(ent==null||S==null)continue;
     if(deYM!=null||ateYM!=null){
       const d=new Date(ent);const entYM=d.getUTCFullYear()*100+(d.getUTCMonth()+1);
@@ -1308,12 +1310,12 @@ function derive(meta,base){
     const pre=lib!=null?diff(lib,S):null;
     let motivo=null;
     if(pre!=null&&pre>=meta){
-      const a=ass!=null?diff(inp,ass):-1, b=diff(lib,inp);
-      motivo=(b>a)?"Da entrada na validação (Input BKO) até a liberação para a gestão":(a>0?"Da assinatura do cliente até o Input no BKO":"Etapa não identificada nos dados");
+      const a=diff(inp,S), b=diff(lib,inp);
+      motivo=(b>a)?"Da entrada na validação (Input BKO) até a liberação para a gestão":(a>0?"Da venda até o Input no BKO":"Etapa não identificada nos dados");
     }
     const prz=r.prazoContratoDias>0, lim=r.dataLimite;
     out.push({
-      c,e,usouAss:ass!=null,mes:ym(ent),q:new Date(ent).getUTCDate()<=15?1:2,
+      c,e,mes:ym(ent),q:new Date(ent).getUTCDate()<=15?1:2,
       mesC:conc!=null?ym(conc):null,dias:e?diff(conc,S):null,
       gp:e&&lib!=null?diff(conc,lib):null,d30:e?diff(conc,ent):null,pre,motivo,
       age:diff(T,S),ctr:(e&&prz&&lim!=null)?(conc<=lim?1:0):null,
@@ -1341,12 +1343,12 @@ function card(t,a,meta){
     ["Já concluídos",a.ent+" ("+pc(a.ent,a.base)+" dos que entraram)"],
     ["Concluídos no mesmo mês em que entraram",a.mes+" ("+pc(a.mes,a.base)+" dos que entraram)"],
     ["Concluídos em até 30 dias após a entrada",a.d30+" ("+pc(a.d30,a.base)+" dos que entraram)"],
-    ["Média de dias, da assinatura do cliente à conclusão (só concluídos)",a.avg+" dias"],
+    ["Média de dias, da venda à conclusão (só concluídos)",a.avg+" dias"],
     ["Concluídos dentro da meta de "+meta+" dias",a.ok+" ("+pc(a.ok,a.ent)+" dos concluídos)"],
     ["Concluídos fora da meta (acima de "+meta+" dias)",'<span class="pdca-bad">'+a.late+" ("+pc(a.late,a.ent)+" dos concluídos)</span>"],
     ["Entraram na gestão com a meta já estourada",'<span class="pdca-wa">'+a.sem+" ("+pc(a.sem,a.libN)+" dos que têm data de liberação)</span>"],
     ["Ainda em andamento",a.ab],
-    ["Em andamento há mais de "+meta+" dias desde a assinatura",a.abL],
+    ["Em andamento há mais de "+meta+" dias desde a venda",a.abL],
     ["Tempo médio com o GP, da liberação à conclusão (só concluídos)",a.gp+" dias"],
     ["Concluídos dentro do prazo do contrato (só com prazo preenchido)",a.ctrN?a.ctrOk+" de "+a.ctrN+" ("+pc(a.ctrOk,a.ctrN)+")":"-"]
   ];
@@ -1360,7 +1362,7 @@ function motBlock(t,L){
   });
   const bar=o=>{const e=Object.entries(o).sort((a,b)=>b[1]-a[1]),m=e.length?e[0][1]:1;
     return e.length?e.map(([k,v])=>'<div class="pdca-bar-row"><div class="pdca-bar-head"><span>'+k+'</span><b>'+v+'</b></div><div class="pdca-bar-fill" style="width:'+(100*v/m)+'%"></div></div>').join(""):'<div style="color:var(--muted);font-size:12px;">Nenhum projeto nesta situação.</div>'};
-  let h='<div class="card"><div class="card-title">'+t+'</div><div style="color:var(--muted);font-size:11px;margin-bottom:8px;">Etapa que mais demorou entre a assinatura do cliente e a liberação para a gestão</div>'+bar(cnt);
+  let h='<div class="card"><div class="card-title">'+t+'</div><div style="color:var(--muted);font-size:11px;margin-bottom:8px;">Etapa que mais demorou entre a venda e a liberação para a gestão</div>'+bar(cnt);
   if(Object.keys(usr).length)h+='<div style="color:var(--muted);font-size:11px;margin:14px 0 6px;">Motivos informados na coluna Motivo do atraso da planilha</div>'+bar(usr);
   return h+'</div>';
 }
@@ -1411,7 +1413,7 @@ function render(){
   if(!metaEl||!baseEl)return;
   const meta=+metaEl.value||20, base=baseEl.value;
   const L=derive(meta,base);
-  $("cov").textContent="Início da contagem da meta: assinatura do cliente em "+L.filter(x=>x.usouAss).length+" protocolos; data da venda em "+L.filter(x=>!x.usouAss).length+" (sem assinatura registrada na planilha).";
+  $("cov").textContent="Início da contagem da meta: data da venda, em "+L.length+" protocolos.";
   const q1=L.filter(x=>x.q==1), q2=L.filter(x=>x.q==2);
   const cardsEl=$("cards");
   if(pdcaCut==='mensal'){
