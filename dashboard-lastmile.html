@@ -427,8 +427,8 @@ main>.section-title:first-of-type{margin-top:0;}
     <input type="number" id="meta" min="1" value="20" style="width:70px;"/>
     <label>Data que define quando o projeto entrou</label>
     <select id="base">
+      <option value="venda" selected>Data da venda</option>
       <option value="lib">Liberação para a gestão (se vazia, usa a data da venda)</option>
-      <option value="venda">Data da venda</option>
     </select>
     <div class="filter-sep"></div>
     <label>De</label><input type="month" id="pdcaDe"/>
@@ -450,12 +450,7 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="section-title">Entradas × Entregues no Mesmo Mês</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:260px;"><canvas id="entradasEntreguesChart"></canvas></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Barras: quantos projetos entraram na esteira em cada mês (coluna cheia) e quantos desses mesmos projetos já foram entregues ainda dentro do mês de entrada (coluna clara). A diferença é o que "vazou" para os meses seguintes.</div>
-  </div>
-
-  <div class="section-title">Mês a Mês, pelo Mês de Entrada</div>
-  <div class="card" style="margin-bottom:18px;">
-    <div class="proto-wrap"><table class="pdca-table" id="tb"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Barras: quantos projetos entraram na esteira em cada mês (coluna cheia) e quantos desses mesmos projetos já foram entregues ainda dentro do mês de entrada (coluna clara). A diferença é o que "vazou" para os meses seguintes — passe o mouse sobre a barra do mês pra ver em quais meses esses projetos acabaram sendo entregues (ou se ainda não foram).</div>
   </div>
 
   <div class="section-title">Meta já Estourada na Entrada: Onde o Tempo foi Gasto</div>
@@ -1373,12 +1368,36 @@ function renderEntradasEntregues(L){
   const meses=[...new Set(L.map(x=>x.mes))].sort();
   const entraram=meses.map(m=>L.filter(x=>x.mes===m&&!x.c).length);
   const entreguesMesmoMes=meses.map(m=>L.filter(x=>x.mes===m&&x.mesC===x.mes).length);
+  // Para cada mês de entrada, quando os projetos foram (ou ainda não foram) entregues —
+  // usado só no tooltip, pra responder "e os que não saíram no mesmo mês, saíram quando?"
+  const breakdown=meses.map(m=>{
+    const acc={};
+    L.filter(x=>x.mes===m&&!x.c).forEach(x=>{
+      const k=x.mesC||'ainda não entregue';
+      acc[k]=(acc[k]||0)+1;
+    });
+    return Object.entries(acc).sort(([a],[b])=>{
+      if(a==='ainda não entregue')return 1;
+      if(b==='ainda não entregue')return-1;
+      return a<b?-1:1;
+    });
+  });
   if(charts.pdcaEntrada)charts.pdcaEntrada.destroy();
   const ctx=document.getElementById('entradasEntreguesChart');if(!ctx)return;
   charts.pdcaEntrada=new Chart(ctx,{type:'bar',data:{labels:meses,datasets:[
     {label:'Entraram na esteira',data:entraram,backgroundColor:'#3498db',borderRadius:5},
     {label:'Entregues no mesmo mês',data:entreguesMesmoMes,backgroundColor:'#2ecc71',borderRadius:5}
-  ]},options:darkOpts({plugins:{legend:{display:true,labels:{color:'#9aa6c3',font:{size:10}}}}})});
+  ]},options:darkOpts({plugins:{
+    legend:{display:true,labels:{color:'#9aa6c3',font:{size:10}}},
+    tooltip:{callbacks:{afterBody:items=>{
+      if(!items.length)return[];
+      const idx=items[0].dataIndex;
+      const b=breakdown[idx];
+      if(!b.length)return[];
+      return['',"Quando foram entregues os que entraram em "+meses[idx]+":"]
+        .concat(b.map(([k,v])=>'  '+(k==='ainda não entregue'?'Ainda não entregue':'Entregue em '+k)+': '+v));
+    }}}
+  }})});
 }
 function render(){
   if(!window.allRows||!window.allRows.length)return;
@@ -1396,23 +1415,7 @@ function render(){
     if(cardsEl)cardsEl.style.gridTemplateColumns='1fr 1fr';
     $("cards").innerHTML=card("Entraram do dia 1 ao 15",agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês",agg(q2,meta),meta);
   }
-  const meses=[...new Set(L.map(x=>x.mes))].sort();
   renderEntradasEntregues(L);
-  let h;
-  if(pdcaCut==='mensal'){
-    h="<tr><th>Mês de entrada</th><th>Entradas</th><th>Concluídos</th><th>Concluídos no mês da entrada (% das entradas)</th><th>Concluídos em até 30 dias (% das entradas)</th><th>Média da assinatura à conclusão (dias)</th><th>Concluídos na meta</th><th>Concluídos fora da meta</th><th>Entraram com a meta já estourada</th><th>Em andamento</th><th>Média com o GP (dias)</th></tr>";
-    meses.forEach(m=>{
-      const a=agg(L.filter(x=>x.mes===m),meta); if(!a.n)return;
-      h+="<tr><td>"+m+"</td><td>"+a.base+"</td><td>"+a.ent+"</td><td>"+pc(a.mes,a.base)+"</td><td>"+pc(a.d30,a.base)+"</td><td>"+a.avg+"</td><td class='pdca-ok'>"+a.ok+"</td><td class='pdca-bad'>"+a.late+"</td><td class='pdca-wa'>"+a.sem+"</td><td>"+a.ab+"</td><td>"+a.gp+"</td></tr>";
-    });
-  }else{
-    h="<tr><th>Mês de entrada</th><th>Entraram em</th><th>Entradas</th><th>Concluídos</th><th>Concluídos no mês da entrada (% das entradas)</th><th>Concluídos em até 30 dias (% das entradas)</th><th>Média da assinatura à conclusão (dias)</th><th>Concluídos na meta</th><th>Concluídos fora da meta</th><th>Entraram com a meta já estourada</th><th>Em andamento</th><th>Média com o GP (dias)</th></tr>";
-    meses.forEach(m=>[1,2].forEach(q=>{
-      const a=agg(L.filter(x=>x.mes===m&&x.q==q),meta); if(!a.n)return;
-      h+="<tr><td>"+m+"</td><td>"+(q==1?"Dias 1 a 15":"Dia 16 ao fim do mês")+"</td><td>"+a.base+"</td><td>"+a.ent+"</td><td>"+pc(a.mes,a.base)+"</td><td>"+pc(a.d30,a.base)+"</td><td>"+a.avg+"</td><td class='pdca-ok'>"+a.ok+"</td><td class='pdca-bad'>"+a.late+"</td><td class='pdca-wa'>"+a.sem+"</td><td>"+a.ab+"</td><td>"+a.gp+"</td></tr>";
-    }));
-  }
-  $("tb").innerHTML=h;
   $("mot").innerHTML=motBlock("Entraram do dia 1 ao 15",q1)+motBlock("Entraram do dia 16 ao fim do mês",q2);
 }
 ["meta","base","pdcaDe","pdcaAte"].forEach(i=>{const el=$(i);if(el)el.addEventListener("input",render);});
