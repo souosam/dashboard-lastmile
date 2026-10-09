@@ -441,10 +441,10 @@ main>.section-title:first-of-type{margin-top:0;}
   </div>
   <div class="grid-2" id="cards" style="margin-bottom:18px;"></div>
 
-  <div class="section-title">Entradas × Entregues no Mesmo Mês</div>
+  <div class="section-title">Entradas × Entregues Dentro da Meta de SLA</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:260px;"><canvas id="entradasEntreguesChart"></canvas></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Barras: quantos projetos entraram na esteira em cada mês (coluna cheia) e quantos desses mesmos projetos já foram entregues ainda dentro do mês de entrada (coluna clara). A diferença é o que "vazou" para os meses seguintes — passe o mouse sobre a barra do mês pra ver em quais meses esses projetos acabaram sendo entregues (ou se ainda não foram).</div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Dos protocolos que entraram em cada mês: quantos já foram entregues dentro da meta de dias (verde), quantos foram entregues mas estouraram a meta (vermelho) — a diferença pra barra azul é o que ainda não foi entregue. Passe o mouse sobre a barra do mês pra ver o detalhamento.</div>
   </div>
 
   <div class="section-title">Backlog Acumulado</div>
@@ -1019,14 +1019,20 @@ function renderSLAByMonth(rows){
     const d=new Date(r.dataVenda);
     return mNames[d.getUTCMonth()+1]+'/'+(d.getUTCFullYear()%100).toString().padStart(2,'0');
   };
-  // SLA do Contrato (coluna "SLA Contratual")
-  const accCont={};rows.forEach(r=>{const m=mesVenda(r);if(m&&r.slaContrato>0){(accCont[m]=accCont[m]||[]).push(r.slaContrato);}});
-  // SLA do GP, para efeito comparativo (mesmo mês de venda)
-  const accGP={};rows.forEach(r=>{const m=mesVenda(r);if(m&&r.slaGP>0){(accGP[m]=accGP[m]||[]).push(r.slaGP);}});
+  // SLA do Contrato: só entra quem já está entregue de verdade (status 11 a 13 —
+  // Boas vindas, Ag. Faturamento, Entregue — mesma definição de isEntregue() usada no
+  // resto do dashboard), com venda e conclusão preenchidas. Sem isso, um protocolo cuja
+  // "Data de Conclusão" foi preenchida antes do status avançar (ou vice-versa) entrava ou
+  // saía da conta de forma inconsistente com o que o resto do dashboard chama de "entregue".
+  const accCont={};rows.forEach(r=>{const m=mesVenda(r);if(m&&isEntregue(r)&&r.slaContrato>0){(accCont[m]=accCont[m]||[]).push(r.slaContrato);}});
+  // SLA do GP, para efeito comparativo (mesmo mês de venda, mesmo filtro de entregue)
+  const accGP={};rows.forEach(r=>{const m=mesVenda(r);if(m&&isEntregue(r)&&r.slaGP>0){(accGP[m]=accGP[m]||[]).push(r.slaGP);}});
   const allMes=[...new Set([...Object.keys(accCont),...Object.keys(accGP)])];
   const labels=sortMonths(allMes);
   const dataCont=labels.map(l=>accCont[l]?Math.round(accCont[l].reduce((a,b)=>a+b,0)/accCont[l].length):null);
   const dataGP=labels.map(l=>accGP[l]?Math.round(accGP[l].reduce((a,b)=>a+b,0)/accGP[l].length):null);
+  const nCont=labels.map(l=>accCont[l]?accCont[l].length:0);
+  const nGP=labels.map(l=>accGP[l]?accGP[l].length:0);
   const meta=parseInt(document.getElementById('metaSLA')?.value)||30;
   s('metaLabel','(meta: '+meta+'d)');
   if(charts.slaMon)charts.slaMon.destroy();
@@ -1039,7 +1045,11 @@ function renderSLAByMonth(rows){
   charts.slaMon=new Chart(ctx,{type:'line',data:{labels,datasets},options:darkOpts({
     plugins:{
       legend:{display:true,labels:{color:'#9aa3bd',font:{size:10},boxWidth:12,padding:12}},
-      tooltip:{callbacks:{label:c=>` ${c.dataset.label}: ${c.raw}d`}}
+      tooltip:{callbacks:{label:c=>{
+        if(c.dataset.label==='Meta')return ` Meta: ${c.raw}d`;
+        const n=c.dataset.label==='SLA do Contrato'?nCont[c.dataIndex]:nGP[c.dataIndex];
+        return ` ${c.dataset.label}: ${c.raw}d (${n} protocolo${n===1?'':'s'})`;
+      }}}
     }
   })});
 }
@@ -1356,38 +1366,28 @@ function mesLabel(ym){
   if(!m)return ym;
   return MESES_PT[+m[2]-1]+' '+m[1];
 }
-function renderEntradasEntregues(L){
+function renderEntradasEntregues(L,meta){
   const meses=[...new Set(L.map(x=>x.mes))].sort();
-  const entraram=meses.map(m=>L.filter(x=>x.mes===m&&!x.c).length);
-  const entreguesMesmoMes=meses.map(m=>L.filter(x=>x.mes===m&&x.mesC===x.mes).length);
-  // Para cada mês de entrada, quando os projetos foram (ou ainda não foram) entregues —
-  // usado só no tooltip, pra responder "e os que não saíram no mesmo mês, saíram quando?"
-  const breakdown=meses.map(m=>{
-    const acc={};
-    L.filter(x=>x.mes===m&&!x.c).forEach(x=>{
-      const k=x.mesC||'ainda não entregue';
-      acc[k]=(acc[k]||0)+1;
-    });
-    return Object.entries(acc).sort(([a],[b])=>{
-      if(a==='ainda não entregue')return 1;
-      if(b==='ainda não entregue')return-1;
-      return a<b?-1:1;
-    });
-  });
+  const base=meses.map(m=>L.filter(x=>x.mes===m&&!x.c));
+  const entraram=base.map(g=>g.length);
+  const dentroMeta=base.map(g=>g.filter(x=>x.e&&x.dias!=null&&x.dias<=meta).length);
+  const foraMeta=base.map(g=>g.filter(x=>x.e&&x.dias!=null&&x.dias>meta).length);
+  const aindaNao=base.map(g=>g.filter(x=>!x.e).length);
   if(charts.pdcaEntrada)charts.pdcaEntrada.destroy();
   const ctx=document.getElementById('entradasEntreguesChart');if(!ctx)return;
   charts.pdcaEntrada=new Chart(ctx,{type:'bar',data:{labels:meses.map(mesLabel),datasets:[
     {label:'Entraram na esteira',data:entraram,backgroundColor:'#3498db',borderRadius:5},
-    {label:'Entregues no mesmo mês',data:entreguesMesmoMes,backgroundColor:'#2ecc71',borderRadius:5}
+    {label:'Entregues dentro da meta ('+meta+'d)',data:dentroMeta,backgroundColor:'#2ecc71',borderRadius:5},
+    {label:'Entregues fora da meta',data:foraMeta,backgroundColor:'#e74c3c',borderRadius:5}
   ]},options:darkOpts({plugins:{
     legend:{display:true,labels:{color:'#9aa6c3',font:{size:10}}},
     tooltip:{callbacks:{afterBody:items=>{
       if(!items.length)return[];
       const idx=items[0].dataIndex;
-      const b=breakdown[idx];
-      if(!b.length)return[];
-      return['',"Quando foram entregues os que entraram em "+mesLabel(meses[idx])+":"]
-        .concat(b.map(([k,v])=>'  '+(k==='ainda não entregue'?'Ainda não entregue':'Entregue em '+mesLabel(k))+': '+v));
+      return['',"Dos que entraram em "+mesLabel(meses[idx])+":",
+        '  Dentro da meta: '+dentroMeta[idx],
+        '  Fora da meta: '+foraMeta[idx],
+        '  Ainda não entregue: '+aindaNao[idx]];
     }}}
   }})});
 }
@@ -1408,11 +1408,23 @@ function renderBacklog(L){
   const todos=[...new Set(base.flatMap(x=>x.mesC?[x.mes,x.mesC]:[x.mes]))].sort();
   const meses=enumerarMeses(todos[0],todos[todos.length-1]);
   const backlog=meses.map(m=>base.filter(x=>x.mes<=m&&(x.mesC==null||x.mesC>m)).length);
+  // Só pro tooltip: quantos entraram naquele mês e quantos foram entregues naquele mês
+  // (entregues pode incluir protocolos que entraram em meses anteriores).
+  const entradasMes=meses.map(m=>base.filter(x=>x.mes===m).length);
+  const entreguesMes=meses.map(m=>base.filter(x=>x.mesC===m).length);
   if(charts.pdcaBacklog)charts.pdcaBacklog.destroy();
   const ctx=document.getElementById('backlogChart');if(!ctx)return;
   charts.pdcaBacklog=new Chart(ctx,{type:'line',data:{labels:meses.map(mesLabel),datasets:[
     {label:'Em andamento (fim do mês)',data:backlog,borderColor:'#f39c12',backgroundColor:'rgba(243,156,18,.15)',fill:true,tension:.3,pointRadius:3}
-  ]},options:darkOpts({plugins:{legend:{display:false}}})});
+  ]},options:darkOpts({plugins:{
+    legend:{display:false},
+    tooltip:{callbacks:{afterBody:items=>{
+      if(!items.length)return[];
+      const idx=items[0].dataIndex;
+      return['','Entraram em '+mesLabel(meses[idx])+': '+entradasMes[idx],
+        'Entregues em '+mesLabel(meses[idx])+': '+entreguesMes[idx]];
+    }}}
+  }})});
 }
 function renderAtrasoHist(L,meta){
   const entregues=L.filter(x=>x.e&&x.dias!=null);
@@ -1471,7 +1483,7 @@ function render(){
     if(cardsEl)cardsEl.style.gridTemplateColumns='1fr 1fr';
     $("cards").innerHTML=card("Entraram do dia 1 ao 15",agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês",agg(q2,meta),meta);
   }
-  renderEntradasEntregues(L);
+  renderEntradasEntregues(L,meta);
   renderBacklog(L);
   renderAtrasoHist(L,meta);
   $("mot").innerHTML=motBlock("Entraram do dia 1 ao 15",q1)+motBlock("Entraram do dia 16 ao fim do mês",q2);
