@@ -1416,19 +1416,44 @@ function renderBacklog(L){
 }
 function renderAtrasoHist(L,meta){
   const entregues=L.filter(x=>x.e&&x.dias!=null);
+  const total=entregues.length;
   const buckets=[
     {label:'Dentro da meta',test:d=>d<=meta,color:'#2ecc71'},
     {label:'1 a 10 dias de atraso',test:d=>d>meta&&d<=meta+10,color:'#f1c40f'},
     {label:'11 a 20 dias',test:d=>d>meta+10&&d<=meta+20,color:'#e67e22'},
     {label:'21 a 30 dias',test:d=>d>meta+20&&d<=meta+30,color:'#e74c3c'},
-    {label:'Mais de 30 dias',test:d=>d>meta+30,color:'#c0392b'}
+    {label:'31 a 60 dias',test:d=>d>meta+30&&d<=meta+60,color:'#c0392b'},
+    {label:'61 a 90 dias',test:d=>d>meta+60&&d<=meta+90,color:'#922b21'},
+    {label:'Mais de 90 dias',test:d=>d>meta+90,color:'#641e16'}
   ];
   const counts=buckets.map(b=>entregues.filter(x=>b.test(x.dias)).length);
+  const pcts=counts.map(c=>total?Math.round(100*c/total):0);
   if(charts.pdcaAtraso)charts.pdcaAtraso.destroy();
   const ctx=document.getElementById('atrasoHistChart');if(!ctx)return;
   charts.pdcaAtraso=new Chart(ctx,{type:'bar',data:{labels:buckets.map(b=>b.label),datasets:[
     {data:counts,backgroundColor:buckets.map(b=>b.color),borderRadius:5}
-  ]},options:darkOpts({plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>' '+c.raw+' protocolo'+(c.raw===1?'':'s')}}}})});
+  ]},
+  options:darkOpts({plugins:{
+    legend:{display:false},
+    tooltip:{callbacks:{label:c=>' '+c.raw+' protocolo'+(c.raw===1?'':'s')+' ('+pcts[c.dataIndex]+'%)'}}
+  }}),
+  // Rótulo de % acima de cada barra (plugin simples, sem dependência externa)
+  plugins:[{
+    id:'pctLabels',
+    afterDatasetsDraw(chart){
+      const {ctx}=chart;
+      chart.getDatasetMeta(0).data.forEach((bar,i)=>{
+        if(!counts[i])return;
+        ctx.save();
+        ctx.fillStyle='#e8ecf4';
+        ctx.font='600 11px sans-serif';
+        ctx.textAlign='center';
+        ctx.fillText(pcts[i]+'%',bar.x,bar.y-8);
+        ctx.restore();
+      });
+    }
+  }]
+  });
 }
 function render(){
   if(!window.allRows||!window.allRows.length)return;
