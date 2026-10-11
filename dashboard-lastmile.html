@@ -429,6 +429,12 @@ main>.section-title:first-of-type{margin-top:0;}
     <div style="color:var(--muted);font-size:11px;margin-top:10px;">Quantos protocolos estão em andamento (não entregues, não cancelados) ao final de cada mês. Se a linha sobe mês a mês, a esteira está recebendo mais do que consegue entregar.</div>
   </div>
 
+  <div class="section-title">Projetos Pendentes de Entrega</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="proto-wrap"><table class="pdca-table" id="pendentesTable"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Todos os protocolos ainda não entregues (nem cancelados), do mais pro menos atrasado. "Vencido" = já passou da meta de dias contada a partir da data da venda.</div>
+  </div>
+
   <div class="section-title">Distribuição de Atraso dos Concluídos</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:260px;"><canvas id="atrasoHistChart"></canvas></div>
@@ -1357,6 +1363,10 @@ const av=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):"-";
 // metade dos casos rápidos e metade muito atrasados — o desvio-padrão expõe essa diferença.
 const sd=a=>{if(a.length<2)return"-";const m=a.reduce((x,y)=>x+y,0)/a.length;const v=a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1);return Math.sqrt(v).toFixed(1);};
 const pc=(a,b)=>b?Math.round(100*a/b)+"%":"-";
+// Um protocolo pode ter mais de um motivo de atraso selecionado na planilha, separados
+// por vírgula (ex.: "Aguardando cliente, Pendência financeira") — cada motivo precisa
+// contar como uma ocorrência própria, não a célula inteira como um motivo único.
+const splitMotivos=s=>(s||'').split(',').map(x=>x.trim()).filter(Boolean);
 
 // Deriva, a partir do array normalizado (allRows), as métricas específicas do
 // PDCA — depende de "meta" e "base", por isso é recalculada aqui, não na
@@ -1401,7 +1411,7 @@ function derive(meta,base){
       mesC:conc!=null?ym(conc):null,dias:e?diff(conc,S):null,
       gp:e&&lib!=null?diff(conc,lib):null,d30:e?diff(conc,ent):null,pre,motivo,
       age:diff(T,S),ctr:(e&&prz&&lim!=null)?(conc<=lim?1:0):null,
-      mu:r.motivoAtraso,parceiro:r.parceiro
+      mu:r.motivoAtraso,parceiro:r.parceiro,cliente:r.cliente,produto:r.produto,protocolo:r.protocolo
     });
   }
   return out;
@@ -1443,7 +1453,7 @@ function card(t,a,meta){
 // mais demorou" calculada automaticamente — só o que está de fato preenchido na planilha.
 function renderMotivoPareto(L){
   const usr={};
-  L.filter(x=>!x.c&&x.mu).forEach(x=>{usr[x.mu]=(usr[x.mu]||0)+1;});
+  L.filter(x=>!x.c&&x.mu).forEach(x=>{splitMotivos(x.mu).forEach(m=>{usr[m]=(usr[m]||0)+1;});});
   const entries=Object.entries(usr).sort((a,b)=>b[1]-a[1]);
   if(charts.pdcaMotivo){charts.pdcaMotivo.destroy();charts.pdcaMotivo=null;}
   const ctx=document.getElementById('motivoParetoChart');if(!ctx)return;
@@ -1490,21 +1500,29 @@ function renderEntradasEntregues(L,meta){
   const dentroMeta=base.map(g=>g.filter(x=>x.e&&x.dias!=null&&x.dias<=meta).length);
   const foraMeta=base.map(g=>g.filter(x=>x.e&&x.dias!=null&&x.dias>meta).length);
   const aindaNao=base.map(g=>g.filter(x=>!x.e).length);
+  // % dentro da meta ENTRE OS JÁ ENTREGUES daquele mês (não sobre o total que entrou) —
+  // assim a linha mostra se a qualidade da entrega está melhorando ou piorando mês a mês,
+  // sem ser distorcida por meses recentes que só parecem "ruins" por ainda estarem em
+  // andamento. Fica null (sem ponto) nos meses sem nenhuma entrega ainda.
+  const pctDentro=meses.map((m,i)=>{const tot=dentroMeta[i]+foraMeta[i];return tot?+(100*dentroMeta[i]/tot).toFixed(1):null;});
   if(charts.pdcaEntrada)charts.pdcaEntrada.destroy();
   const ctx=document.getElementById('entradasEntreguesChart');if(!ctx)return;
-  charts.pdcaEntrada=new Chart(ctx,{type:'bar',data:{labels:meses.map(mesLabel),datasets:[
-    {label:'Entregues dentro da meta ('+meta+'d)',data:dentroMeta,backgroundColor:'#2ecc71',stack:'s'},
-    {label:'Entregues fora da meta',data:foraMeta,backgroundColor:'#e74c3c',stack:'s'},
-    {label:'Ainda não entregues',data:aindaNao,backgroundColor:'#3498db',stack:'s',borderRadius:{topLeft:5,topRight:5}}
+  charts.pdcaEntrada=new Chart(ctx,{data:{labels:meses.map(mesLabel),datasets:[
+    {type:'bar',label:'Entregues dentro da meta ('+meta+'d)',data:dentroMeta,backgroundColor:'#2ecc71',stack:'s',yAxisID:'y',order:2},
+    {type:'bar',label:'Entregues fora da meta',data:foraMeta,backgroundColor:'#e74c3c',stack:'s',yAxisID:'y',order:2},
+    {type:'bar',label:'Ainda não entregues',data:aindaNao,backgroundColor:'#3498db',stack:'s',borderRadius:{topLeft:5,topRight:5},yAxisID:'y',order:2},
+    {type:'line',label:'% dentro da meta (dos entregues)',data:pctDentro,borderColor:'#f1c40f',backgroundColor:'#f1c40f',tension:.25,pointRadius:3,spanGaps:true,yAxisID:'y1',order:1}
   ]},options:darkOpts({
     scales:{
       x:{stacked:true,grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},
-      y:{stacked:true,grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}
+      y:{stacked:true,position:'left',grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},
+      y1:{position:'right',min:0,max:100,grid:{display:false},ticks:{color:'#f1c40f',font:{size:10},callback:v=>v+'%'}}
     },
     plugins:{
       legend:{display:true,labels:{color:'#9aa6c3',font:{size:10}}},
       tooltip:{callbacks:{
         title:items=>mesLabel(meses[items[0].dataIndex])+' · '+entraram[items[0].dataIndex]+' entraram na esteira',
+        label:c=>c.dataset.type==='line'?(c.raw==null?' % dentro da meta: sem entregas ainda':' % dentro da meta: '+c.raw+'%'):' '+c.dataset.label+': '+c.raw,
         afterBody:items=>{
           if(!items.length)return[];
           const idx=items[0].dataIndex;
@@ -1613,8 +1631,10 @@ function renderMotivoParceiro(L){
   const porMotivo={};
   L.filter(x=>!x.c&&x.mu).forEach(x=>{
     const p=(x.parceiro||'—').trim()||'—';
-    (porMotivo[x.mu]=porMotivo[x.mu]||{});
-    porMotivo[x.mu][p]=(porMotivo[x.mu][p]||0)+1;
+    splitMotivos(x.mu).forEach(m=>{
+      (porMotivo[m]=porMotivo[m]||{});
+      porMotivo[m][p]=(porMotivo[m][p]||0)+1;
+    });
   });
   const topMotivos=Object.entries(porMotivo).map(([m,ps])=>[m,Object.values(ps).reduce((a,b)=>a+b,0),ps])
     .sort((a,b)=>b[1]-a[1]).slice(0,6);
@@ -1632,6 +1652,21 @@ function renderMotivoParceiro(L){
       </div>${rows}
     </div>`;
   }).join('');
+}
+// Lista de todo protocolo ainda não entregue (nem cancelado), do mais pro menos atrasado,
+// com cliente, dias em andamento, se já venceu a meta e o motivo de atraso informado.
+function renderPendentes(L,meta){
+  const tb=document.getElementById('pendentesTable');if(!tb)return;
+  const pend=L.filter(x=>!x.c&&!x.e).sort((a,b)=>(b.age||0)-(a.age||0));
+  if(!pend.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhum protocolo pendente — tudo entregue ou cancelado.</td></tr>';return;}
+  const head='<tr><th>Cliente</th><th>Parceiro</th><th>Entrou em</th><th>Dias em andamento</th><th>Situação</th><th>Motivo do atraso</th></tr>';
+  const rows=pend.map(x=>{
+    const vencido=x.age!=null&&x.age>meta;
+    return`<tr><td>${x.cliente||'—'}</td><td>${x.parceiro||'—'}</td><td>${mesLabel(x.mes)}</td><td>${x.age!=null?x.age+'d':'—'}</td>`+
+      `<td><span class="${vencido?'pdca-bad':'pdca-wa'}">${vencido?'Vencido':'Dentro do prazo'}</span></td>`+
+      `<td style="text-align:left;white-space:normal;">${x.mu||'<span style=\"color:var(--muted)\">— não informado —</span>'}</td></tr>`;
+  }).join('');
+  tb.innerHTML=head+rows;
 }
 function render(){
   if(!window.allRows||!window.allRows.length)return;
@@ -1651,6 +1686,7 @@ function render(){
   }
   renderEntradasEntregues(L,meta);
   renderBacklog(L);
+  renderPendentes(L,meta);
   renderAtrasoHist(L,meta);
   renderMotivoPareto(L);
   renderMotivoParceiro(L);
