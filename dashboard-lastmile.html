@@ -62,28 +62,33 @@ main{padding:22px 28px 40px;max-width:1700px;margin:0 auto;}
 @media(max-width:900px){.grid-pipeline{grid-template-columns:1fr;}}
 @media(max-width:1100px){.grid-3,.grid-3-map{grid-template-columns:1fr 1fr;}}
 @media(max-width:720px){.grid-2,.grid-3,.grid-3-map{grid-template-columns:1fr;}}
-/* KPI */
-.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px;}
+/* KPI — grade fixa de 3 colunas (6 cards = 2 linhas), cor e destaque definidos por
+   classe semântica (kpi-hero/kpi-amber/kpi-blue/kpi-neutral/kpi-trend), não por
+   posição (nth-child), pra não embaralhar as cores toda vez que um card muda de lugar. */
+.kpi-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px;}
+@media(max-width:980px){.kpi-row{grid-template-columns:repeat(2,1fr);}}
+@media(max-width:560px){.kpi-row{grid-template-columns:1fr;}}
 .kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;position:relative;overflow:hidden;transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;}
-.kpi-main{grid-column:span 2;background:var(--card-hi);}
-.kpi-main .kpi-value{font-size:28px!important;}
-.kpi-main .kpi-label{color:var(--accent);}
-@media (max-width:900px){.kpi-main{grid-column:span 1;}}
 .kpi:hover{transform:translateY(-3px);box-shadow:0 10px 28px rgba(0,0,0,.35);border-color:#2f3750;}
-.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));}
-.kpi:nth-child(2)::before{background:linear-gradient(90deg,var(--warn),#ffcf6b);}
-.kpi:nth-child(3)::before{background:linear-gradient(90deg,var(--accent2),var(--info));}
-.kpi:nth-child(4)::before{background:linear-gradient(90deg,var(--warn),var(--danger));}
-.kpi:nth-child(5)::before{background:linear-gradient(90deg,var(--info),#8e6fe0);}
-.kpi:nth-child(6)::before{background:linear-gradient(90deg,var(--muted),var(--border));}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--muted),var(--border));}
 .kpi-label{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
-.kpi-value{font-size:27px;font-weight:800;font-family:var(--font-d);color:var(--accent);line-height:1;font-variant-numeric:tabular-nums;}
-.kpi:nth-child(2) .kpi-value{color:var(--warn);}
-.kpi:nth-child(3) .kpi-value{color:var(--accent2);}
-.kpi:nth-child(4) .kpi-value{color:var(--warn);}
-.kpi:nth-child(5) .kpi-value{color:var(--info);}
-.kpi:nth-child(6) .kpi-value{color:var(--text);}
+.kpi-value{font-size:27px;font-weight:800;font-family:var(--font-d);color:var(--text);line-height:1;font-variant-numeric:tabular-nums;}
 .kpi-sub{font-size:11px;color:var(--textdim);margin-top:5px;}
+.kpi-sub strong{display:block;font-size:11px;font-weight:700;}
+.kpi-sub .kpi-period{display:block;margin-top:1px;color:var(--textdim);}
+/* Hero: o número que mais importa no mês (valor entregue) — único card com destaque forte */
+.kpi-hero{background:var(--card-hi);border-color:#2a3350;}
+.kpi-hero::before{background:linear-gradient(90deg,var(--accent),var(--accent2));}
+.kpi-hero .kpi-label{color:var(--accent);}
+.kpi-hero .kpi-value{color:var(--accent);}
+.kpi-amber::before{background:linear-gradient(90deg,var(--warn),#ffcf6b);}
+.kpi-amber .kpi-value{color:var(--warn);}
+.kpi-blue::before{background:linear-gradient(90deg,var(--info),#8e6fe0);}
+.kpi-blue .kpi-value{color:var(--info);}
+.kpi-trend-good::before{background:linear-gradient(90deg,var(--accent2),var(--accent));}
+.kpi-trend-good .kpi-value{color:var(--accent2);}
+.kpi-trend-bad::before{background:linear-gradient(90deg,var(--danger),#ff8a8a);}
+.kpi-trend-bad .kpi-value{color:var(--danger);}
 /* CARD */
 .card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;}
 .card-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:14px;display:flex;align-items:center;gap:6px;}
@@ -317,12 +322,12 @@ main>.section-title:first-of-type{margin-top:0;}
 
   <!-- KPIs -->
   <div class="kpi-row">
-    <div class="kpi kpi-main"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
-    <div class="kpi kpi-main"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
-    <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">meta: 4,5 ★</div></div>
-    <div class="kpi" title="Dias da data da venda até a data de conclusão, média dos protocolos entregues."><div class="kpi-label">SLA Contratual</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub" id="kpiSLASub">últimos 3 meses</div></div>
-    <div class="kpi"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" id="kpiAberto" style="font-size:17px;">—</div><div class="kpi-sub" id="kpiAbertoSub"></div></div>
-    <div class="kpi kpi-main"><div class="kpi-label">Entregues no Mês</div><div class="kpi-value" id="kpiEntreguesMes" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiEntreguesMesSub"></div></div>
+    <div class="kpi kpi-hero"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:22px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
+    <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
+    <div class="kpi kpi-amber"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">meta: 4,5 ★</div></div>
+    <div class="kpi" id="kpiSLACard" title="Dias da data da venda até a data de conclusão, média dos protocolos entregues."><div class="kpi-label">SLA Contratual</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub"><strong id="kpiSLATrend">—</strong><span class="kpi-period">últimos 3 meses, vs. 3 meses anteriores</span></div></div>
+    <div class="kpi kpi-blue"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" id="kpiAberto" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiAbertoSub"></div></div>
+    <div class="kpi kpi-hero"><div class="kpi-label">Entregues no Mês</div><div class="kpi-value" id="kpiEntreguesMes" style="font-size:22px;">—</div><div class="kpi-sub" id="kpiEntreguesMesSub"></div></div>
   </div>
 
   <!-- PIPELINE -->
@@ -884,11 +889,15 @@ function renderKPIs(rows){
   // Trimestre atual (últimos 3 meses) vs trimestre anterior, pra mostrar se está
   // melhorando (SLA caindo) ou piorando (SLA subindo) — SLA é "quanto menor, melhor",
   // por isso a seta é invertida em relação a um indicador normal de crescimento.
+  // A janela é contada pelo mês de ENTREGA (dataConclusao), não pela venda: contar pela
+  // venda misturava protocolos vendidos há pouco (ainda em andamento, SLA baixo porque
+  // mal começaram) com os já entregues, puxando a média artificialmente pra baixo e
+  // destoando do gráfico "SLA de Contrato por Mês", que já usa o mês de entrega.
   const now=new Date();
   const threeAgo=Date.UTC(now.getFullYear(),now.getMonth()-3,1);
   const sixAgo=Date.UTC(now.getFullYear(),now.getMonth()-6,1);
-  const recSlas=rows.filter(r=>r.slaContrato!=null&&r.dataVenda!=null&&r.dataVenda>=threeAgo).map(r=>r.slaContrato);
-  const prevSlas=rows.filter(r=>r.slaContrato!=null&&r.dataVenda!=null&&r.dataVenda>=sixAgo&&r.dataVenda<threeAgo).map(r=>r.slaContrato);
+  const recSlas=rows.filter(r=>r.slaContrato!=null&&r.dataConclusao!=null&&r.dataConclusao>=threeAgo).map(r=>r.slaContrato);
+  const prevSlas=rows.filter(r=>r.slaContrato!=null&&r.dataConclusao!=null&&r.dataConclusao>=sixAgo&&r.dataConclusao<threeAgo).map(r=>r.slaContrato);
   const sla=recSlas.length?Math.round(recSlas.reduce((a,b)=>a+b,0)/recSlas.length):0;
   const slaPrev=prevSlas.length?Math.round(prevSlas.reduce((a,b)=>a+b,0)/prevSlas.length):0;
   // mesma definição de "em esteira" acima — elimina a divergência entre os dois números
@@ -902,15 +911,17 @@ function renderKPIs(rows){
   s('kpiValorSub',conc.length+' protocolos entregues');
   s('kpiNota',nota?nota.toFixed(2):'—');
   s('kpiSLA',sla||'—');
-  const slaSubEl=document.getElementById('kpiSLASub');
-  if(slaSubEl){
-    if(slaPrev>0){
+  const slaTrendEl=document.getElementById('kpiSLATrend'),slaCardEl=document.getElementById('kpiSLACard');
+  if(slaTrendEl){
+    if(slaPrev>0&&recSlas.length){
       const pct=Math.round((sla-slaPrev)/slaPrev*100);
-      slaSubEl.textContent=(pct<=0?'▼ ':'▲ +')+Math.abs(pct)+'% vs trim. anterior';
-      slaSubEl.className='kpi-sub '+(pct<=0?'growth-pos':'growth-neg');
+      slaTrendEl.textContent=(pct<=0?'▼ ':'▲ +')+Math.abs(pct)+'% vs trimestre anterior';
+      slaTrendEl.className=pct<=0?'growth-pos':'growth-neg';
+      if(slaCardEl)slaCardEl.className='kpi '+(pct<=0?'kpi-trend-good':'kpi-trend-bad');
     }else{
-      slaSubEl.textContent='últimos 3 meses';
-      slaSubEl.className='kpi-sub';
+      slaTrendEl.textContent='Sem base de comparação ainda';
+      slaTrendEl.className='';
+      if(slaCardEl)slaCardEl.className='kpi';
     }
   }
   s('kpiAberto','R$ '+valAberto.toLocaleString('pt-BR',{minimumFractionDigits:2}));
