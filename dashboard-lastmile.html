@@ -1020,21 +1020,20 @@ function renderPRCByMonth(rows){
 
 // ── SLA BY MONTH ──────────────────────────────────────────────────
 function renderSLAByMonth(rows){
-  // Mês de referência = mês da DATA DA VENDA (mesma base do KPI "SLA de Contrato" no topo)
-  const mNames=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-  const mesVenda=r=>{
-    if(r.dataVenda==null)return null;
-    const d=new Date(r.dataVenda);
-    return mNames[d.getUTCMonth()+1]+'/'+(d.getUTCFullYear()%100).toString().padStart(2,'0');
-  };
+  // Mês de referência = mês de ENTREGA (r.mes, o mesmo campo usado em "Protocolos
+  // Entregues por Mês" e "Valor Entregue por Mês"). Antes este gráfico agrupava pelo
+  // mês da VENDA enquanto os outros agrupavam pelo mês de CONCLUSÃO — dois meses
+  // diferentes, o que fazia a contagem de protocolos parecer divergente entre os
+  // cards mesmo quando ambos estavam corretos. Agora todos usam a mesma base.
+  const mesEntrega=r=>r.mes||null;
   // SLA do Contrato: só entra quem já está entregue de verdade (status 11 a 13 —
   // Boas vindas, Ag. Faturamento, Entregue — mesma definição de isEntregue() usada no
   // resto do dashboard), com venda e conclusão preenchidas. Sem isso, um protocolo cuja
   // "Data de Conclusão" foi preenchida antes do status avançar (ou vice-versa) entrava ou
   // saía da conta de forma inconsistente com o que o resto do dashboard chama de "entregue".
-  const accCont={};rows.forEach(r=>{const m=mesVenda(r);if(m&&isEntregue(r)&&r.slaContrato>0){(accCont[m]=accCont[m]||[]).push(r.slaContrato);}});
-  // SLA do GP, para efeito comparativo (mesmo mês de venda, mesmo filtro de entregue)
-  const accGP={};rows.forEach(r=>{const m=mesVenda(r);if(m&&isEntregue(r)&&r.slaGP>0){(accGP[m]=accGP[m]||[]).push(r.slaGP);}});
+  const accCont={};rows.forEach(r=>{const m=mesEntrega(r);if(m&&isEntregue(r)&&r.slaContrato>0){(accCont[m]=accCont[m]||[]).push(r.slaContrato);}});
+  // SLA do GP, para efeito comparativo (mesmo mês de entrega, mesmo filtro de entregue)
+  const accGP={};rows.forEach(r=>{const m=mesEntrega(r);if(m&&isEntregue(r)&&r.slaGP>0){(accGP[m]=accGP[m]||[]).push(r.slaGP);}});
   const allMes=[...new Set([...Object.keys(accCont),...Object.keys(accGP)])];
   const labels=sortMonths(allMes);
   const dataCont=labels.map(l=>accCont[l]?Math.round(accCont[l].reduce((a,b)=>a+b,0)/accCont[l].length):null);
