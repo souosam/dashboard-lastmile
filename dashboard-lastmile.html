@@ -394,7 +394,7 @@ main>.section-title:first-of-type{margin-top:0;}
 
   <div class="filter-bar">
     <label>Meta de entrega, em dias contados da data da venda</label>
-    <input type="number" id="meta" min="1" value="20" style="width:70px;"/>
+    <input type="number" id="meta" min="1" value="30" style="width:70px;"/>
     <label>Data que define quando o projeto entrou</label>
     <select id="base">
       <option value="venda" selected>Data da venda</option>
@@ -435,8 +435,17 @@ main>.section-title:first-of-type{margin-top:0;}
     <div style="color:var(--muted);font-size:11px;margin-top:10px;">Quantos protocolos entregues ficaram em cada faixa de dias acima (ou dentro) da meta. Mostra se o atraso é concentrado em poucos casos muito fora da meta ou espalhado por todo mundo.</div>
   </div>
 
-  <div class="section-title">Meta já Estourada na Entrada: Onde o Tempo foi Gasto</div>
-  <div class="grid-2" id="mot" style="margin-bottom:18px;"></div>
+  <div class="section-title">Motivos de Atraso — Visão Geral</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="chart-wrap" style="height:320px;"><canvas id="motivoParetoChart"></canvas></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Motivos informados na coluna "Motivo do atraso" da planilha, do mais para o menos frequente. A linha mostra o percentual acumulado — onde ela cruza 80% são as causas que, resolvidas, eliminam a maior parte dos atrasos (princípio de Pareto).</div>
+  </div>
+
+  <div class="section-title">Motivo × Parceiro</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div id="motivoParceiroList"></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:4px;">Pra cada motivo mais frequente, quais parceiros mais aparecem nele. Motivo concentrado em 1-2 parceiros é um problema pontual (cobrar aquele parceiro); motivo espalhado entre vários é um problema do processo (vale revisar o fluxo).</div>
+  </div>
 
   <div class="section-title">Como Ler Esta Página</div>
   <div class="card" style="margin-bottom:18px;">
@@ -1104,11 +1113,25 @@ function renderSLAByMonth(rows){
   charts.slaMon=new Chart(ctx,{type:'line',data:{labels,datasets},options:darkOpts({
     plugins:{
       legend:{display:true,labels:{color:'#9aa3bd',font:{size:10},boxWidth:12,padding:12}},
-      tooltip:{callbacks:{label:c=>{
-        if(c.dataset.label==='Meta')return ` Meta: ${c.raw}d`;
-        const n=c.dataset.label==='SLA do Contrato'?nCont[c.dataIndex]:nGP[c.dataIndex];
-        return ` ${c.dataset.label}: ${c.raw}d (${n} protocolo${n===1?'':'s'})`;
-      }}}
+      tooltip:{callbacks:{
+        label:c=>{
+          if(c.dataset.label==='Meta')return ` Meta: ${c.raw}d`;
+          const n=c.dataset.label==='SLA do Contrato'?nCont[c.dataIndex]:nGP[c.dataIndex];
+          return ` ${c.dataset.label}: ${c.raw}d (${n} protocolo${n===1?'':'s'})`;
+        },
+        // Popup de análise: quantos dias de diferença existem entre o SLA do Contrato
+        // (venda → conclusão) e o SLA do GP (liberação p/ gestão → conclusão) naquele mês —
+        // ou seja, quanto tempo em média fica "parado" antes de a gestão assumir o protocolo.
+        afterBody:items=>{
+          const idx=items[0]?.dataIndex;
+          if(idx==null)return;
+          const c=dataCont[idx],g=dataGP[idx];
+          if(c==null||g==null)return;
+          const diff=c-g;
+          return['','Diferença (Contrato − GP): '+(diff>=0?'+':'')+diff+'d',
+            diff>0?'→ tempo médio até a liberação p/ gestão':diff<0?'→ GP demora mais que o contrato total (ver dados)':'→ liberado no mesmo dia da venda'];
+        }
+      }}
     }
   })});
 }
@@ -1329,6 +1352,10 @@ function darkOpts(extra={}){
 (function(){
 const $=id=>document.getElementById(id);
 const av=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length).toFixed(1):"-";
+// Desvio-padrão (amostral) — mede o quão espalhado o SLA está em torno da média.
+// Duas médias iguais podem esconder processos muito diferentes: um estável, outro com
+// metade dos casos rápidos e metade muito atrasados — o desvio-padrão expõe essa diferença.
+const sd=a=>{if(a.length<2)return"-";const m=a.reduce((x,y)=>x+y,0)/a.length;const v=a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1);return Math.sqrt(v).toFixed(1);};
 const pc=(a,b)=>b?Math.round(100*a/b)+"%":"-";
 
 // Deriva, a partir do array normalizado (allRows), as métricas específicas do
@@ -1374,7 +1401,7 @@ function derive(meta,base){
       mesC:conc!=null?ym(conc):null,dias:e?diff(conc,S):null,
       gp:e&&lib!=null?diff(conc,lib):null,d30:e?diff(conc,ent):null,pre,motivo,
       age:diff(T,S),ctr:(e&&prz&&lim!=null)?(conc<=lim?1:0):null,
-      mu:r.motivoAtraso
+      mu:r.motivoAtraso,parceiro:r.parceiro
     });
   }
   return out;
@@ -1384,7 +1411,7 @@ function agg(L,meta){
   return{
     n:L.length,canc:L.length-B.length,base:B.length,ent:E.length,
     mes:E.filter(x=>x.mesC===x.mes).length,d30:E.filter(x=>x.d30<=30).length,
-    avg:av(E.map(x=>x.dias)),ok:E.filter(x=>x.dias<=meta).length,late:E.filter(x=>x.dias>meta).length,
+    avg:av(E.map(x=>x.dias)),std:sd(E.map(x=>x.dias)),ok:E.filter(x=>x.dias<=meta).length,late:E.filter(x=>x.dias>meta).length,
     sem:B.filter(x=>x.pre!=null&&x.pre>=meta).length,libN:B.filter(x=>x.pre!=null).length,
     ab:B.filter(x=>!x.e).length,abL:B.filter(x=>!x.e&&x.age>meta).length,
     gp:av(E.filter(x=>x.gp!=null&&x.gp>=0).map(x=>x.gp)),
@@ -1399,6 +1426,7 @@ function card(t,a,meta){
     ["Concluídos no mesmo mês em que entraram",a.mes+" ("+pc(a.mes,a.base)+" dos que entraram)"],
     ["Concluídos em até 30 dias após a entrada",a.d30+" ("+pc(a.d30,a.base)+" dos que entraram)"],
     ["Média de dias, da venda à conclusão (só concluídos)",a.avg+" dias"],
+    ["Desvio-padrão do SLA (quanto mais alto, mais imprevisível)",a.std+(a.std!=="-"?" dias":"")],
     ["Concluídos dentro da meta de "+meta+" dias",a.ok+" ("+pc(a.ok,a.ent)+" dos concluídos)"],
     ["Concluídos fora da meta (acima de "+meta+" dias)",'<span class="pdca-bad">'+a.late+" ("+pc(a.late,a.ent)+" dos concluídos)</span>"],
     ["Entraram na gestão com a meta já estourada",'<span class="pdca-wa">'+a.sem+" ("+pc(a.sem,a.libN)+" dos que têm data de liberação)</span>"],
@@ -1409,17 +1437,41 @@ function card(t,a,meta){
   ];
   return '<div class="card"><div class="card-title">'+t+'</div>'+k.map(x=>'<div class="pdca-kv"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join("")+'</div>';
 }
-function motBlock(t,L){
-  const cnt={}, usr={};
-  L.filter(x=>!x.c).forEach(x=>{
-    if(x.motivo)cnt[x.motivo]=(cnt[x.motivo]||0)+1;
-    if(x.mu)usr[x.mu]=(usr[x.mu]||0)+1;
-  });
-  const bar=o=>{const e=Object.entries(o).sort((a,b)=>b[1]-a[1]),m=e.length?e[0][1]:1;
-    return e.length?e.map(([k,v])=>'<div class="pdca-bar-row"><div class="pdca-bar-head"><span>'+k+'</span><b>'+v+'</b></div><div class="pdca-bar-fill" style="width:'+(100*v/m)+'%"></div></div>').join(""):'<div style="color:var(--muted);font-size:12px;">Nenhum projeto nesta situação.</div>'};
-  let h='<div class="card"><div class="card-title">'+t+'</div><div style="color:var(--muted);font-size:11px;margin-bottom:8px;">Etapa que mais demorou entre a venda e a liberação para a gestão</div>'+bar(cnt);
-  if(Object.keys(usr).length)h+='<div style="color:var(--muted);font-size:11px;margin:14px 0 6px;">Motivos informados na coluna Motivo do atraso da planilha</div>'+bar(usr);
-  return h+'</div>';
+// Gráfico de Pareto dos motivos de atraso (coluna "Motivo do atraso" da planilha):
+// barras = contagem por motivo, do mais pro menos frequente; linha = % acumulado.
+// Visão geral (quinzena 1-15 + 16-fim juntas), sem o antigo bloco de "etapa que
+// mais demorou" calculada automaticamente — só o que está de fato preenchido na planilha.
+function renderMotivoPareto(L){
+  const usr={};
+  L.filter(x=>!x.c&&x.mu).forEach(x=>{usr[x.mu]=(usr[x.mu]||0)+1;});
+  const entries=Object.entries(usr).sort((a,b)=>b[1]-a[1]);
+  if(charts.pdcaMotivo){charts.pdcaMotivo.destroy();charts.pdcaMotivo=null;}
+  const ctx=document.getElementById('motivoParetoChart');if(!ctx)return;
+  if(!entries.length){
+    const c=ctx.getContext('2d');c.clearRect(0,0,ctx.width,ctx.height);
+    c.fillStyle='#6b7a9f';c.font='12px sans-serif';c.textAlign='center';
+    c.fillText('Nenhum motivo de atraso preenchido na planilha ainda.',ctx.width/2,ctx.height/2);
+    return;
+  }
+  const labels=entries.map(([k])=>k);
+  const counts=entries.map(([,v])=>v);
+  const total=counts.reduce((a,b)=>a+b,0);
+  let acc=0;
+  const cum=counts.map(c=>{acc+=c;return+(100*acc/total).toFixed(1);});
+  charts.pdcaMotivo=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+    {type:'bar',label:'Protocolos',data:counts,backgroundColor:'#e67e22',borderRadius:5,order:2,yAxisID:'y'},
+    {type:'line',label:'% acumulado',data:cum,borderColor:'#f1c40f',backgroundColor:'#f1c40f',tension:.25,pointRadius:3,order:1,yAxisID:'y1'}
+  ]},options:darkOpts({
+    scales:{
+      x:{grid:{color:'#2a3147'},ticks:{color:'#9aa3bd',font:{size:10},autoSkip:false,maxRotation:30,minRotation:0}},
+      y:{position:'left',grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}},title:{display:true,text:'Protocolos',color:'#6b7a9f',font:{size:10}}},
+      y1:{position:'right',min:0,max:100,grid:{display:false},ticks:{color:'#f1c40f',font:{size:10},callback:v=>v+'%'}}
+    },
+    plugins:{
+      legend:{display:true,labels:{color:'#9aa3bd',font:{size:10},boxWidth:12,padding:12}},
+      tooltip:{callbacks:{label:c=>c.dataset.type==='line'?' Acumulado: '+c.raw+'%':' '+c.raw+' protocolo'+(c.raw===1?'':'s')}}
+    }
+  })});
 }
 const MESES_PT=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
 function mesLabel(ym){
@@ -1428,6 +1480,10 @@ function mesLabel(ym){
   return MESES_PT[+m[2]-1]+' '+m[1];
 }
 function renderEntradasEntregues(L,meta){
+  // Barra ÚNICA empilhada por mês (dentro da meta + fora da meta + ainda não entregue =
+  // total que entrou), em vez de 3 barras lado a lado com uma delas ("Entraram") sempre
+  // maior que as outras duas — ficava difícil comparar visualmente. Empilhado, a altura
+  // total da barra já É o total de entradas, sem precisar de uma barra extra pra isso.
   const meses=[...new Set(L.map(x=>x.mes))].sort();
   const base=meses.map(m=>L.filter(x=>x.mes===m&&!x.c));
   const entraram=base.map(g=>g.length);
@@ -1437,20 +1493,27 @@ function renderEntradasEntregues(L,meta){
   if(charts.pdcaEntrada)charts.pdcaEntrada.destroy();
   const ctx=document.getElementById('entradasEntreguesChart');if(!ctx)return;
   charts.pdcaEntrada=new Chart(ctx,{type:'bar',data:{labels:meses.map(mesLabel),datasets:[
-    {label:'Entraram na esteira',data:entraram,backgroundColor:'#3498db',borderRadius:5},
-    {label:'Entregues dentro da meta ('+meta+'d)',data:dentroMeta,backgroundColor:'#2ecc71',borderRadius:5},
-    {label:'Entregues fora da meta',data:foraMeta,backgroundColor:'#e74c3c',borderRadius:5}
-  ]},options:darkOpts({plugins:{
-    legend:{display:true,labels:{color:'#9aa6c3',font:{size:10}}},
-    tooltip:{callbacks:{afterBody:items=>{
-      if(!items.length)return[];
-      const idx=items[0].dataIndex;
-      return['',"Dos que entraram em "+mesLabel(meses[idx])+":",
-        '  Dentro da meta: '+dentroMeta[idx],
-        '  Fora da meta: '+foraMeta[idx],
-        '  Ainda não entregue: '+aindaNao[idx]];
-    }}}
-  }})});
+    {label:'Entregues dentro da meta ('+meta+'d)',data:dentroMeta,backgroundColor:'#2ecc71',stack:'s'},
+    {label:'Entregues fora da meta',data:foraMeta,backgroundColor:'#e74c3c',stack:'s'},
+    {label:'Ainda não entregues',data:aindaNao,backgroundColor:'#3498db',stack:'s',borderRadius:{topLeft:5,topRight:5}}
+  ]},options:darkOpts({
+    scales:{
+      x:{stacked:true,grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}},
+      y:{stacked:true,grid:{color:'#2a3147'},ticks:{color:'#6b7a9f',font:{size:10}}}
+    },
+    plugins:{
+      legend:{display:true,labels:{color:'#9aa6c3',font:{size:10}}},
+      tooltip:{callbacks:{
+        title:items=>mesLabel(meses[items[0].dataIndex])+' · '+entraram[items[0].dataIndex]+' entraram na esteira',
+        afterBody:items=>{
+          if(!items.length)return[];
+          const idx=items[0].dataIndex;
+          const pct=entraram[idx]?Math.round(100*dentroMeta[idx]/entraram[idx]):0;
+          return['','Dentro da meta: '+pct+'% do que entrou'];
+        }
+      }}
+    }
+  })});
 }
 // Enumera todos os meses, em ordem, entre o primeiro e o último mês presente nos dados —
 // precisa ser contínuo (não só os meses que têm linha em L) pra backlog não "pular" meses parados.
@@ -1504,35 +1567,77 @@ function renderAtrasoHist(L,meta){
   if(charts.pdcaAtraso)charts.pdcaAtraso.destroy();
   const ctx=document.getElementById('atrasoHistChart');if(!ctx)return;
   charts.pdcaAtraso=new Chart(ctx,{type:'bar',data:{labels:buckets.map(b=>b.label),datasets:[
-    {data:counts,backgroundColor:buckets.map(b=>b.color),borderRadius:5}
+    {data:counts,backgroundColor:buckets.map(b=>b.color),borderRadius:6,maxBarThickness:70}
   ]},
-  options:darkOpts({plugins:{
-    legend:{display:false},
-    tooltip:{callbacks:{label:c=>' '+c.raw+' protocolo'+(c.raw===1?'':'s')+' ('+pcts[c.dataIndex]+'%)'}}
-  }}),
+  options:darkOpts({
+    // Espaço reservado em cima pro rótulo de % não ficar cortado na borda do card,
+    // e eixo Y escondido — o % já em cima da barra conta a história, o número de
+    // protocolos de cada faixa fica no hover.
+    layout:{padding:{top:26}},
+    scales:{
+      x:{grid:{display:false},ticks:{color:'#9aa3bd',font:{size:10,weight:'600'}}},
+      y:{display:false,grid:{display:false}}
+    },
+    plugins:{
+      legend:{display:false},
+      tooltip:{callbacks:{label:c=>' '+c.raw+' protocolo'+(c.raw===1?'':'s')+' ('+pcts[c.dataIndex]+'%)'}}
+    }
+  }),
   // Rótulo de % acima de cada barra (plugin simples, sem dependência externa)
   plugins:[{
     id:'pctLabels',
     afterDatasetsDraw(chart){
-      const {ctx}=chart;
+      const {ctx,chartArea}=chart;
       chart.getDatasetMeta(0).data.forEach((bar,i)=>{
-        if(!counts[i])return;
         ctx.save();
+        const y=Math.max(chartArea.top+26,bar.y-24);
         ctx.fillStyle='#e8ecf4';
-        ctx.font='600 11px sans-serif';
+        ctx.font='700 12px sans-serif';
         ctx.textAlign='center';
-        ctx.fillText(pcts[i]+'%',bar.x,bar.y-8);
+        ctx.fillText(pcts[i]+'%',bar.x,y);
+        ctx.font='500 10px sans-serif';
+        ctx.fillStyle='#6b7a9f';
+        ctx.fillText(counts[i]+(counts[i]===1?' proto.':' protos.'),bar.x,y+14);
         ctx.restore();
       });
     }
   }]
   });
 }
+// Cruza motivo de atraso × parceiro: pra cada um dos motivos mais frequentes (saído
+// do Pareto), mostra quais parceiros mais contribuem pra ele. Ajuda a diferenciar um
+// motivo "sistêmico" (espalhado entre vários parceiros) de um "pontual" (concentrado
+// em 1-2 parceiros específicos) — o plano de ação é bem diferente em cada caso.
+function renderMotivoParceiro(L){
+  const el=document.getElementById('motivoParceiroList');if(!el)return;
+  const porMotivo={};
+  L.filter(x=>!x.c&&x.mu).forEach(x=>{
+    const p=(x.parceiro||'—').trim()||'—';
+    (porMotivo[x.mu]=porMotivo[x.mu]||{});
+    porMotivo[x.mu][p]=(porMotivo[x.mu][p]||0)+1;
+  });
+  const topMotivos=Object.entries(porMotivo).map(([m,ps])=>[m,Object.values(ps).reduce((a,b)=>a+b,0),ps])
+    .sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(!topMotivos.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;">Nenhum motivo de atraso preenchido na planilha ainda.</div>';return;}
+  el.innerHTML=topMotivos.map(([motivo,total,ps])=>{
+    const partners=Object.entries(ps).sort((a,b)=>b[1]-a[1]);
+    const concentrado=partners.length<=2;
+    const rows=partners.slice(0,4).map(([p,c])=>
+      `<div class="pdca-bar-row"><div class="pdca-bar-head"><span>${p}</span><b>${c}</b></div><div class="pdca-bar-fill" style="width:${100*c/partners[0][1]}%"></div></div>`
+    ).join('');
+    return `<div style="margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
+        <span style="font-weight:700;font-size:12px;color:var(--text);">${motivo}</span>
+        <span style="font-size:10px;font-weight:700;color:${concentrado?'#e74c3c':'#f39c12'};">${total} caso${total===1?'':'s'} · ${concentrado?'concentrado em poucos parceiros':'espalhado entre parceiros'}</span>
+      </div>${rows}
+    </div>`;
+  }).join('');
+}
 function render(){
   if(!window.allRows||!window.allRows.length)return;
   const metaEl=$("meta"),baseEl=$("base");
   if(!metaEl||!baseEl)return;
-  const meta=+metaEl.value||20, base=baseEl.value;
+  const meta=+metaEl.value||30, base=baseEl.value;
   const L=derive(meta,base);
   $("cov").textContent="Início da contagem da meta: data da venda, em "+L.length+" protocolos.";
   const q1=L.filter(x=>x.q==1), q2=L.filter(x=>x.q==2);
@@ -1547,7 +1652,8 @@ function render(){
   renderEntradasEntregues(L,meta);
   renderBacklog(L);
   renderAtrasoHist(L,meta);
-  $("mot").innerHTML=motBlock("Entraram do dia 1 ao 15",q1)+motBlock("Entraram do dia 16 ao fim do mês",q2);
+  renderMotivoPareto(L);
+  renderMotivoParceiro(L);
 }
 ["meta","base","pdcaDe","pdcaAte"].forEach(i=>{const el=$(i);if(el)el.addEventListener("input",render);});
 const goBtn=$("go");if(goBtn)goBtn.addEventListener("click",()=>{if(typeof loadData==='function')loadData();});
