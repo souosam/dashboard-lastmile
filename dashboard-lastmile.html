@@ -107,6 +107,7 @@ main>.section-title:first-of-type{margin-top:0;}
 .stage-dot{width:8px;height:8px;border-radius:50%;margin:0 auto 9px;}
 .stage-count{font-family:var(--font-d);font-size:21px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums;}
 .stage-label{font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--textdim);line-height:1.3;min-height:24px;margin-top:5px;}
+.stage-value{font-size:10px;font-weight:700;font-family:var(--font-m);color:var(--muted);margin-top:4px;}
 .stage-bar-track{height:3px;background:var(--border);border-radius:2px;margin-top:11px;overflow:hidden;}
 .stage-bar-fill{height:100%;border-radius:2px;transition:width .3s ease;}
 .funnel-metric-toggle{display:flex;gap:6px;margin-left:auto;}
@@ -273,6 +274,7 @@ main>.section-title:first-of-type{margin-top:0;}
     <div class="nav-item active" data-view="dashboard" onclick="switchView('dashboard')"><span class="nav-ico">📊</span>Dashboard</div>
     <div class="nav-item" data-view="pdca" onclick="switchView('pdca')"><span class="nav-ico">🔁</span>PDCA</div>
     <div class="nav-item" data-view="partners" onclick="switchView('partners')"><span class="nav-ico">🤝</span>Qualidade Parceiros</div>
+    <div class="nav-item" data-view="analises" onclick="switchView('analises')"><span class="nav-ico">📊</span>Análises</div>
   </nav>
   <div class="content-col">
 <header>
@@ -322,7 +324,7 @@ main>.section-title:first-of-type{margin-top:0;}
 
   <!-- KPIs -->
   <div class="kpi-row">
-    <div class="kpi kpi-hero"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:22px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
+    <div class="kpi kpi-hero" title="Soma o valor de Boas Vindas + Ag. Faturamento + Entregue (status 11 a 13) com Data de Conclusão preenchida. O card &quot;Entregue&quot; do Pipeline mostra só a etapa final (13), por isso os números não batem."><div class="kpi-label">Valor Entregue (Etapas Finais)</div><div class="kpi-value" id="kpiValor" style="font-size:22px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
     <div class="kpi"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
     <div class="kpi kpi-amber"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">meta: 4,5 ★</div></div>
     <div class="kpi" id="kpiSLACard" title="Dias da data da venda até a data de conclusão, média dos protocolos entregues."><div class="kpi-label">SLA Contratual</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub"><strong id="kpiSLATrend">—</strong><span class="kpi-period">últimos 3 meses, vs. 3 meses anteriores</span></div></div>
@@ -364,37 +366,6 @@ main>.section-title:first-of-type{margin-top:0;}
       <div class="card-title">SLA de Contrato por Mês <span style="font-size:10px;color:var(--muted);" id="metaLabel"></span></div>
       <div class="chart-wrap"><canvas id="slaByMonth"></canvas></div>
     </div>
-  </div>
-
-  <!-- ANÁLISES -->
-  <div class="section-title">📊 Análises</div>
-  <div class="grid-2" style="margin-bottom:18px;">
-    <div class="card">
-      <div class="card-title">SLA Médio por Cliente (dias)
-        <span class="tip" data-tip="SLA real de entrega (data da venda → data de conclusão), médio por cliente. Ordenado do maior para o menor SLA.">ℹ</span>
-      </div>
-      <div class="map-city-list" id="slaByCliente"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">SLA Médio por Parceiro (dias)
-        <span class="tip" data-tip="SLA real de entrega (data da venda → data de conclusão), médio por parceiro. Ordenado do maior para o menor SLA.">ℹ</span>
-      </div>
-      <div class="map-city-list" id="slaByParceiro"></div>
-    </div>
-  </div>
-  <div class="grid-2" style="margin-bottom:18px;">
-    <div class="card">
-      <div class="card-title">Top Clientes · Valor Entregue</div>
-      <div class="map-city-list" id="topValorList"></div>
-    </div>
-    <div class="card">
-      <div class="card-title">Top Clientes · Quantidade</div>
-      <div class="map-city-list" id="topQtdList"></div>
-    </div>
-  </div>
-  <div class="grid-2" style="margin-bottom:18px;">
-    <div class="card"><div class="card-title">Parceiros com Mais Protocolos</div><div class="map-city-list" id="topParceirosList"></div></div>
-    <div class="card"><div class="card-title">Distribuição por Estado</div><div class="map-city-list" id="estadoList"></div></div>
   </div>
 
   <!-- MAPA -->
@@ -499,6 +470,40 @@ main>.section-title:first-of-type{margin-top:0;}
 </main>
 </div><!-- #view-partners -->
 
+<div id="view-analises" class="view">
+<main>
+  <div style="color:var(--muted);font-size:11px;margin:-6px 0 16px;">Reflete os mesmos filtros e o mesmo escopo (NET TURBO / Demais Parceiros) selecionados na aba Dashboard.</div>
+  <div class="grid-2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-title">SLA Médio por Cliente (dias)
+        <span class="tip" data-tip="SLA real de entrega (data da venda → data de conclusão), médio por cliente. Ordenado do maior para o menor SLA.">ℹ</span>
+      </div>
+      <div class="map-city-list" id="slaByCliente"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">SLA Médio por Parceiro (dias)
+        <span class="tip" data-tip="SLA real de entrega (data da venda → data de conclusão), médio por parceiro. Ordenado do maior para o menor SLA.">ℹ</span>
+      </div>
+      <div class="map-city-list" id="slaByParceiro"></div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-bottom:18px;">
+    <div class="card">
+      <div class="card-title">Top Clientes · Valor Entregue</div>
+      <div class="map-city-list" id="topValorList"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Top Clientes · Quantidade</div>
+      <div class="map-city-list" id="topQtdList"></div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-bottom:18px;">
+    <div class="card"><div class="card-title">Parceiros com Mais Protocolos</div><div class="map-city-list" id="topParceirosList"></div></div>
+    <div class="card"><div class="card-title">Distribuição por Estado</div><div class="map-city-list" id="estadoList"></div></div>
+  </div>
+</main>
+</div><!-- #view-analises -->
+
   </div><!-- .content-col -->
 </div><!-- .app-shell -->
 </div><!-- #appContent -->
@@ -560,6 +565,8 @@ function switchView(name){
     title.textContent='PDCA Last Mile';sub.textContent='GP · Samuel Almeida · Coortes por entrada';
   }else if(name==='partners'){
     title.textContent='Qualidade Parceiros';sub.textContent='GP · Samuel Almeida · Comparativo entre parceiros';
+  }else if(name==='analises'){
+    title.textContent='Análises';sub.textContent='GP · Samuel Almeida · SLA e rankings detalhados';
   }else{
     title.textContent='Last Mile Dashboard';sub.textContent='GP · Samuel Almeida';
   }
@@ -908,7 +915,7 @@ function renderKPIs(rows){
   const entreguesMes=rows.filter(r=>isEntregue(r)&&r.mes===mesAtual);
   const valEntreguesMes=entreguesMes.reduce((s,r)=>s+r.valor,0);
   s('kpiValor','R$ '+val.toLocaleString('pt-BR',{minimumFractionDigits:2}));
-  s('kpiValorSub',conc.length+' protocolos entregues');
+  s('kpiValorSub',conc.length+' protocolos c/ conclusão registrada');
   s('kpiNota',nota?nota.toFixed(2):'—');
   s('kpiSLA',sla||'—');
   const slaTrendEl=document.getElementById('kpiSLATrend'),slaCardEl=document.getElementById('kpiSLACard');
@@ -941,21 +948,25 @@ function getStatusColor(status){
   return'#6b7a9f';
 }
 function renderFunnel(rows){
-  const counts={};rows.forEach(r=>{if(r.status)counts[r.status]=(counts[r.status]||0)+1;});
+  const counts={},valores={};
+  rows.forEach(r=>{if(r.status){counts[r.status]=(counts[r.status]||0)+1;valores[r.status]=(valores[r.status]||0)+(r.valor||0);}});
   const seen=new Set(),main=[],bottom=[];
   FUNNEL_ORDER.forEach(o=>{const on=o.toLowerCase();Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)&&normLabel(st)===on){main.push([st,c]);seen.add(st);}});});
   BOTTOM_ORDER.forEach(o=>{const on=o.toLowerCase();Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)&&normLabel(st)===on){bottom.push([st,c]);seen.add(st);}});});
   Object.entries(counts).forEach(([st,c])=>{if(!seen.has(st)){main.push([st,c]);seen.add(st);}});
 
+  const fmtR=v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
   function stageCard(st,c,maxC){
     const color=getStatusColor(st);const label=st.replace(/^\d+\.\s*/,'').trim();
     const pct=Math.max(6,Math.round((c/maxC)*100));
     const isActive=activeStatusFilter===st;
     const dim=activeStatusFilter&&!isActive;
+    const val=valores[st]||0;
     return`<div class="stage-card${isActive?' is-active':''}${dim?' is-dim':''}" onclick="filterByStatus('${st.replace(/'/g,"\\'")}')">
       <div class="stage-dot" style="background:${color}"></div>
       <div class="stage-count" style="color:${color}">${c}</div>
       <div class="stage-label">${label}</div>
+      <div class="stage-value">${fmtR(val)}</div>
       <div class="stage-bar-track"><div class="stage-bar-fill" style="width:${pct}%;background:${color}"></div></div>
     </div>`;
   }
