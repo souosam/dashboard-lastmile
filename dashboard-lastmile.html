@@ -566,12 +566,13 @@ const PALETTE=['#2ecc71','#1abc9c','#3498db','#9b59b6','#f39c12','#e74c3c','#e67
 const STATUS_COLORS={'Projeto Futuro':'#b0bec5','Em validação':'#f39c12','Assinatura LM':'#3498db','Compra de material':'#e67e22','Parado':'#e74c3c','Site Survey':'#8e44ad','Em configuração':'#e84393','Postar equipamento':'#f1c40f','Solicitar agendamento':'#a29bfe','Aceite agendamento':'#6c5ce7','Agendado':'#1abc9c','Boas vindas':'#2ecc71','Ag. Faturamento':'#16a085','Entregue':'#27ae60','Concluída':'#27ae60','Cancelado':'#c0392b'};
 const FUNNEL_ORDER=['Projeto Futuro','Em validação','Assinatura LM','Compra de material','Parado','Site Survey','Em configuração','Postar equipamento','Solicitar agendamento','Aceite agendamento','Agendado','Boas vindas','Ag. Faturamento'];
 const BOTTOM_ORDER=['Entregue','Concluída','Cancelado'];
-// Valor conta como "entregue" a partir da etapa Boas vindas (status 11 a 13: Boas vindas, Ag. Faturamento, Entregue/Concluída)
-// Baseado no número do status (statusNum), não no texto — resiste a mudanças de rótulo na planilha (ex.: "Concluída" → "Entregue")
+// "Entregue" = tem Data de Conclusão preenchida e status não é Cancelado (14).
+// Calculado uma única vez em parseSheet() (campo r.entregue) — aqui só lemos esse
+// campo, pra garantir que todo o dashboard (KPIs, gráficos, PDCA, Qualidade de
+// Parceiros) usa exatamente a mesma regra.
 function isEntregue(r){
   if(r==null)return false;
-  const n=typeof r==='object'?r.statusNum:parseInt(r);
-  return n>=11&&n<=13;
+  return!!r.entregue;
 }
 const CITY_COORDS={'São Paulo':[-23.55,-46.63],'Campinas':[-22.91,-47.06],'Santos':[-23.96,-46.33],'Guarulhos':[-23.46,-46.53],'Sorocaba':[-23.50,-47.46],'Piracicaba':[-22.72,-47.65],'Limeira':[-22.56,-47.40],'Jundiaí':[-23.19,-46.88],'Barueri':[-23.51,-46.88],'Cajamar':[-23.35,-46.88],'Salto':[-23.20,-47.29],'Indaiatuba':[-23.09,-47.22],'Porto Feliz':[-23.21,-47.52],'Cotia':[-23.60,-46.92],'São Carlos':[-21.99,-47.89],'São Roque':[-23.53,-47.14],'Bragança Paulista':[-22.95,-46.54],'Itapetininga':[-23.60,-48.05],'Assis':[-22.66,-50.41],'Araçatuba':[-21.21,-50.43],'Votuporanga':[-20.42,-49.97],'Presidente Prudente':[-22.12,-51.39],'Bauru':[-22.31,-49.07],'Marília':[-22.21,-49.95],'Extrema':[-22.86,-46.32],'Franco da Rocha':[-23.32,-46.72],'Santo André':[-23.66,-46.53],'Vinhedo':[-23.03,-46.97],'Americana':[-22.74,-47.33],'Ribeirão Preto':[-21.17,-47.81],'Itu':[-23.27,-47.30],'Jaguariúna':[-22.70,-47.00],'Angatuba':[-23.49,-48.41],'Itaberá':[-23.86,-49.14],'Pederneiras':[-22.35,-48.77],'Bertioga':[-23.85,-46.14],'Itararé':[-24.11,-49.33],'Laranjal Paulista':[-23.04,-47.84],'Lins':[-21.68,-49.74],'Birigui':[-21.28,-50.34],'Botucatu':[-22.89,-48.44],'Extrema':[-22.86,-46.32],'Altinópolis':[-21.02,-47.37],'Belo Horizonte':[-19.92,-43.94],'Uberlândia':[-18.92,-48.28],'Uberaba':[-19.75,-47.93],'Araxá':[-19.59,-46.94],'Timóteo':[-19.58,-42.65],'Dom Cavati':[-19.35,-42.07],'Andradas':[-22.07,-46.57],'Bambuí':[-20.01,-45.98],'Itapecerica':[-20.48,-45.12],'Cássia':[-20.58,-46.92],'Conceição do Mato Dentro':[-19.04,-43.42],'Tocantins':[-21.18,-43.02],'Recreio':[-21.36,-42.46],'Matipó':[-20.28,-42.34],'Laranjal':[-21.37,-42.67],'Campo Florido':[-19.78,-48.57],'Monte Azul':[-15.15,-42.87],'Guanambi':[-14.22,-42.78],'Uruana de Minas':[-16.26,-46.15],'Mato Verde':[-15.41,-42.87],'Iturama':[-19.73,-50.20],'Curitiba':[-25.43,-49.27],'Londrina':[-23.31,-51.17],'Porto Alegre':[-30.03,-51.22],'Vila Flores':[-28.87,-51.57],'Florianópolis':[-27.60,-48.55],'Salvador':[-12.97,-38.50],'Fortaleza':[-3.72,-38.54],'Recife':[-8.05,-34.88],'Rio de Janeiro':[-22.91,-43.17],'Campo Grande':[-20.44,-54.65],'Cuiabá':[-15.60,-56.10],'Manaus':[-3.10,-60.02],'Belém':[-1.46,-48.50],'Goiânia':[-16.69,-49.25],'Sinop':[-11.86,-55.51],'São Luís':[-2.53,-44.30],'Palmas':[-10.18,-48.33]};
 
@@ -767,15 +768,22 @@ function parseSheet(text){
     // SLA real de entrega (dias corridos), calculado pelas datas — não pela coluna bruta da planilha:
     // SLA do Contrato = data da venda → data de conclusão
     // SLA do GP        = data de liberação para gestão → data de conclusão
-    const slaContrato=(dataVenda!=null&&dataConclusao!=null)?diff(dataConclusao,dataVenda):0;
-    const slaGP=(liberado!=null&&dataConclusao!=null)?diff(dataConclusao,liberado):0;
+    // IMPORTANTE: fica null (não 0) quando falta alguma data, pra não confundir "sem dado"
+    // com um SLA real de 0 dia (venda e conclusão no mesmo dia, que é um valor válido).
+    const slaContrato=(dataVenda!=null&&dataConclusao!=null)?diff(dataConclusao,dataVenda):null;
+    const slaGP=(liberado!=null&&dataConclusao!=null)?diff(dataConclusao,liberado):null;
+    // Definição ÚNICA de "entregue", usada em TODO o dashboard (KPIs, gráficos, PDCA,
+    // Qualidade de Parceiros): tem Data de Conclusão preenchida e o status não é
+    // Cancelado (14). Calculada aqui, uma única vez, pra nenhuma tela reimplementar
+    // essa regra do jeito dela e divergir das demais.
+    const entregue=dataConclusao!=null&&statusNum!==14;
 
     return{cliente,parceiro:get('parceiro'),estado:get('estado'),cidade:get('cidade'),
       protocolo:get('protocolo'),etiqueta:get('etiqueta'),produto:get('produto'),
       prio:get('prio'),status,statusNum,
       valor,nota,slaGP,slaContrato,prazoContrato,mes,mesSort,
       dataVenda,liberado,dataConclusao,assinatura,inputBKO,dataLimite,
-      prazoContratoDias:prazoContrato,motivoAtraso};
+      prazoContratoDias:prazoContrato,motivoAtraso,entregue};
   }).filter(Boolean);
 }
 
@@ -874,7 +882,7 @@ function renderKPIs(rows){
   const nota=notas.length?notas.reduce((a,b)=>a+b,0)/notas.length:0;
   // SLA de Contrato (coluna "SLA Contratual"), média simples, janela fixada pela data da venda
   const now=new Date();const sixAgo=Date.UTC(now.getFullYear(),now.getMonth()-6,1);
-  const recSlas=rows.filter(r=>r.slaContrato>0&&r.dataVenda!=null&&r.dataVenda>=sixAgo).map(r=>r.slaContrato);
+  const recSlas=rows.filter(r=>r.slaContrato!=null&&r.dataVenda!=null&&r.dataVenda>=sixAgo).map(r=>r.slaContrato);
   const sla=recSlas.length?Math.round(recSlas.reduce((a,b)=>a+b,0)/recSlas.length):0;
   // mesma definição de "ativos" acima — elimina a divergência entre os dois números
   const liberados=ativos.length;
@@ -949,7 +957,7 @@ function renderPipelineList(rows){
       <td><span class="prod-chip">${r.produto||'—'}</span></td>
       <td style="font-size:11px;">${r.prio||'—'}</td>
       <td><span class="status-chip ${sCls(r.status)}">${(r.status||'').replace(/^\d+\.\s*/,'')}</span></td>
-      <td>${r.slaGP>0?slaBadge(r.slaGP):'—'}</td>
+      <td>${r.slaGP!=null?slaBadge(r.slaGP):'—'}</td>
       <td style="text-align:right;color:var(--accent);font-weight:700;">${r.valor>0?'R$ '+r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—'}</td>
     </tr>`).join('');
 }
@@ -978,14 +986,14 @@ function renderTicketMedio(rows){
 // ── SLA ALERTS ────────────────────────────────────────────────────
 function renderSLAAlerts(rows){
   const meta=parseInt(document.getElementById('metaSLA')?.value)||30;
-  const ativos=rows.filter(r=>r.slaGP>0&&r.status&&!isEntregue(r)&&!r.status.includes('Cancelado')).sort((a,b)=>b.slaGP-a.slaGP).slice(0,15);
+  const ativos=rows.filter(r=>r.slaGP!=null&&r.status&&!isEntregue(r)&&!r.status.includes('Cancelado')).sort((a,b)=>b.slaGP-a.slaGP).slice(0,15);
   const tb=document.querySelector('#slaAlertTable tbody');if(!tb)return;
   tb.innerHTML=ativos.map(r=>{const cls=r.slaGP>meta*1.5?'sem-red':r.slaGP>meta?'sem-yellow':'sem-green';return`<tr><td><span class="sem-dot ${cls}"></span></td><td>${sname(r.cliente)}</td><td><span class="prod-chip">${r.produto||'—'}</span></td><td style="font-size:10px;color:var(--muted)">${(r.status||'').replace(/^\d+\.\s*/,'')}</td><td>${slaBadge(r.slaGP)}</td></tr>`;}).join('');
 }
 
 // ── PARADOS ───────────────────────────────────────────────────────
 function renderParados(rows){
-  const parados=rows.filter(r=>r.slaGP>0&&r.status&&(r.status.toLowerCase().includes('parado')||r.status.toLowerCase().includes('em andamento'))).sort((a,b)=>b.slaGP-a.slaGP).slice(0,15);
+  const parados=rows.filter(r=>r.slaGP!=null&&r.status&&(r.status.toLowerCase().includes('parado')||r.status.toLowerCase().includes('em andamento'))).sort((a,b)=>b.slaGP-a.slaGP).slice(0,15);
   const tb=document.querySelector('#paradosTable tbody');if(!tb)return;
   tb.innerHTML=parados.map(r=>`<tr><td>${sname(r.cliente)}</td><td>${r.parceiro||'—'}</td><td style="font-size:10px;color:var(--muted)">${(r.status||'').replace(/^\d+\.\s*/,'')}</td><td>${slaBadge(r.slaGP)}</td></tr>`).join('');
 }
@@ -1031,9 +1039,9 @@ function renderSLAByMonth(rows){
   // resto do dashboard), com venda e conclusão preenchidas. Sem isso, um protocolo cuja
   // "Data de Conclusão" foi preenchida antes do status avançar (ou vice-versa) entrava ou
   // saía da conta de forma inconsistente com o que o resto do dashboard chama de "entregue".
-  const accCont={};rows.forEach(r=>{const m=mesEntrega(r);if(m&&isEntregue(r)&&r.slaContrato>0){(accCont[m]=accCont[m]||[]).push(r.slaContrato);}});
+  const accCont={};rows.forEach(r=>{const m=mesEntrega(r);if(m&&isEntregue(r)&&r.slaContrato!=null){(accCont[m]=accCont[m]||[]).push(r.slaContrato);}});
   // SLA do GP, para efeito comparativo (mesmo mês de entrega, mesmo filtro de entregue)
-  const accGP={};rows.forEach(r=>{const m=mesEntrega(r);if(m&&isEntregue(r)&&r.slaGP>0){(accGP[m]=accGP[m]||[]).push(r.slaGP);}});
+  const accGP={};rows.forEach(r=>{const m=mesEntrega(r);if(m&&isEntregue(r)&&r.slaGP!=null){(accGP[m]=accGP[m]||[]).push(r.slaGP);}});
   const allMes=[...new Set([...Object.keys(accCont),...Object.keys(accGP)])];
   const labels=sortMonths(allMes);
   const dataCont=labels.map(l=>accCont[l]?Math.round(accCont[l].reduce((a,b)=>a+b,0)/accCont[l].length):null);
@@ -1129,7 +1137,7 @@ function renderSLARankList(elId,sorted,maxM){
 }
 function renderSLAByCliente(rows){
   const acc={},name={};
-  rows.filter(r=>r.slaContrato>0).forEach(r=>{
+  rows.filter(r=>r.slaContrato!=null).forEach(r=>{
     const k=clienteKey(r.cliente);if(!k)return;
     if(!acc[k])acc[k]=[];acc[k].push(r.slaContrato);
     if(!name[k])name[k]=r.cliente.trim();
@@ -1140,7 +1148,7 @@ function renderSLAByCliente(rows){
 }
 function renderSLAByParceiroChart(rows){
   const acc={};
-  rows.filter(r=>r.parceiro&&r.slaContrato>0).forEach(r=>{if(!acc[r.parceiro])acc[r.parceiro]=[];acc[r.parceiro].push(r.slaContrato);});
+  rows.filter(r=>r.parceiro&&r.slaContrato!=null).forEach(r=>{if(!acc[r.parceiro])acc[r.parceiro]=[];acc[r.parceiro].push(r.slaContrato);});
   const sorted=Object.entries(acc).map(([p,v])=>({l:p,media:Math.round(v.reduce((a,b)=>a+b,0)/v.length),count:v.length})).sort((a,b)=>b.media-a.media);
   const maxM=Math.max(...sorted.map(s=>s.media),1);
   renderSLARankList('slaByParceiro',sorted,maxM);
@@ -1250,7 +1258,7 @@ function renderProtoTable(rows){
       <td style="font-family:var(--font-m);color:var(--accent2);font-size:11px;">${r.protocolo}</td>
       <td><span class="prod-chip">${r.produto||'—'}</span></td>
       <td><span class="status-chip ${sCls(r.status)}">${(r.status||'').replace(/^\d+\.\s*/,'')}</span></td>
-      <td>${r.slaGP>0?slaBadge(r.slaGP):'—'}</td>
+      <td>${r.slaGP!=null?slaBadge(r.slaGP):'—'}</td>
       <td>${r.valor>0?'R$ '+r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—'}</td>
       <td style="color:var(--warn)">${r.nota>0?'★'.repeat(r.nota):'—'}</td>
     </tr>`).join('');
@@ -1306,7 +1314,9 @@ function derive(meta,base){
       if(ateYM!=null&&entYM>ateYM)continue;
     }
     const n=r.statusNum;
-    const c=n===14, e=(n>=11&&n<=13&&conc!=null);
+    // c/e usam a mesma regra única de "entregue" (r.entregue) calculada em parseSheet() —
+    // tem Data de Conclusão e status não é Cancelado — pra não divergir do Dashboard.
+    const c=n===14, e=r.entregue;
     const inp=r.inputBKO;
     const pre=lib!=null?diff(lib,S):null;
     let motivo=null;
@@ -1524,13 +1534,13 @@ function renderPartnersTable(stats){
 }
 function renderPartnersSlaChart(rows,topNomes){
   const acc={}; // acc[parceiro][mes] = {s,c}
-  rows.filter(r=>r.statusNum===13&&r.slaContrato>0&&r.dataConclusao!=null&&topNomes.includes(parceiroKey(r.parceiro))).forEach(r=>{
+  rows.filter(r=>r.statusNum===13&&r.slaContrato!=null&&r.dataConclusao!=null&&topNomes.includes(parceiroKey(r.parceiro))).forEach(r=>{
     const k=parceiroKey(r.parceiro), m=ym(r.dataConclusao);
     if(!acc[k])acc[k]={};
     if(!acc[k][m])acc[k][m]={s:0,c:0};
     acc[k][m].s+=r.slaContrato;acc[k][m].c++;
   });
-  const meses=[...new Set(rows.filter(r=>r.statusNum===13&&r.slaContrato>0&&r.dataConclusao!=null).map(r=>ym(r.dataConclusao)))].sort();
+  const meses=[...new Set(rows.filter(r=>r.statusNum===13&&r.slaContrato!=null&&r.dataConclusao!=null).map(r=>ym(r.dataConclusao)))].sort();
   const nomeOriginal={}; rows.forEach(r=>{const k=parceiroKey(r.parceiro);if(k&&!nomeOriginal[k])nomeOriginal[k]=r.parceiro;});
   const datasets=topNomes.map((k,i)=>({
     label:nomeOriginal[k]||k,
@@ -1555,7 +1565,7 @@ function render(){
     if(r.statusNum===14)a.canc++;
     if(r.statusNum===13){
       a.entregues++;
-      if(r.slaContrato>0){a.slaS+=r.slaContrato;a.slaC++;}
+      if(r.slaContrato!=null){a.slaS+=r.slaContrato;a.slaC++;}
     }
     if(r.nota>0){a.notaS+=r.nota;a.notaC++;}
   });
