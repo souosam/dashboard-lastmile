@@ -320,9 +320,9 @@ main>.section-title:first-of-type{margin-top:0;}
     <div class="kpi kpi-main"><div class="kpi-label">Valor Entregue</div><div class="kpi-value" id="kpiValor" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiValorSub"></div></div>
     <div class="kpi kpi-main"><div class="kpi-label">Total Protocolos</div><div class="kpi-value" id="kpiTotal">—</div><div class="kpi-sub">na base</div></div>
     <div class="kpi"><div class="kpi-label">Nota Média PRC</div><div class="kpi-value" id="kpiNota">—</div><div class="kpi-sub">meta: 4,5 ★</div></div>
-    <div class="kpi"><div class="kpi-label">SLA de Contrato</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub">últimos 6 meses</div></div>
+    <div class="kpi" title="Dias da data da venda até a data de conclusão, média dos protocolos entregues."><div class="kpi-label">SLA Contratual</div><div class="kpi-value" id="kpiSLA">—</div><div class="kpi-sub" id="kpiSLASub">últimos 3 meses</div></div>
     <div class="kpi"><div class="kpi-label">Valor em Aberto</div><div class="kpi-value" id="kpiAberto" style="font-size:17px;">—</div><div class="kpi-sub" id="kpiAbertoSub"></div></div>
-    <div class="kpi"><div class="kpi-label">Protocolos Ativos</div><div class="kpi-value" id="kpiAtivos">—</div><div class="kpi-sub" id="kpiAtivosSub"></div></div>
+    <div class="kpi kpi-main"><div class="kpi-label">Entregues no Mês</div><div class="kpi-value" id="kpiEntreguesMes" style="font-size:19px;">—</div><div class="kpi-sub" id="kpiEntreguesMesSub"></div></div>
   </div>
 
   <!-- PIPELINE -->
@@ -874,27 +874,49 @@ function render(){
 // ── KPIs ──────────────────────────────────────────────────────────
 function renderKPIs(rows){
   const conc=rows.filter(r=>isEntregue(r));
-  // "Ativos" = protocolos em gestão, da etapa 02. Assinatura LM até 10. Agendado
+  // "Em esteira" = protocolos em gestão, da etapa 02. Assinatura LM até 10. Agendado
   // (00 Projeto Futuro e 01 Em validação ainda não estão com a gestão; 11-13 já é considerado entregue; 14 é cancelado)
-  const ativos=rows.filter(r=>r.statusNum>=2&&r.statusNum<=10);
+  const emEsteira=rows.filter(r=>r.statusNum>=2&&r.statusNum<=10);
   const val=conc.reduce((s,r)=>s+r.valor,0);
   const notas=rows.filter(r=>r.nota>0).map(r=>r.nota);
   const nota=notas.length?notas.reduce((a,b)=>a+b,0)/notas.length:0;
-  // SLA de Contrato (coluna "SLA Contratual"), média simples, janela fixada pela data da venda
-  const now=new Date();const sixAgo=Date.UTC(now.getFullYear(),now.getMonth()-6,1);
-  const recSlas=rows.filter(r=>r.slaContrato!=null&&r.dataVenda!=null&&r.dataVenda>=sixAgo).map(r=>r.slaContrato);
+  // SLA Contratual = dias da data da venda até a data de conclusão, só dos entregues.
+  // Trimestre atual (últimos 3 meses) vs trimestre anterior, pra mostrar se está
+  // melhorando (SLA caindo) ou piorando (SLA subindo) — SLA é "quanto menor, melhor",
+  // por isso a seta é invertida em relação a um indicador normal de crescimento.
+  const now=new Date();
+  const threeAgo=Date.UTC(now.getFullYear(),now.getMonth()-3,1);
+  const sixAgo=Date.UTC(now.getFullYear(),now.getMonth()-6,1);
+  const recSlas=rows.filter(r=>r.slaContrato!=null&&r.dataVenda!=null&&r.dataVenda>=threeAgo).map(r=>r.slaContrato);
+  const prevSlas=rows.filter(r=>r.slaContrato!=null&&r.dataVenda!=null&&r.dataVenda>=sixAgo&&r.dataVenda<threeAgo).map(r=>r.slaContrato);
   const sla=recSlas.length?Math.round(recSlas.reduce((a,b)=>a+b,0)/recSlas.length):0;
-  // mesma definição de "ativos" acima — elimina a divergência entre os dois números
-  const liberados=ativos.length;
-  const valAberto=ativos.reduce((s,r)=>s+r.valor,0);
+  const slaPrev=prevSlas.length?Math.round(prevSlas.reduce((a,b)=>a+b,0)/prevSlas.length):0;
+  // mesma definição de "em esteira" acima — elimina a divergência entre os dois números
+  const valAberto=emEsteira.reduce((s,r)=>s+r.valor,0);
+  // Entregues no mês corrente (qtd + valor juntos no mesmo card)
+  const mNames=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const mesAtual=mNames[now.getMonth()+1]+'/'+(now.getFullYear()%100).toString().padStart(2,'0');
+  const entreguesMes=rows.filter(r=>isEntregue(r)&&r.mes===mesAtual);
+  const valEntreguesMes=entreguesMes.reduce((s,r)=>s+r.valor,0);
   s('kpiValor','R$ '+val.toLocaleString('pt-BR',{minimumFractionDigits:2}));
   s('kpiValorSub',conc.length+' protocolos entregues');
   s('kpiNota',nota?nota.toFixed(2):'—');
   s('kpiSLA',sla||'—');
-  s('kpiAtivos',ativos.length);
-  s('kpiAtivosSub',liberados+' liberados p/ gestão');
+  const slaSubEl=document.getElementById('kpiSLASub');
+  if(slaSubEl){
+    if(slaPrev>0){
+      const pct=Math.round((sla-slaPrev)/slaPrev*100);
+      slaSubEl.textContent=(pct<=0?'▼ ':'▲ +')+Math.abs(pct)+'% vs trim. anterior';
+      slaSubEl.className='kpi-sub '+(pct<=0?'growth-pos':'growth-neg');
+    }else{
+      slaSubEl.textContent='últimos 3 meses';
+      slaSubEl.className='kpi-sub';
+    }
+  }
   s('kpiAberto','R$ '+valAberto.toLocaleString('pt-BR',{minimumFractionDigits:2}));
-  s('kpiAbertoSub',ativos.length+' protocolos ativos');
+  s('kpiAbertoSub',emEsteira.length+' em esteira');
+  s('kpiEntreguesMes',entreguesMes.length);
+  s('kpiEntreguesMesSub','R$ '+valEntreguesMes.toLocaleString('pt-BR',{minimumFractionDigits:2})+' em '+mesAtual);
   s('kpiTotal',rows.length);
 }
 function s(id,v){const e=document.getElementById(id);if(e)e.textContent=v;}
