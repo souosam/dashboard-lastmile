@@ -222,6 +222,15 @@ main>.section-title:first-of-type{margin-top:0;}
 }
 /* PDCA */
 .pdca-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--textdim);}
+.pa-form{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+.pa-form input{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text);font-family:var(--font);}
+.pa-form input:focus{outline:none;border-color:var(--accent);}
+.pa-status{border:none;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;}
+.pa-status-aberto{background:rgba(231,76,60,.15);color:var(--danger);}
+.pa-status-andamento{background:rgba(243,156,18,.15);color:var(--warn);}
+.pa-status-concluido{background:rgba(46,204,113,.15);color:var(--accent);}
+.pa-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;}
+.pa-del:hover{color:var(--danger);}
 .pdca-kv:last-child{border:0;}
 .pdca-kv b{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text);}
 .pdca-ok{color:var(--accent);}
@@ -429,12 +438,6 @@ main>.section-title:first-of-type{margin-top:0;}
     <div style="color:var(--muted);font-size:11px;margin-top:10px;">Quantos protocolos estão em andamento (não entregues, não cancelados) ao final de cada mês. Se a linha sobe mês a mês, a esteira está recebendo mais do que consegue entregar.</div>
   </div>
 
-  <div class="section-title">Projetos Pendentes de Entrega</div>
-  <div class="card" style="margin-bottom:18px;">
-    <div class="proto-wrap"><table class="pdca-table" id="pendentesTable"></table></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Todos os protocolos ainda não entregues (nem cancelados), do mais pro menos atrasado. "Vencido" = já passou da meta de dias contada a partir da data da venda.</div>
-  </div>
-
   <div class="section-title">Distribuição de Atraso dos Concluídos</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:260px;"><canvas id="atrasoHistChart"></canvas></div>
@@ -451,6 +454,20 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="card" style="margin-bottom:18px;">
     <div id="motivoParceiroList"></div>
     <div style="color:var(--muted);font-size:11px;margin-top:4px;">Pra cada motivo mais frequente, quais parceiros mais aparecem nele. Motivo concentrado em 1-2 parceiros é um problema pontual (cobrar aquele parceiro); motivo espalhado entre vários é um problema do processo (vale revisar o fluxo).</div>
+  </div>
+
+  <div class="section-title">Plano de Ação (PDCA)</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="pa-form">
+      <input list="pa-motivos" id="paMotivo" placeholder="Motivo (ex.: Documentação pendente LM)" style="flex:1.4;min-width:160px;"/>
+      <datalist id="pa-motivos"></datalist>
+      <input id="paAcao" placeholder="Ação combinada" style="flex:2;min-width:200px;"/>
+      <input id="paResp" placeholder="Responsável" style="flex:1;min-width:120px;"/>
+      <input id="paPrazo" type="date" style="flex:.8;min-width:130px;"/>
+      <button class="btn-primary" onclick="addAcao()" style="flex:0 0 auto;">+ Adicionar</button>
+    </div>
+    <div class="proto-wrap"><table class="pdca-table" id="planoAcaoTable"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Registre aqui o que foi combinado pra cada motivo do Pareto acima — é o que fecha o ciclo PDCA (o "Act"). Fica salvo neste navegador. Em atraso = passou do prazo e ainda não foi marcado como concluído.</div>
   </div>
 
   <div class="section-title">Como Ler Esta Página</div>
@@ -488,6 +505,13 @@ main>.section-title:first-of-type{margin-top:0;}
 <div id="view-analises" class="view">
 <main>
   <div style="color:var(--muted);font-size:11px;margin:-6px 0 16px;">Reflete os mesmos filtros e o mesmo escopo (NET TURBO / Demais Parceiros) selecionados na aba Dashboard.</div>
+
+  <div class="section-title">Projetos Pendentes de Entrega</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="proto-wrap"><table class="pdca-table" id="pendentesTable"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Todos os protocolos ainda não entregues (nem cancelados), do mais pro menos atrasado. "Vencido" = já passou da meta de dias (configurada na aba PDCA) contada a partir da data da venda.</div>
+  </div>
+
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
       <div class="card-title">SLA Médio por Cliente (dias)
@@ -1653,6 +1677,58 @@ function renderMotivoParceiro(L){
     </div>`;
   }).join('');
 }
+// ── PLANO DE AÇÃO (fecha o ciclo PDCA — o "Act") ──────────────────
+// Guardado no localStorage deste navegador (não existe backend neste dashboard).
+// Cada item liga um motivo do Pareto a uma ação combinada, responsável e prazo.
+const PA_KEY='lastmile_pdca_plano_acao';
+function loadAcoes(){
+  try{const raw=localStorage.getItem(PA_KEY);return raw?JSON.parse(raw):[];}
+  catch(e){console.warn('Plano de ação: não foi possível ler o localStorage.',e);return[];}
+}
+function saveAcoes(arr){
+  try{localStorage.setItem(PA_KEY,JSON.stringify(arr));}
+  catch(e){console.warn('Plano de ação: não foi possível salvar no localStorage.',e);}
+}
+function addAcao(){
+  const motivo=$("paMotivo")?.value.trim(),acao=$("paAcao")?.value.trim(),
+    resp=$("paResp")?.value.trim(),prazo=$("paPrazo")?.value;
+  if(!motivo||!acao){alert('Preencha pelo menos o motivo e a ação combinada.');return;}
+  const arr=loadAcoes();
+  arr.unshift({id:Date.now(),motivo,acao,resp,prazo,status:'aberto'});
+  saveAcoes(arr);
+  $("paMotivo").value='';$("paAcao").value='';$("paResp").value='';$("paPrazo").value='';
+  renderPlanoAcao();
+}
+function cicleStatusAcao(id){
+  const ordem=['aberto','andamento','concluido'];
+  const arr=loadAcoes();
+  const it=arr.find(x=>x.id===id);if(!it)return;
+  it.status=ordem[(ordem.indexOf(it.status)+1)%ordem.length];
+  saveAcoes(arr);renderPlanoAcao();
+}
+function delAcao(id){
+  if(!confirm('Remover esta ação do plano?'))return;
+  saveAcoes(loadAcoes().filter(x=>x.id!==id));
+  renderPlanoAcao();
+}
+const PA_STATUS_LABEL={aberto:'Aberto',andamento:'Em andamento',concluido:'Concluído'};
+function renderPlanoAcao(){
+  const tb=document.getElementById('planoAcaoTable');if(!tb)return;
+  const arr=loadAcoes();
+  const today=new Date().toISOString().slice(0,10);
+  if(!arr.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhuma ação registrada ainda — use o formulário acima.</td></tr>';return;}
+  const head='<tr><th>Motivo</th><th>Ação combinada</th><th>Responsável</th><th>Prazo</th><th>Status</th><th></th></tr>';
+  const rows=arr.map(it=>{
+    const atrasada=it.status!=='concluido'&&it.prazo&&it.prazo<today;
+    return`<tr><td style="text-align:left;white-space:normal;">${it.motivo}</td>`+
+      `<td style="text-align:left;white-space:normal;">${it.acao}</td>`+
+      `<td>${it.resp||'—'}</td>`+
+      `<td>${it.prazo?it.prazo.split('-').reverse().join('/'):'—'}${atrasada?' <span class="pdca-bad">(atrasado)</span>':''}</td>`+
+      `<td><button class="pa-status pa-status-${it.status}" onclick="cicleStatusAcao(${it.id})" title="Clique pra avançar o status">${PA_STATUS_LABEL[it.status]}</button></td>`+
+      `<td><button class="pa-del" onclick="delAcao(${it.id})" title="Remover">✕</button></td></tr>`;
+  }).join('');
+  tb.innerHTML=head+rows;
+}
 // Lista de todo protocolo ainda não entregue (nem cancelado), do mais pro menos atrasado,
 // com cliente, dias em andamento, se já venceu a meta e o motivo de atraso informado.
 function renderPendentes(L,meta){
@@ -1690,10 +1766,14 @@ function render(){
   renderAtrasoHist(L,meta);
   renderMotivoPareto(L);
   renderMotivoParceiro(L);
+  const motivosUniq=[...new Set(L.filter(x=>!x.c&&x.mu).flatMap(x=>splitMotivos(x.mu)))].sort();
+  const dl=$("pa-motivos");if(dl)dl.innerHTML=motivosUniq.map(m=>`<option value="${m}">`).join('');
+  renderPlanoAcao();
 }
 ["meta","base","pdcaDe","pdcaAte"].forEach(i=>{const el=$(i);if(el)el.addEventListener("input",render);});
 const goBtn=$("go");if(goBtn)goBtn.addEventListener("click",()=>{if(typeof loadData==='function')loadData();});
 window.PDCA={render};
+window.addAcao=addAcao;window.cicleStatusAcao=cicleStatusAcao;window.delAcao=delAcao;
 })();
 </script>
 
