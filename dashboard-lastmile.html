@@ -222,6 +222,13 @@ main>.section-title:first-of-type{margin-top:0;}
 }
 /* PDCA */
 .pdca-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--textdim);}
+.pdca-stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--border);border-radius:8px;overflow:hidden;}
+.pdca-stat{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:7px;}
+.pdca-stat .l{font-size:10.5px;color:var(--muted);line-height:1.35;}
+.pdca-stat .v{font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
+.pdca-stat .v .sub{font-size:11px;font-weight:600;color:var(--muted);margin-left:2px;}
+.pdca-stat .v.bad{color:var(--danger);}
+.pdca-stat .v.warn{color:var(--warn);}
 .insight-card{border-left:3px solid var(--accent);background:var(--surface);border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:10px;}
 .insight-card.warn{border-left-color:var(--warn);}
 .insight-card.bad{border-left-color:var(--danger);}
@@ -241,10 +248,6 @@ main>.section-title:first-of-type{margin-top:0;}
 .pdca-table th:nth-child(-n+2),.pdca-table td:nth-child(-n+2){text-align:left;}
 .pdca-table tr:hover td{background:var(--surface);}
 .pdca-table td:first-child{color:var(--text);font-weight:600;}
-.pdca-bar-row{margin:10px 0;}
-.pdca-bar-head{display:flex;justify-content:space-between;font-size:12px;color:var(--textdim);}
-.pdca-bar-head b{color:var(--text);font-variant-numeric:tabular-nums;}
-.pdca-bar-fill{display:block;height:7px;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;margin-top:4px;}
 .pdca-dl dt{font-weight:700;color:var(--text);margin-top:14px;font-size:12.5px;}
 .pdca-dl dt:first-child{margin-top:0;}
 .pdca-dl dd{margin:3px 0 0;color:var(--muted);font-size:12px;line-height:1.5;}
@@ -448,12 +451,6 @@ main>.section-title:first-of-type{margin-top:0;}
     <div style="color:var(--muted);font-size:11px;margin-top:10px;">Motivos informados na coluna "Motivo do atraso" da planilha, do mais para o menos frequente. A linha mostra o percentual acumulado — onde ela cruza 80% são as causas que, resolvidas, eliminam a maior parte dos atrasos (princípio de Pareto).</div>
   </div>
 
-  <div class="section-title">Motivo × Parceiro</div>
-  <div class="card" style="margin-bottom:18px;">
-    <div id="motivoParceiroList"></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:4px;">Pra cada motivo mais frequente, quais parceiros mais aparecem nele. Motivo concentrado em 1-2 parceiros é um problema pontual (cobrar aquele parceiro); motivo espalhado entre vários é um problema do processo (vale revisar o fluxo).</div>
-  </div>
-
   <div class="section-title">Diagnóstico e Sugestões de Ação</div>
   <div class="card" style="margin-bottom:18px;">
     <div id="insightsList"></div>
@@ -488,6 +485,12 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:300px;"><canvas id="partnersSlaChart"></canvas></div>
     <div style="color:var(--muted);font-size:11px;margin-top:10px;">Mostra os parceiros com mais protocolos entregues, pra manter o gráfico legível. Mês de referência: mês da conclusão.</div>
+  </div>
+
+  <div class="section-title">Motivo de Atraso × Parceiro</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="proto-wrap"><table class="pdca-table" id="motivoParceiroTable"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Pra cada motivo mais frequente, quais parceiros mais aparecem nele. Concentrado (1-2 parceiros) é um problema pontual — cobrar aquele parceiro; espalhado é um problema do processo — vale revisar o fluxo.</div>
   </div>
 </main>
 </div><!-- #view-partners -->
@@ -1444,22 +1447,26 @@ function agg(L,meta){
 }
 function card(t,a,meta){
   const k=[
-    ["Projetos que entraram (sem os cancelados)",a.base],
-    ["Cancelados (ficam fora das contas abaixo)",a.canc],
-    ["Já concluídos",a.ent+" ("+pc(a.ent,a.base)+" dos que entraram)"],
-    ["Concluídos no mesmo mês em que entraram",a.mes+" ("+pc(a.mes,a.base)+" dos que entraram)"],
-    ["Concluídos em até 30 dias após a entrada",a.d30+" ("+pc(a.d30,a.base)+" dos que entraram)"],
-    ["Média de dias, da venda à conclusão (só concluídos)",a.avg+" dias"],
-    ["Desvio-padrão do SLA (quanto mais alto, mais imprevisível)",a.std+(a.std!=="-"?" dias":"")],
-    ["Concluídos dentro da meta de "+meta+" dias",a.ok+" ("+pc(a.ok,a.ent)+" dos concluídos)"],
-    ["Concluídos fora da meta (acima de "+meta+" dias)",'<span class="pdca-bad">'+a.late+" ("+pc(a.late,a.ent)+" dos concluídos)</span>"],
-    ["Entraram na gestão com a meta já estourada",'<span class="pdca-wa">'+a.sem+" ("+pc(a.sem,a.libN)+" dos que têm data de liberação)</span>"],
-    ["Ainda em andamento",a.ab],
-    ["Em andamento há mais de "+meta+" dias desde a venda",a.abL],
-    ["Tempo médio com o GP, da liberação à conclusão (só concluídos)",a.gp+" dias"],
-    ["Concluídos dentro do prazo do contrato (só com prazo preenchido)",a.ctrN?a.ctrOk+" de "+a.ctrN+" ("+pc(a.ctrOk,a.ctrN)+")":"-"]
+    ["Entraram (sem cancelados)",a.base,''],
+    ["Cancelados",a.canc,''],
+    ["Já concluídos",a.ent,pc(a.ent,a.base)+" dos que entraram",''],
+    ["Concluídos no mesmo mês",a.mes,pc(a.mes,a.base)+" dos que entraram",''],
+    ["Concluídos em até 30 dias",a.d30,pc(a.d30,a.base)+" dos que entraram",''],
+    ["Média de dias, venda → conclusão",a.avg+"d",'',''],
+    ["Desvio-padrão do SLA",a.std+(a.std!=="-"?"d":""),'',''],
+    ["Dentro da meta de "+meta+" dias",a.ok,pc(a.ok,a.ent)+" dos concluídos",''],
+    ["Fora da meta (acima de "+meta+"d)",a.late,pc(a.late,a.ent)+" dos concluídos",'bad'],
+    ["Entraram com a meta já estourada",a.sem,pc(a.sem,a.libN)+" dos com data de liberação",'warn'],
+    ["Ainda em andamento",a.ab,'',''],
+    ["Em andamento há +"+meta+"d desde a venda",a.abL,'','warn'],
+    ["Tempo médio com o GP",a.gp+"d",'',''],
+    ["Dentro do prazo do contrato",a.ctrN?a.ctrOk+"/"+a.ctrN:"-",a.ctrN?pc(a.ctrOk,a.ctrN):'','']
   ];
-  return '<div class="card"><div class="card-title">'+t+'</div>'+k.map(x=>'<div class="pdca-kv"><span>'+x[0]+'</span><b>'+x[1]+'</b></div>').join("")+'</div>';
+  const tiles=k.map(x=>{
+    const [label,val,sub,cls]=x;
+    return '<div class="pdca-stat"><div class="l">'+label+'</div><div class="v'+(cls?' '+cls:'')+'">'+val+(sub?' <span class="sub">('+sub+')</span>':'')+'</div></div>';
+  }).join('');
+  return '<div class="card"><div class="card-title">'+t+'</div><div class="pdca-stat-grid">'+tiles+'</div></div>';
 }
 // Gráfico de Pareto dos motivos de atraso (coluna "Motivo do atraso" da planilha):
 // barras = contagem por motivo, do mais pro menos frequente; linha = % acumulado.
@@ -1641,7 +1648,7 @@ function renderAtrasoHist(L,meta){
 // motivo "sistêmico" (espalhado entre vários parceiros) de um "pontual" (concentrado
 // em 1-2 parceiros específicos) — o plano de ação é bem diferente em cada caso.
 function renderMotivoParceiro(L){
-  const el=document.getElementById('motivoParceiroList');if(!el)return;
+  const tb=document.getElementById('motivoParceiroTable');if(!tb)return;
   const porMotivo={};
   L.filter(x=>!x.c&&x.mu).forEach(x=>{
     const p=(x.parceiro||'—').trim()||'—';
@@ -1651,21 +1658,21 @@ function renderMotivoParceiro(L){
     });
   });
   const topMotivos=Object.entries(porMotivo).map(([m,ps])=>[m,Object.values(ps).reduce((a,b)=>a+b,0),ps])
-    .sort((a,b)=>b[1]-a[1]).slice(0,6);
-  if(!topMotivos.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;">Nenhum motivo de atraso preenchido na planilha ainda.</div>';return;}
-  el.innerHTML=topMotivos.map(([motivo,total,ps])=>{
+    .sort((a,b)=>b[1]-a[1]).slice(0,10);
+  if(!topMotivos.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhum motivo de atraso preenchido na planilha ainda.</td></tr>';return;}
+  const head='<tr><th>Motivo</th><th>Casos</th><th>Parceiros envolvidos</th><th>Padrão</th></tr>';
+  const rows=topMotivos.map(([motivo,total,ps])=>{
     const partners=Object.entries(ps).sort((a,b)=>b[1]-a[1]);
     const concentrado=partners.length<=2;
-    const rows=partners.slice(0,4).map(([p,c])=>
-      `<div class="pdca-bar-row"><div class="pdca-bar-head"><span>${p}</span><b>${c}</b></div><div class="pdca-bar-fill" style="width:${100*c/partners[0][1]}%"></div></div>`
-    ).join('');
-    return `<div style="margin-bottom:16px;">
-      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;">
-        <span style="font-weight:700;font-size:12px;color:var(--text);">${motivo}</span>
-        <span style="font-size:10px;font-weight:700;color:${concentrado?'#e74c3c':'#f39c12'};">${total} caso${total===1?'':'s'} · ${concentrado?'concentrado em poucos parceiros':'espalhado entre parceiros'}</span>
-      </div>${rows}
-    </div>`;
+    const quem=partners.slice(0,4).map(([p,c])=>`${p} (${c})`).join(', ')+(partners.length>4?` +${partners.length-4}`:'');
+    return `<tr>`+
+      `<td style="text-align:left;white-space:normal;">${motivo}</td>`+
+      `<td>${total}</td>`+
+      `<td style="text-align:left;white-space:normal;color:var(--textdim);">${quem}</td>`+
+      `<td><span class="${concentrado?'pdca-bad':'pdca-wa'}">${concentrado?'Concentrado':'Espalhado'}</span></td>`+
+      `</tr>`;
   }).join('');
+  tb.innerHTML=head+rows;
 }
 // ── DIAGNÓSTICO E SUGESTÕES DE AÇÃO ───────────────────────────────
 // Leitura automática dos indicadores acima (Pareto, Motivo × Parceiro, SLA, backlog),
