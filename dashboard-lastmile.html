@@ -222,15 +222,13 @@ main>.section-title:first-of-type{margin-top:0;}
 }
 /* PDCA */
 .pdca-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--textdim);}
-.pa-form{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
-.pa-form input{background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:12px;color:var(--text);font-family:var(--font);}
-.pa-form input:focus{outline:none;border-color:var(--accent);}
-.pa-status{border:none;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;cursor:pointer;}
-.pa-status-aberto{background:rgba(231,76,60,.15);color:var(--danger);}
-.pa-status-andamento{background:rgba(243,156,18,.15);color:var(--warn);}
-.pa-status-concluido{background:rgba(46,204,113,.15);color:var(--accent);}
-.pa-del{background:none;border:none;color:var(--muted);cursor:pointer;font-size:14px;padding:2px 6px;}
-.pa-del:hover{color:var(--danger);}
+.insight-card{border-left:3px solid var(--accent);background:var(--surface);border-radius:0 8px 8px 0;padding:12px 14px;margin-bottom:10px;}
+.insight-card.warn{border-left-color:var(--warn);}
+.insight-card.bad{border-left-color:var(--danger);}
+.insight-card .insight-head{font-size:12px;font-weight:700;color:var(--text);margin-bottom:4px;}
+.insight-card .insight-body{font-size:12px;color:var(--textdim);line-height:1.5;}
+.insight-card .insight-action{font-size:12px;color:var(--text);line-height:1.5;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);}
+.insight-card .insight-action b{color:var(--accent);}
 .pdca-kv:last-child{border:0;}
 .pdca-kv b{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text);}
 .pdca-ok{color:var(--accent);}
@@ -456,18 +454,10 @@ main>.section-title:first-of-type{margin-top:0;}
     <div style="color:var(--muted);font-size:11px;margin-top:4px;">Pra cada motivo mais frequente, quais parceiros mais aparecem nele. Motivo concentrado em 1-2 parceiros é um problema pontual (cobrar aquele parceiro); motivo espalhado entre vários é um problema do processo (vale revisar o fluxo).</div>
   </div>
 
-  <div class="section-title">Plano de Ação (PDCA)</div>
+  <div class="section-title">Diagnóstico e Sugestões de Ação</div>
   <div class="card" style="margin-bottom:18px;">
-    <div class="pa-form">
-      <input list="pa-motivos" id="paMotivo" placeholder="Motivo (ex.: Documentação pendente LM)" style="flex:1.4;min-width:160px;"/>
-      <datalist id="pa-motivos"></datalist>
-      <input id="paAcao" placeholder="Ação combinada" style="flex:2;min-width:200px;"/>
-      <input id="paResp" placeholder="Responsável" style="flex:1;min-width:120px;"/>
-      <input id="paPrazo" type="date" style="flex:.8;min-width:130px;"/>
-      <button class="btn-primary" onclick="addAcao()" style="flex:0 0 auto;">+ Adicionar</button>
-    </div>
-    <div class="proto-wrap"><table class="pdca-table" id="planoAcaoTable"></table></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Registre aqui o que foi combinado pra cada motivo do Pareto acima — é o que fecha o ciclo PDCA (o "Act"). Fica salvo neste navegador. Em atraso = passou do prazo e ainda não foi marcado como concluído.</div>
+    <div id="insightsList"></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Leitura automática dos dados acima, pra apoiar a decisão da gestão sobre onde agir — não substitui o registro formal de ações, que fica a cargo da gerência.</div>
   </div>
 
   <div class="section-title">Como Ler Esta Página</div>
@@ -1677,57 +1667,84 @@ function renderMotivoParceiro(L){
     </div>`;
   }).join('');
 }
-// ── PLANO DE AÇÃO (fecha o ciclo PDCA — o "Act") ──────────────────
-// Guardado no localStorage deste navegador (não existe backend neste dashboard).
-// Cada item liga um motivo do Pareto a uma ação combinada, responsável e prazo.
-const PA_KEY='lastmile_pdca_plano_acao';
-function loadAcoes(){
-  try{const raw=localStorage.getItem(PA_KEY);return raw?JSON.parse(raw):[];}
-  catch(e){console.warn('Plano de ação: não foi possível ler o localStorage.',e);return[];}
-}
-function saveAcoes(arr){
-  try{localStorage.setItem(PA_KEY,JSON.stringify(arr));}
-  catch(e){console.warn('Plano de ação: não foi possível salvar no localStorage.',e);}
-}
-function addAcao(){
-  const motivo=$("paMotivo")?.value.trim(),acao=$("paAcao")?.value.trim(),
-    resp=$("paResp")?.value.trim(),prazo=$("paPrazo")?.value;
-  if(!motivo||!acao){alert('Preencha pelo menos o motivo e a ação combinada.');return;}
-  const arr=loadAcoes();
-  arr.unshift({id:Date.now(),motivo,acao,resp,prazo,status:'aberto'});
-  saveAcoes(arr);
-  $("paMotivo").value='';$("paAcao").value='';$("paResp").value='';$("paPrazo").value='';
-  renderPlanoAcao();
-}
-function cicleStatusAcao(id){
-  const ordem=['aberto','andamento','concluido'];
-  const arr=loadAcoes();
-  const it=arr.find(x=>x.id===id);if(!it)return;
-  it.status=ordem[(ordem.indexOf(it.status)+1)%ordem.length];
-  saveAcoes(arr);renderPlanoAcao();
-}
-function delAcao(id){
-  if(!confirm('Remover esta ação do plano?'))return;
-  saveAcoes(loadAcoes().filter(x=>x.id!==id));
-  renderPlanoAcao();
-}
-const PA_STATUS_LABEL={aberto:'Aberto',andamento:'Em andamento',concluido:'Concluído'};
-function renderPlanoAcao(){
-  const tb=document.getElementById('planoAcaoTable');if(!tb)return;
-  const arr=loadAcoes();
-  const today=new Date().toISOString().slice(0,10);
-  if(!arr.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhuma ação registrada ainda — use o formulário acima.</td></tr>';return;}
-  const head='<tr><th>Motivo</th><th>Ação combinada</th><th>Responsável</th><th>Prazo</th><th>Status</th><th></th></tr>';
-  const rows=arr.map(it=>{
-    const atrasada=it.status!=='concluido'&&it.prazo&&it.prazo<today;
-    return`<tr><td style="text-align:left;white-space:normal;">${it.motivo}</td>`+
-      `<td style="text-align:left;white-space:normal;">${it.acao}</td>`+
-      `<td>${it.resp||'—'}</td>`+
-      `<td>${it.prazo?it.prazo.split('-').reverse().join('/'):'—'}${atrasada?' <span class="pdca-bad">(atrasado)</span>':''}</td>`+
-      `<td><button class="pa-status pa-status-${it.status}" onclick="cicleStatusAcao(${it.id})" title="Clique pra avançar o status">${PA_STATUS_LABEL[it.status]}</button></td>`+
-      `<td><button class="pa-del" onclick="delAcao(${it.id})" title="Remover">✕</button></td></tr>`;
-  }).join('');
-  tb.innerHTML=head+rows;
+// ── DIAGNÓSTICO E SUGESTÕES DE AÇÃO ───────────────────────────────
+// Leitura automática dos indicadores acima (Pareto, Motivo × Parceiro, SLA, backlog),
+// em texto explicativo com uma sugestão de ação por achado. Não é um registro de ações —
+// quem decide e registra o que fazer é a gestão; aqui só fica explicado o "porquê".
+function renderInsights(L,meta){
+  const el=document.getElementById('insightsList');if(!el)return;
+  const cards=[];
+  const entregues=L.filter(x=>!x.c&&x.e);
+
+  // 1) Motivo nº1 do Pareto
+  const porMotivo={};
+  L.filter(x=>!x.c&&x.mu).forEach(x=>splitMotivos(x.mu).forEach(m=>{porMotivo[m]=(porMotivo[m]||0)+1;}));
+  const motivosOrdenados=Object.entries(porMotivo).sort((a,b)=>b[1]-a[1]);
+  const totalMotivos=motivosOrdenados.reduce((s,[,c])=>s+c,0);
+  if(motivosOrdenados.length){
+    const [topMotivo,topCount]=motivosOrdenados[0];
+    const pct=totalMotivos?Math.round(100*topCount/totalMotivos):0;
+    // parceiros desse motivo, pra saber se é pontual ou do processo
+    const porParceiro={};
+    L.filter(x=>!x.c&&x.mu).forEach(x=>{if(splitMotivos(x.mu).includes(topMotivo)){const p=(x.parceiro||'—').trim()||'—';porParceiro[p]=(porParceiro[p]||0)+1;}});
+    const parceirosOrd=Object.entries(porParceiro).sort((a,b)=>b[1]-a[1]);
+    const concentrado=parceirosOrd.length<=2;
+    const quemAgir=concentrado?`cobrar diretamente ${parceirosOrd.map(([p])=>p).join(' e ')}, que concentram esse motivo`:`revisar o processo com todos os parceiros envolvidos, já que o motivo está espalhado entre ${parceirosOrd.length} parceiros diferentes`;
+    cards.push({cls:'bad',head:`Principal motivo de atraso: ${topMotivo}`,
+      body:`Responde por ${topCount} de ${totalMotivos} ocorrências registradas (${pct}%) — é o maior ponto de atenção do período.`,
+      action:`Sugestão: ${quemAgir}.`});
+  }
+
+  // 2) Tendência do SLA (% dentro da meta) nos últimos meses com dado completo
+  const porMes={};
+  entregues.forEach(x=>{if(!x.mes)return;(porMes[x.mes]=porMes[x.mes]||{d:0,t:0});porMes[x.mes].t++;if(x.dias!=null&&x.dias<=meta)porMes[x.mes].d++;});
+  const mesesOrd=Object.keys(porMes).sort();
+  if(mesesOrd.length>=2){
+    const ult=mesesOrd.slice(-3);
+    const pcts=ult.map(m=>porMes[m].t?Math.round(100*porMes[m].d/porMes[m].t):null).filter(v=>v!=null);
+    if(pcts.length>=2){
+      const diff=pcts[pcts.length-1]-pcts[0];
+      const melhorando=diff>=3, piorando=diff<=-3;
+      cards.push({cls:melhorando?'':(piorando?'bad':'warn'),
+        head:`Cumprimento da meta de SLA está ${melhorando?'melhorando':piorando?'piorando':'estável'}`,
+        body:`Nos últimos ${pcts.length} meses com dado completo, o percentual de entregas dentro da meta foi de ${pcts.join('% → ')}%.`,
+        action:melhorando?'Sugestão: manter a prática recente e documentar o que mudou, pra não perder o ganho.':piorando?'Sugestão: investigar o que mudou nos últimos meses (volume, parceiro, etapa) antes que o atraso vire padrão.':'Sugestão: acompanhar — sem tendência clara ainda pra agir.'});
+    }
+  }
+
+  // 3) Backlog: entrando mais do que entregando?
+  const porMesEntrada={};
+  L.filter(x=>!x.c&&x.mes).forEach(x=>{(porMesEntrada[x.mes]=porMesEntrada[x.mes]||{in:0,out:0});porMesEntrada[x.mes].in++;if(x.e)porMesEntrada[x.mes].out++;});
+  const mesesBl=Object.keys(porMesEntrada).sort().slice(0,-1); // exclui o mês corrente, ainda incompleto
+  if(mesesBl.length>=2){
+    const ult=mesesBl.slice(-3);
+    const saldoTotal=ult.reduce((s,m)=>s+(porMesEntrada[m].in-porMesEntrada[m].out),0);
+    if(saldoTotal>0){
+      cards.push({cls:'warn',head:'Entrada de protocolos acima da capacidade de entrega',
+        body:`Nos últimos ${ult.length} meses completos, entraram ${saldoTotal} protocolos a mais do que foram entregues — o backlog está crescendo.`,
+        action:'Sugestão: avaliar se é hora de reforçar a capacidade da esteira ou segurar a entrada de novos projetos até estabilizar.'});
+    }else if(saldoTotal<0){
+      cards.push({cls:'',head:'Backlog reduzindo',
+        body:`Nos últimos ${ult.length} meses completos, foram entregues ${-saldoTotal} protocolos a mais do que entraram.`,
+        action:'Sugestão: bom momento para olhar os motivos de atraso mais antigos, já que há fôlego na esteira.'});
+    }
+  }
+
+  // 4) Protocolos pendentes sem motivo informado
+  const pendSemMotivo=L.filter(x=>!x.c&&!x.e&&!x.mu).length;
+  const pendTotal=L.filter(x=>!x.c&&!x.e).length;
+  if(pendTotal>0 && pendSemMotivo>0){
+    const pct=Math.round(100*pendSemMotivo/pendTotal);
+    cards.push({cls:pct>=40?'warn':'',head:'Protocolos pendentes sem motivo de atraso preenchido',
+      body:`${pendSemMotivo} de ${pendTotal} protocolos ainda em aberto (${pct}%) não têm o motivo do atraso registrado na planilha.`,
+      action:'Sugestão: cobrar o preenchimento desse campo — sem ele, esses casos ficam fora do Pareto e podem esconder um motivo relevante.'});
+  }
+
+  if(!cards.length){el.innerHTML='<div style="color:var(--muted);font-size:12px;">Sem dados suficientes no período selecionado pra gerar um diagnóstico.</div>';return;}
+  el.innerHTML=cards.map(c=>`<div class="insight-card${c.cls?' '+c.cls:''}">`+
+    `<div class="insight-head">${c.head}</div>`+
+    `<div class="insight-body">${c.body}</div>`+
+    `<div class="insight-action">${c.action.replace(/^(Sugestão:)/,'<b>$1</b>')}</div></div>`).join('');
 }
 // Lista de todo protocolo ainda não entregue (nem cancelado), do mais pro menos atrasado,
 // com cliente, dias em andamento, se já venceu a meta e o motivo de atraso informado.
@@ -1766,14 +1783,11 @@ function render(){
   renderAtrasoHist(L,meta);
   renderMotivoPareto(L);
   renderMotivoParceiro(L);
-  const motivosUniq=[...new Set(L.filter(x=>!x.c&&x.mu).flatMap(x=>splitMotivos(x.mu)))].sort();
-  const dl=$("pa-motivos");if(dl)dl.innerHTML=motivosUniq.map(m=>`<option value="${m}">`).join('');
-  renderPlanoAcao();
+  renderInsights(L,meta);
 }
 ["meta","base","pdcaDe","pdcaAte"].forEach(i=>{const el=$(i);if(el)el.addEventListener("input",render);});
 const goBtn=$("go");if(goBtn)goBtn.addEventListener("click",()=>{if(typeof loadData==='function')loadData();});
 window.PDCA={render};
-window.addAcao=addAcao;window.cicleStatusAcao=cicleStatusAcao;window.delAcao=delAcao;
 })();
 </script>
 
