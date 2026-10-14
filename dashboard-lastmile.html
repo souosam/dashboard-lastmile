@@ -222,8 +222,8 @@ main>.section-title:first-of-type{margin-top:0;}
 }
 /* PDCA */
 .pdca-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--textdim);}
-.pdca-stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:1px;background:var(--border);border-radius:8px;overflow:hidden;}
-.pdca-stat{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:7px;}
+.pdca-stat-grid{display:flex;flex-wrap:wrap;gap:1px;background:var(--border);border-radius:8px;overflow:hidden;}
+.pdca-stat{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:7px;flex:1 1 180px;min-width:180px;}
 .pdca-stat .l{font-size:10.5px;color:var(--muted);line-height:1.35;}
 .pdca-stat .v{font-size:17px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;}
 .pdca-stat .v .sub{font-size:11px;font-weight:600;color:var(--muted);margin-left:2px;}
@@ -347,6 +347,12 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="card" style="margin-bottom:18px;">
     <div class="card-title">Pipeline de Status <span id="filterActiveLabel" style="color:var(--accent);font-size:10px;font-weight:400;"></span></div>
     <div id="funnelList"></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Clique numa etapa pra ver a lista de protocolos dela abaixo.</div>
+  </div>
+
+  <div class="card" id="stageProtoSection" style="margin-bottom:18px;display:none;">
+    <div class="card-title" id="stageProtoTitle">Protocolos<button onclick="clearStatusFilter()" style="margin-left:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;cursor:pointer;">✕ Fechar</button></div>
+    <div class="proto-wrap"><table class="pdca-table" id="stageProtoTable"></table></div>
   </div>
 
   <!-- GRÁFICOS MENSAIS -->
@@ -650,8 +656,6 @@ function setPdcaCut(c){
   const bq=document.getElementById('pdcaCutQuinzenal'),bm=document.getElementById('pdcaCutMensal');
   if(bq)bq.classList.toggle('active',c==='quinzenal');
   if(bm)bm.classList.toggle('active',c==='mensal');
-  const t=document.getElementById('cardsTitle');
-  if(t)t.textContent=c==='mensal'?'Resumo: mês completo':'Resumo: dia 1 ao 15 × dia 16 ao fim do mês';
   if(window.PDCA)window.PDCA.render();
 }
 
@@ -870,6 +874,7 @@ function clearFilters(){
   filteredRows=[...allRows];
   const tc=document.getElementById('totalCount');if(tc)tc.textContent=allRows.length+' protocolos';
   render();
+  renderStageProtoList();
 }
 function exportFilteredCSV(){
   const cols=[['cliente','Cliente'],['parceiro','Parceiro'],['estado','Estado'],['cidade','Cidade'],['protocolo','Protocolo'],['produto','Produto'],['status','Status'],['valor','Valor'],['slaContrato','SLA do Contrato (dias)'],['slaGP','SLA do GP (dias)'],['mes','Mês']];
@@ -885,23 +890,47 @@ function exportFilteredCSV(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+function fmtD(t){return t==null?'—':new Date(t).toLocaleDateString('pt-BR',{timeZone:'UTC'});}
+function fmtRCur(v){return'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});}
+function renderStageProtoList(){
+  const sec=document.getElementById('stageProtoSection');if(!sec)return;
+  if(!activeStatusFilter){sec.style.display='none';return;}
+  sec.style.display='';
+  const titleEl=document.getElementById('stageProtoTitle');
+  const label=activeStatusFilter.replace(/^\d+\.\s*/,'');
+  if(titleEl)titleEl.innerHTML='Protocolos · '+label+' <span style="color:var(--muted);font-weight:400;">('+filteredRows.length+')</span>'+
+    '<button onclick="clearStatusFilter()" style="margin-left:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;cursor:pointer;">✕ Fechar</button>';
+  const tb=document.getElementById('stageProtoTable');if(!tb)return;
+  if(!filteredRows.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhum protocolo nessa etapa com os filtros atuais.</td></tr>';return;}
+  const rows=[...filteredRows].sort((a,b)=>(b.dataVenda||0)-(a.dataVenda||0));
+  const head='<tr><th>Cliente</th><th>Parceiro</th><th>Produto</th><th>Protocolo</th><th>Data da venda</th><th>Valor</th></tr>';
+  const body=rows.slice(0,300).map(r=>
+    `<tr><td style="text-align:left;white-space:normal;">${r.cliente||'—'}</td>`+
+    `<td style="text-align:left;">${r.parceiro||'—'}</td>`+
+    `<td style="text-align:left;">${r.produto||'—'}</td>`+
+    `<td style="text-align:left;">${r.protocolo||'—'}</td>`+
+    `<td>${fmtD(r.dataVenda)}</td>`+
+    `<td>${fmtRCur(r.valor)}</td></tr>`
+  ).join('');
+  const more=rows.length>300?`<tr><td colspan="6" style="text-align:center;color:var(--muted);">+${rows.length-300} protocolos a mais — exporte em CSV pra ver todos.</td></tr>`:'';
+  tb.innerHTML=head+body+more;
+}
 function filterByStatus(status){
   activeStatusFilter=activeStatusFilter===status?null:status;
   const lbl=activeStatusFilter?'· filtrado: '+activeStatusFilter.replace(/^\d+\.\s*/,''):'';
   ['filterActiveLabel','filterActiveLabelTable'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=lbl;});
-  const titleEl=document.getElementById('pipelineListTitle');
-  const clearBtn=document.getElementById('pipelineClearBtn');
-  if(titleEl)titleEl.textContent=activeStatusFilter?'Protocolos · '+activeStatusFilter.replace(/^\d+\.\s*/,''):'Protocolos · Todos os status';
-  if(clearBtn)clearBtn.style.display=activeStatusFilter?'inline':'none';
   applyFilters();
+  renderStageProtoList();
+  if(activeStatusFilter){
+    const sec=document.getElementById('stageProtoSection');
+    if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});
+  }
 }
 function clearStatusFilter(){
   activeStatusFilter=null;
-  const titleEl=document.getElementById('pipelineListTitle');
-  const clearBtn=document.getElementById('pipelineClearBtn');
-  if(titleEl)titleEl.textContent='Protocolos · Todos os status';
-  if(clearBtn)clearBtn.style.display='none';
+  ['filterActiveLabel','filterActiveLabelTable'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent='';});
   applyFilters();
+  renderStageProtoList();
 }
 
 // ── RENDER ────────────────────────────────────────────────────────
@@ -1768,6 +1797,20 @@ function renderPendentes(L,meta){
   }).join('');
   tb.innerHTML=head+rows;
 }
+// Rótulo do período em uso: sem filtro de data = "geral" (toda a base); com filtro,
+// mostra o intervalo selecionado, pra não dar a entender que é sempre "o mês atual".
+function periodoLabel(){
+  const de=$("pdcaDe")?.value,ate=$("pdcaAte")?.value;
+  if(!de&&!ate)return'Geral — todos os meses da base';
+  if(de&&ate)return de===ate?mesLabel(de):mesLabel(de)+' a '+mesLabel(ate);
+  if(de)return'A partir de '+mesLabel(de);
+  return'Até '+mesLabel(ate);
+}
+function updateCardsTitle(){
+  const t=document.getElementById('cardsTitle');if(!t)return;
+  const corte=pdcaCut==='mensal'?'mês completo':'dia 1 ao 15 × dia 16 ao fim do mês';
+  t.textContent='Resumo: '+corte+' · '+periodoLabel();
+}
 function render(){
   if(!window.allRows||!window.allRows.length)return;
   const metaEl=$("meta"),baseEl=$("base");
@@ -1775,14 +1818,16 @@ function render(){
   const meta=+metaEl.value||30, base=baseEl.value;
   const L=derive(meta,base);
   $("cov").textContent="Início da contagem da meta: data da venda, em "+L.length+" protocolos.";
+  updateCardsTitle();
   const q1=L.filter(x=>x.q==1), q2=L.filter(x=>x.q==2);
   const cardsEl=$("cards");
+  const periodo=periodoLabel();
   if(pdcaCut==='mensal'){
     if(cardsEl)cardsEl.style.gridTemplateColumns='1fr';
-    $("cards").innerHTML=card("Entraram no mês (dia 1 ao fim do mês)",agg(L,meta),meta);
+    $("cards").innerHTML=card("Entraram · "+periodo,agg(L,meta),meta);
   }else{
     if(cardsEl)cardsEl.style.gridTemplateColumns='1fr 1fr';
-    $("cards").innerHTML=card("Entraram do dia 1 ao 15",agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês",agg(q2,meta),meta);
+    $("cards").innerHTML=card("Entraram do dia 1 ao 15 · "+periodo,agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês · "+periodo,agg(q2,meta),meta);
   }
   renderEntradasEntregues(L,meta);
   renderBacklog(L);
