@@ -433,6 +433,12 @@ main>.section-title:first-of-type{margin-top:0;}
   </div>
   <div class="grid-2" id="cards" style="margin-bottom:18px;"></div>
 
+  <div class="section-title">Prazo do Contrato por Faixa</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="proto-wrap"><table class="pdca-table" id="prazoContratoTable"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Cada faixa é o prazo contratado (coluna "Prazo contrato" da planilha), não a meta fixa de cima. Só entram protocolos com esse campo preenchido e não cancelados.</div>
+  </div>
+
   <div class="section-title">Entradas × Entregues Dentro da Meta de SLA</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:260px;"><canvas id="entradasEntreguesChart"></canvas></div>
@@ -448,7 +454,7 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="section-title">Distribuição de Atraso dos Concluídos</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:260px;"><canvas id="atrasoHistChart"></canvas></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Quantos protocolos entregues ficaram em cada faixa de dias acima (ou dentro) da meta. Mostra se o atraso é concentrado em poucos casos muito fora da meta ou espalhado por todo mundo.</div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Só dos protocolos entregues fora da meta: quantos dias de atraso tiveram além da meta, em 4 faixas. Mostra se o atraso é concentrado em poucos casos muito fora da meta ou espalhado por todo mundo.</div>
   </div>
 
   <div class="section-title">Motivos de Atraso — Visão Geral</div>
@@ -1457,6 +1463,7 @@ function derive(meta,base){
       mesC:conc!=null?ym(conc):null,dias:e?diff(conc,S):null,
       gp:e&&lib!=null?diff(conc,lib):null,d30:e?diff(conc,ent):null,pre,motivo,
       age:diff(T,S),ctr:(e&&prz&&lim!=null)?(conc<=lim?1:0):null,
+      prazo:r.prazoContratoDias>0?r.prazoContratoDias:null,
       mu:r.motivoAtraso,parceiro:r.parceiro,cliente:r.cliente,produto:r.produto,protocolo:r.protocolo
     });
   }
@@ -1480,7 +1487,6 @@ function card(t,a,meta){
     ["Cancelados",a.canc,''],
     ["Já concluídos",a.ent,pc(a.ent,a.base)+" dos que entraram",''],
     ["Concluídos no mesmo mês",a.mes,pc(a.mes,a.base)+" dos que entraram",''],
-    ["Concluídos em até 30 dias",a.d30,pc(a.d30,a.base)+" dos que entraram",''],
     ["Média de dias, venda → conclusão",a.avg+"d",'',''],
     ["Desvio-padrão do SLA",a.std+(a.std!=="-"?"d":""),'',''],
     ["Dentro da meta de "+meta+" dias",a.ok,pc(a.ok,a.ent)+" dos concluídos",''],
@@ -1489,13 +1495,39 @@ function card(t,a,meta){
     ["Ainda em andamento",a.ab,'',''],
     ["Em andamento há +"+meta+"d desde a venda",a.abL,'','warn'],
     ["Tempo médio com o GP",a.gp+"d",'',''],
-    ["Dentro do prazo do contrato",a.ctrN?a.ctrOk+"/"+a.ctrN:"-",a.ctrN?pc(a.ctrOk,a.ctrN):'','']
+    ["Dentro do prazo do contrato (prazo específico de cada venda, não a meta de "+meta+"d acima)",a.ctrN?a.ctrOk+"/"+a.ctrN:"-",a.ctrN?pc(a.ctrOk,a.ctrN)+" dos que têm prazo de contrato preenchido":'','']
   ];
   const tiles=k.map(x=>{
     const [label,val,sub,cls]=x;
     return '<div class="pdca-stat"><div class="l">'+label+'</div><div class="v'+(cls?' '+cls:'')+'">'+val+(sub?' <span class="sub">('+sub+')</span>':'')+'</div></div>';
   }).join('');
   return '<div class="card"><div class="card-title">'+t+'</div><div class="pdca-stat-grid">'+tiles+'</div></div>';
+}
+// Quebra "Dentro do prazo do contrato" por faixa de prazo (14d, 20d, 40d, 60d...),
+// já que prazos diferentes costumam ser de parceiros diferentes (ex.: NET TURBO
+// costuma ser 40d, ALGAR 20d) — não cabe tudo isso no cartãozinho do Resumo acima.
+function renderPrazoContrato(L){
+  const tb=document.getElementById('prazoContratoTable');if(!tb)return;
+  const by={};
+  L.filter(x=>!x.c&&x.prazo!=null).forEach(x=>{
+    (by[x.prazo]=by[x.prazo]||{total:0,entregues:0,dentro:0,parc:{}});
+    const g=by[x.prazo];
+    g.total++;
+    if(x.e){g.entregues++;if(x.ctr===1)g.dentro++;}
+    const p=(x.parceiro||'—').trim()||'—';
+    g.parc[p]=(g.parc[p]||0)+1;
+  });
+  const prazos=Object.keys(by).map(Number).sort((a,b)=>a-b);
+  if(!prazos.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhum protocolo com prazo de contrato preenchido na planilha.</td></tr>';return;}
+  const head='<tr><th>Prazo</th><th>Protocolos</th><th>Entregues</th><th>Dentro do prazo</th><th>Parceiro(s) mais comuns</th></tr>';
+  const rows=prazos.map(p=>{
+    const g=by[p];
+    const top=Object.entries(g.parc).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([n,c])=>`${n} (${c})`).join(', ');
+    return`<tr><td style="text-align:left;">${p} dias</td><td>${g.total}</td><td>${g.entregues}</td>`+
+      `<td>${g.entregues?g.dentro+'/'+g.entregues+' ('+pc(g.dentro,g.entregues)+')':'—'}</td>`+
+      `<td style="text-align:left;color:var(--textdim);">${top||'—'}</td></tr>`;
+  }).join('');
+  tb.innerHTML=head+rows;
 }
 // Gráfico de Pareto dos motivos de atraso (coluna "Motivo do atraso" da planilha):
 // barras = contagem por motivo, do mais pro menos frequente; linha = % acumulado.
@@ -1619,18 +1651,17 @@ function renderBacklog(L){
   }})});
 }
 function renderAtrasoHist(L,meta){
-  const entregues=L.filter(x=>x.e&&x.dias!=null);
-  const total=entregues.length;
+  // Só os entregues que estouraram a meta — "dias de atraso" = dias acima da meta.
+  // Quem entregou dentro da meta já está contado à parte no Resumo acima.
+  const atrasados=L.filter(x=>x.e&&x.dias!=null&&x.dias>meta).map(x=>x.dias-meta);
+  const total=atrasados.length;
   const buckets=[
-    {label:'Dentro da meta',test:d=>d<=meta,color:'#2ecc71'},
-    {label:'1 a 10 dias de atraso',test:d=>d>meta&&d<=meta+10,color:'#f1c40f'},
-    {label:'11 a 20 dias',test:d=>d>meta+10&&d<=meta+20,color:'#e67e22'},
-    {label:'21 a 30 dias',test:d=>d>meta+20&&d<=meta+30,color:'#e74c3c'},
-    {label:'31 a 60 dias',test:d=>d>meta+30&&d<=meta+60,color:'#c0392b'},
-    {label:'61 a 90 dias',test:d=>d>meta+60&&d<=meta+90,color:'#922b21'},
-    {label:'Mais de 90 dias',test:d=>d>meta+90,color:'#641e16'}
+    {label:'0 a 30 dias de atraso',test:d=>d<=30,color:'#f1c40f'},
+    {label:'30 a 60 dias',test:d=>d>30&&d<=60,color:'#e67e22'},
+    {label:'60 a 90 dias',test:d=>d>60&&d<=90,color:'#e74c3c'},
+    {label:'Mais de 90 dias',test:d=>d>90,color:'#922b21'}
   ];
-  const counts=buckets.map(b=>entregues.filter(x=>b.test(x.dias)).length);
+  const counts=buckets.map(b=>atrasados.filter(b.test).length);
   const pcts=counts.map(c=>total?Math.round(100*c/total):0);
   if(charts.pdcaAtraso)charts.pdcaAtraso.destroy();
   const ctx=document.getElementById('atrasoHistChart');if(!ctx)return;
@@ -1829,6 +1860,7 @@ function render(){
     if(cardsEl)cardsEl.style.gridTemplateColumns='1fr 1fr';
     $("cards").innerHTML=card("Entraram do dia 1 ao 15 · "+periodo,agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês · "+periodo,agg(q2,meta),meta);
   }
+  renderPrazoContrato(L);
   renderEntradasEntregues(L,meta);
   renderBacklog(L);
   renderPendentes(L,meta);
