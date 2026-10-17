@@ -530,6 +530,21 @@ main>.section-title:first-of-type{margin-top:0;}
     <div style="color:var(--muted);font-size:11px;margin-top:10px;">Protocolos com prazo de contrato menor que 14 dias, o que é improvável (os prazos usuais são 14, 20, 30, 40 e 60). Vale conferir na planilha se não é erro de digitação.</div>
   </div>
 
+  <div class="section-title">Previsibilidade de Entrega — Próximos 3 Meses</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="proto-wrap"><table class="pdca-table" id="prevTable" style="min-width:980px;"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;line-height:1.5;">Base: entregas dos últimos 6 meses completos (mês de conclusão). Previsão = média dos últimos 3 meses × 3, com faixa de ± 1 desvio-padrão. Previsibilidade = quão estável é a vazão mês a mês (variação em %: até 25% alta, até 50% média, acima baixa) — quanto mais estável, mais confiável a previsão. * Previsão limitada pelo que existe de fato (backlog atual + entradas esperadas). Cobertura = meses de trabalho já na fila. Respeita o escopo NET TURBO / Demais Parceiros.</div>
+    <div style="display:flex;gap:10px;align-items:center;margin:16px 0 8px;flex-wrap:wrap;">
+      <label style="font-size:11px;color:var(--muted);">Ver gráfico de</label>
+      <select id="prevSerie" onchange="setPrevSerie(this.value)" style="background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);"></select>
+      <span class="funnel-metric-toggle" style="margin:0;">
+        <button id="prevM_qtd" class="active" onclick="setPrevMetric('qtd')">Quantidade</button>
+        <button id="prevM_valor" onclick="setPrevMetric('valor')">Valor (R$)</button>
+      </span>
+    </div>
+    <div class="chart-wrap" style="height:280px;"><canvas id="prevChart"></canvas></div>
+  </div>
+
   <div class="grid-2" style="margin-bottom:18px;">
     <div class="card">
       <div class="card-title">SLA Médio por Cliente (dias)
@@ -909,6 +924,16 @@ function exportFilteredCSV(){
   document.body.appendChild(a);a.click();document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
+// Alinha o cabeçalho de cada coluna com o alinhamento real das células (esquerda/direita),
+// pra título e dado nunca ficarem desencontrados nas tabelas .pdca-table.
+function alignAllTables(){
+  document.querySelectorAll('table.pdca-table').forEach(t=>{
+    if(t.rows.length<2)return;
+    const hd=t.rows[0].cells,bd=t.rows[1].cells;
+    if(bd.length!==hd.length)return;
+    for(let i=0;i<hd.length;i++){hd[i].style.textAlign=getComputedStyle(bd[i]).textAlign==='left'?'left':'right';}
+  });
+}
 function fmtD(t){return t==null?'—':new Date(t).toLocaleDateString('pt-BR',{timeZone:'UTC'});}
 function fmtRCur(v){return'R$ '+(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2});}
 function renderStageProtoList(){
@@ -933,6 +958,7 @@ function renderStageProtoList(){
   ).join('');
   const more=rows.length>300?`<tr><td colspan="6" style="text-align:center;color:var(--muted);">+${rows.length-300} protocolos a mais — exporte em CSV pra ver todos.</td></tr>`:'';
   tb.innerHTML=head+body+more;
+  alignAllTables();
 }
 function filterByStatus(status){
   activeStatusFilter=activeStatusFilter===status?null:status;
@@ -961,6 +987,8 @@ function render(){
   renderSLAByCliente(r);renderHeatmap(r);renderSLAByParceiroChart(r);
   renderTopClients(r);renderTopParceiros(r);renderEstadoChart(r);
   renderMap(r);renderProtoTable(r);
+  if(window.renderPrev)window.renderPrev();
+  alignAllTables();
 }
 
 // ── KPIs ──────────────────────────────────────────────────────────
@@ -1930,6 +1958,97 @@ function renderPrazoRevisao(){
   tb.innerHTML=head+rows.map(r=>`<tr><td>${r.cliente||'—'}</td><td>${r.parceiro||'—'}</td><td>${r.protocolo||'—'}</td>`+
     `<td class="pdca-bad">${r.prazoContratoDias} dias</td><td>${fmtD(r.dataVenda)}</td><td style="text-align:left;">${(r.status||'—').replace(/^\d+\.\s*/,'')}</td></tr>`).join('');
 }
+// ── PREVISIBILIDADE DE ENTREGA (aba Análises) ─────────────────────
+// Histórico = 6 meses completos (mês de conclusão). Previsão dos próximos 3 meses =
+// média dos últimos 3 meses completos, com faixa de ± 1 desvio-padrão dos 6 meses.
+// Previsibilidade = coeficiente de variação (desvio ÷ média) da vazão mensal: quanto
+// menor, mais estável e portanto mais confiável a previsão. A previsão é limitada pelo
+// que existe de fato: backlog atual + entradas esperadas.
+let prevSerie='Geral',prevMetric='qtd';
+const PREV_MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+function ymAdd(n){const t=new Date();const d=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()+n,1));return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');}
+function ymLbl(k){const m=/^(\d{4})-(\d{2})$/.exec(k);return PREV_MES[+m[2]-1]+'/'+m[1].slice(2);}
+function ymOfT(t){const d=new Date(t);return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');}
+const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
+const stdev=a=>{if(a.length<2)return 0;const m=mean(a);return Math.sqrt(a.reduce((s,x)=>s+(x-m)**2,0)/(a.length-1));};
+function prevCalc(rows){
+  const hist=[6,5,4,3,2,1].map(i=>ymAdd(-i)), fut=[0,1,2].map(i=>ymAdd(i));
+  const q=hist.map(()=>0),v=hist.map(()=>0),e=hist.map(()=>0);
+  let aberto=0,abertoVal=0;
+  rows.forEach(r=>{
+    if(isEntregue(r)){const k=hist.indexOf(ymOfT(r.dataConclusao));if(k>=0){q[k]++;v[k]+=r.valor||0;}}
+    else{aberto++;abertoVal+=r.valor||0;}
+    if(r.dataVenda!=null){const k=hist.indexOf(ymOfT(r.dataVenda));if(k>=0)e[k]++;}
+  });
+  const q3=q.slice(3),v3=v.slice(3),e3=e.slice(3);
+  const mq=mean(q3),mv=mean(v3),me=mean(e3),sq=stdev(q),sv=stdev(v);
+  const total=q.reduce((a,b)=>a+b,0);
+  const cv=mean(q)>0?stdev(q)/mean(q):null;
+  const prev=total<6?'Poucos dados':cv<=0.25?'Alta':cv<=0.5?'Média':'Baixa';
+  const prevCls=total<6?'':cv<=0.25?'pdca-ok':cv<=0.5?'pdca-wa':'pdca-bad';
+  // teto físico: o que já está na fila + o que se espera que entre
+  const teto=aberto+me*3;
+  const qF=Math.min(mq*3,teto), limitado=mq*3>teto;
+  const vMedio=aberto?abertoVal/aberto:0;
+  const vF=limitado?qF*(mq?mv/mq:vMedio):mv*3;
+  return{hist,fut,q,v,e,mq,mv,me,sq,sv,cv,prev,prevCls,aberto,qF,vF,limitado,
+    qLo:Math.max(0,qF-sq*Math.sqrt(3)),qHi:qF+sq*Math.sqrt(3),vLo:Math.max(0,vF-sv*Math.sqrt(3)),vHi:vF+sv*Math.sqrt(3),
+    cob:mq>0?aberto/mq:null};
+}
+function prevSeries(){
+  const base=(window.allRows||[]).filter(r=>r.statusNum!==14&&(scope==='all'||(scope==='net'?isNetTurbo(r):!isNetTurbo(r))));
+  const out={Geral:prevCalc(base)};
+  const prods=[...new Set(base.map(r=>(r.produto||'—').trim()||'—'))];
+  prods.forEach(p=>{out[p]=prevCalc(base.filter(r=>((r.produto||'—').trim()||'—')===p));});
+  return out;
+}
+function setPrevSerie(x){prevSerie=x;renderPrevisibilidade();}
+function setPrevMetric(m){
+  prevMetric=m;
+  ['qtd','valor'].forEach(k=>{const b=document.getElementById('prevM_'+k);if(b)b.classList.toggle('active',k===m);});
+  renderPrevisibilidade();
+}
+function renderPrevisibilidade(){
+  const tb=document.getElementById('prevTable');if(!tb)return;
+  if(!window.allRows||!window.allRows.length)return;
+  const S=prevSeries();
+  const nomes=Object.keys(S).filter(n=>n==='Geral'||S[n].q.some(x=>x>0)||S[n].aberto>0)
+    .sort((a,b)=>a==='Geral'?-1:b==='Geral'?1:S[b].mq-S[a].mq);
+  const sel=document.getElementById('prevSerie');
+  if(sel){const keep=nomes.includes(prevSerie)?prevSerie:'Geral';prevSerie=keep;
+    sel.innerHTML=nomes.map(n=>`<option value="${n}"${n===keep?' selected':''}>${n}</option>`).join('');}
+  const f1=x=>x.toFixed(1).replace('.',','), R=x=>'R$ '+Math.round(x).toLocaleString('pt-BR');
+  const head='<tr><th>Produto</th><th>Entregas/mês</th><th>Previsibilidade</th><th>Previsão 3 meses (qtd)</th><th>Faixa (qtd)</th><th>Valor/mês</th><th>Previsão 3 meses (R$)</th><th>Faixa (R$)</th><th>Backlog</th><th>Cobertura</th></tr>';
+  const rows=nomes.map(n=>{const c=S[n];
+    return`<tr${n==='Geral'?' style="font-weight:700;"':''}><td style="text-align:left;">${n}</td>`+
+      `<td>${f1(c.mq)}</td><td><span class="${c.prevCls}">${c.prev}${c.cv!=null&&c.prev!=='Poucos dados'?' ('+Math.round(c.cv*100)+'%)':''}</span></td>`+
+      `<td>${Math.round(c.qF)}${c.limitado?' *':''}</td><td>${Math.round(c.qLo)} a ${Math.round(c.qHi)}</td>`+
+      `<td>${R(c.mv)}</td><td>${R(c.vF)}${c.limitado?' *':''}</td><td>${R(c.vLo)} a ${R(c.vHi)}</td>`+
+      `<td>${c.aberto}</td><td>${c.cob==null?'—':f1(c.cob)+' mês'+(c.cob>=2?'es':'')}</td></tr>`;}).join('');
+  tb.innerHTML=head+rows;
+  // gráfico da série escolhida
+  const c=S[prevSerie]||S.Geral, isQ=prevMetric==='qtd';
+  const hist=isQ?c.q:c.v.map(x=>Math.round(x));
+  const medio=isQ?c.mq:c.mv, lo=isQ?c.qLo:c.vLo, hi=isQ?c.qHi:c.vHi, tot=isQ?c.qF:c.vF;
+  const perM=tot/3, sd1=isQ?c.sq:c.sv;
+  const labels=c.hist.concat(c.fut).map(ymLbl);
+  const futVals=c.fut.map(()=>+(perM).toFixed(isQ?1:0));
+  if(charts.prev)charts.prev.destroy();
+  const ctx=document.getElementById('prevChart');if(!ctx)return;
+  charts.prev=new Chart(ctx,{type:'bar',data:{labels,datasets:[
+    {label:'Realizado',data:hist.concat([null,null,null]),backgroundColor:'#3498db',borderRadius:5,maxBarThickness:46},
+    {label:'Previsto',data:[null,null,null,null,null,null].concat(futVals),backgroundColor:'rgba(46,204,113,.45)',borderColor:'#2ecc71',borderWidth:1.5,borderRadius:5,maxBarThickness:46},
+    {type:'line',label:'Média dos últimos 3 meses',data:labels.map(()=>+medio.toFixed(isQ?1:0)),borderColor:'#f39c12',borderDash:[6,4],borderWidth:1.5,pointRadius:0}
+  ]},options:darkOpts({plugins:{legend:{labels:{color:'#9aa3bd',font:{size:10}}},
+    tooltip:{callbacks:{label:t=>{
+      const v=t.raw;if(v==null)return null;
+      const txt=isQ?v+' protocolo'+(v===1?'':'s'):R(v);
+      return' '+t.dataset.label+': '+txt;},
+      afterBody:items=>{
+        if(!items.length||items[0].dataIndex<6)return[];
+        const a=Math.max(0,perM-sd1),b=perM+sd1;
+        return['','Faixa provável: '+(isQ?Math.round(a)+' a '+Math.round(b):R(a)+' a '+R(b))];}}}}})});
+}
 // Rótulo do período em uso: sem filtro de data = "geral" (toda a base); com filtro,
 // mostra o intervalo selecionado, pra não dar a entender que é sempre "o mês atual".
 function periodoLabel(){
@@ -1972,10 +2091,12 @@ function render(){
   renderMotivoPareto(L);
   renderMotivoParceiro(L);
   renderInsights(L,meta);
+  alignAllTables();
 }
 ["meta","base","pdcaDe","pdcaAte"].forEach(i=>{const el=$(i);if(el)el.addEventListener("input",render);});
 const goBtn=$("go");if(goBtn)goBtn.addEventListener("click",()=>{if(typeof loadData==='function')loadData();});
 window.PDCA={render};
+window.renderPrev=renderPrevisibilidade;window.setPrevSerie=setPrevSerie;window.setPrevMetric=setPrevMetric;
 })();
 </script>
 
@@ -1999,6 +2120,7 @@ function renderPartnersTable(stats){
       +'<td>'+(s.notaMedia!=null?s.notaMedia.toFixed(2)+' ★':'—')+'</td></tr>';
   });
   tb.innerHTML=h;
+  alignAllTables();
 }
 function renderPartnersSlaChart(rows,topNomes){
   const acc={}; // acc[parceiro][mes] = {s,c}
