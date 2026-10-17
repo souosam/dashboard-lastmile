@@ -448,7 +448,13 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="section-title">Backlog Acumulado</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:260px;"><canvas id="backlogChart"></canvas></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Quantos protocolos estão em andamento (não entregues, não cancelados) ao final de cada mês. Se a linha sobe mês a mês, a esteira está recebendo mais do que consegue entregar.</div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Quantos protocolos estão em andamento (não entregues, não cancelados) ao final de cada mês. Se a linha sobe mês a mês, a esteira está recebendo mais do que consegue entregar. A linha verde tracejada é o backlog saudável (vazão mensal × meta ÷ 30); a vermelha é 1,5× disso, onde começa a sobrecarga.</div>
+  </div>
+
+  <div class="section-title">Capacidade × Backlog por Produto</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="proto-wrap"><table class="pdca-table" id="capacidadeTable" style="min-width:820px;"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;line-height:1.5;">Vazão e entrada: média dos últimos 3 meses completos. Backlog saudável = vazão × meta ÷ 30 (a fila que dá pra entregar dentro da meta). Ocupação = backlog atual ÷ saudável: até 1× saudável, até 1,5× atenção, acima disso sobrecarga. Dias p/ zerar = tempo pra esvaziar a fila no ritmo atual, sem novas entradas. Entrada em vermelho = entra mais do que sai. Produto com menos de 3 entregas no período aparece como "Poucos dados". Respeita os filtros de escopo e período acima.</div>
   </div>
 
   <div class="section-title">Distribuição de Atraso dos Concluídos</div>
@@ -1626,7 +1632,56 @@ function enumerarMeses(de,ate){
   }
   return out;
 }
-function renderBacklog(L){
+// ── CAPACIDADE × BACKLOG (Lei de Little) ───────────────────────────
+// Backlog saudável = vazão mensal × (meta ÷ 30): é a fila que a esteira consegue
+// entregar dentro da meta. Vazão = média dos últimos 3 meses COMPLETOS (o mês corrente
+// fica de fora porque ainda está incompleto). Ocupação = backlog atual ÷ backlog saudável.
+function mesesCompletos(n){
+  const t=new Date(),out=[];
+  for(let i=1;i<=n;i++){const d=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()-i,1));out.push(d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'));}
+  return out;
+}
+function capacidade(rows,meta){
+  const J=mesesCompletos(3);
+  const nrows=rows.filter(x=>!x.c);
+  const entregues=nrows.filter(x=>x.e&&J.includes(x.mesC)).length;
+  const entradas=nrows.filter(x=>J.includes(x.mes)).length;
+  const aberto=nrows.filter(x=>!x.e);
+  const vazao=entregues/3, entrada=entradas/3;
+  const saudavel=vazao*meta/30;
+  const ocup=saudavel>0?aberto.length/saudavel:null;
+  const idades=aberto.map(x=>x.age).filter(a=>a!=null);
+  const idadeMed=idades.length?idades.reduce((a,b)=>a+b,0)/idades.length:null;
+  const vencidos=aberto.filter(x=>x.age!=null&&x.age>meta).length;
+  const diasZerar=vazao>0?aberto.length/vazao*30:null;
+  let status,cls;
+  if(entregues<3){status=aberto.length?'Poucos dados':'—';cls='';}
+  else if(ocup<=1){status='Saudável';cls='pdca-ok';}
+  else if(ocup<=1.5){status='Atenção';cls='pdca-wa';}
+  else{status='Sobrecarga';cls='pdca-bad';}
+  return{entregues,entradas,vazao,entrada,aberto:aberto.length,saudavel,ocup,idadeMed,vencidos,diasZerar,status,cls,saldo:entrada-vazao};
+}
+function renderCapacidade(L,meta){
+  const tb=document.getElementById('capacidadeTable');if(!tb)return;
+  const f1=v=>v==null?'—':v.toFixed(1).replace('.',',');
+  const produtos=[...new Set(L.filter(x=>!x.c).map(x=>(x.produto||'—').trim()||'—'))];
+  const linhas=[['Geral',capacidade(L,meta)]].concat(
+    produtos.map(p=>[p,capacidade(L.filter(x=>((x.produto||'—').trim()||'—')===p),meta)])
+      .filter(([,c])=>c.aberto>0||c.entregues>0)
+      .sort((a,b)=>(b[1].ocup||0)-(a[1].ocup||0)));
+  const head='<tr><th>Produto</th><th>Vazão/mês</th><th>Entrada/mês</th><th>Backlog atual</th><th>Backlog saudável</th><th>Ocupação</th><th>Idade média</th><th>Vencidos (&gt;'+meta+'d)</th><th>Dias p/ zerar a fila</th><th>Situação</th></tr>';
+  const rows=linhas.map(([nome,c],i)=>`<tr${i===0?' style="font-weight:700;"':''}><td style="text-align:left;">${nome}</td>`+
+    `<td>${f1(c.vazao)}</td>`+
+    `<td class="${c.saldo>0.5?'pdca-bad':''}">${f1(c.entrada)}</td>`+
+    `<td>${c.aberto}</td><td>${f1(c.saudavel)}</td>`+
+    `<td>${c.ocup==null?'—':f1(c.ocup)+'×'}</td>`+
+    `<td>${c.idadeMed==null?'—':Math.round(c.idadeMed)+'d'}</td>`+
+    `<td>${c.aberto?c.vencidos+'/'+c.aberto:'—'}</td>`+
+    `<td>${c.diasZerar==null?'—':Math.round(c.diasZerar)+'d'}</td>`+
+    `<td><span class="${c.cls}">${c.status}</span></td></tr>`).join('');
+  tb.innerHTML=head+rows;
+}
+function renderBacklog(L,meta){
   const base=L.filter(x=>!x.c);
   if(!base.length){if(charts.pdcaBacklog){charts.pdcaBacklog.destroy();charts.pdcaBacklog=null;}return;}
   const todos=[...new Set(base.flatMap(x=>x.mesC?[x.mes,x.mesC]:[x.mes]))].sort();
@@ -1636,12 +1691,16 @@ function renderBacklog(L){
   // (entregues pode incluir protocolos que entraram em meses anteriores).
   const entradasMes=meses.map(m=>base.filter(x=>x.mes===m).length);
   const entreguesMes=meses.map(m=>base.filter(x=>x.mesC===m).length);
+  const capG=capacidade(L,meta||30);
   if(charts.pdcaBacklog)charts.pdcaBacklog.destroy();
   const ctx=document.getElementById('backlogChart');if(!ctx)return;
   charts.pdcaBacklog=new Chart(ctx,{type:'line',data:{labels:meses.map(mesLabel),datasets:[
     {label:'Em andamento (fim do mês)',data:backlog,borderColor:'#f39c12',backgroundColor:'rgba(243,156,18,.15)',fill:true,tension:.3,pointRadius:3}
-  ]},options:darkOpts({plugins:{
-    legend:{display:false},
+  ].concat(capG.vazao>0?[
+    {label:'Limite saudável (1× vazão)',data:meses.map(()=>+capG.saudavel.toFixed(1)),borderColor:'#2ecc71',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false},
+    {label:'Limite de sobrecarga (1,5× vazão)',data:meses.map(()=>+(capG.saudavel*1.5).toFixed(1)),borderColor:'#e74c3c',borderDash:[6,4],borderWidth:1.5,pointRadius:0,fill:false}
+  ]:[])},options:darkOpts({plugins:{
+    legend:{display:capG.vazao>0,labels:{color:'#9aa3bd',font:{size:10}}},
     tooltip:{callbacks:{afterBody:items=>{
       if(!items.length)return[];
       const idx=items[0].dataIndex;
@@ -1797,6 +1856,20 @@ function renderInsights(L,meta){
     }
   }
 
+  // 3b) Ocupação da capacidade (backlog atual × backlog saudável), geral e pior produto
+  const capG=capacidade(L,meta);
+  if(capG.ocup!=null&&capG.entregues>=3){
+    const prods=[...new Set(L.filter(x=>!x.c).map(x=>(x.produto||'—').trim()||'—'))]
+      .map(p=>[p,capacidade(L.filter(x=>((x.produto||'—').trim()||'—')===p),meta)])
+      .filter(([,c])=>c.entregues>=3&&c.ocup!=null).sort((a,b)=>b[1].ocup-a[1].ocup);
+    const pior=prods[0];
+    const piorTxt=pior&&pior[1].ocup>1?` O produto mais pressionado é ${pior[0]}, com ${pior[1].ocup.toFixed(1).replace('.',',')}× o backlog saudável.`:'';
+    cards.push({cls:capG.ocup<=1?'':(capG.ocup<=1.5?'warn':'bad'),
+      head:`Capacidade: backlog em ${capG.ocup.toFixed(1).replace('.',',')}× o nível saudável (${capG.status.toLowerCase()})`,
+      body:`Entregando ~${capG.vazao.toFixed(1).replace('.',',')} protocolos/mês, o backlog saudável pra meta de ${meta} dias é ~${capG.saudavel.toFixed(0)}; hoje há ${capG.aberto} em andamento, ${capG.vencidos} já vencidos. No ritmo atual, zerar a fila levaria ~${Math.round(capG.diasZerar)} dias.${piorTxt}`,
+      action:capG.ocup<=1?'Sugestão: capacidade compatível com a meta; foco em manter o ritmo e tratar os vencidos.':'Sugestão: ou reforçar a capacidade de entrega, ou segurar novas entradas, ou rever a meta de prazo — a fila acima do saudável significa que a meta de '+meta+' dias não é sustentável com a vazão atual.'});
+  }
+
   // 4) Protocolos pendentes sem motivo informado
   const pendSemMotivo=L.filter(x=>!x.c&&!x.e&&!x.mu).length;
   const pendTotal=L.filter(x=>!x.c&&!x.e).length;
@@ -1862,7 +1935,8 @@ function render(){
   }
   renderPrazoContrato(L);
   renderEntradasEntregues(L,meta);
-  renderBacklog(L);
+  renderBacklog(L,meta);
+  renderCapacidade(L,meta);
   renderPendentes(L,meta);
   renderAtrasoHist(L,meta);
   renderMotivoPareto(L);
