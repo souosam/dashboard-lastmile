@@ -436,7 +436,7 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="section-title">Prazo do Contrato por Faixa</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="proto-wrap"><table class="pdca-table" id="prazoContratoTable"></table></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Cada faixa é o prazo contratado (coluna "Prazo contrato" da planilha), não a meta fixa de cima. Só entram protocolos com esse campo preenchido e não cancelados.</div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Cada faixa é o prazo contratado (coluna "Prazo contrato" da planilha), não a meta fixa de cima. Só entram protocolos com esse campo preenchido e não cancelados, e prazos menores que 14 dias ficam fora por serem suspeitos. <span id="prazoSuspeitosNota"></span></div>
   </div>
 
   <div class="section-title">Entradas × Entregues Dentro da Meta de SLA</div>
@@ -460,7 +460,7 @@ main>.section-title:first-of-type{margin-top:0;}
   <div class="section-title">Distribuição de Atraso dos Concluídos</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="chart-wrap" style="height:260px;"><canvas id="atrasoHistChart"></canvas></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Só dos protocolos entregues fora da meta: quantos dias de atraso tiveram além da meta, em 4 faixas. Mostra se o atraso é concentrado em poucos casos muito fora da meta ou espalhado por todo mundo.</div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">De todos os protocolos entregues: quantos ficaram dentro da meta e, dos que estouraram, quantos dias de atraso tiveram além da meta, em 4 faixas. Mostra se o atraso é concentrado em poucos casos muito fora da meta ou espalhado por todo mundo.</div>
   </div>
 
   <div class="section-title">Motivos de Atraso — Visão Geral</div>
@@ -517,10 +517,17 @@ main>.section-title:first-of-type{margin-top:0;}
 <main>
   <div style="color:var(--muted);font-size:11px;margin:-6px 0 16px;">Reflete os mesmos filtros e o mesmo escopo (NET TURBO / Demais Parceiros) selecionados na aba Dashboard.</div>
 
-  <div class="section-title">Projetos Pendentes de Entrega</div>
+  <div class="section-title">Pendentes de Entrega sem Motivo de Atraso</div>
   <div class="card" style="margin-bottom:18px;">
     <div class="proto-wrap"><table class="pdca-table" id="pendentesTable"></table></div>
-    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Todos os protocolos ainda não entregues (nem cancelados), do mais pro menos atrasado. "Vencido" = já passou da meta de dias (configurada na aba PDCA) contada a partir da data da venda.</div>
+    <div id="pendentesResumo" style="color:var(--textdim);font-size:12px;margin-top:10px;font-weight:600;"></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:4px;">Só os pendentes que ainda não têm motivo de atraso na planilha — é a lista pra cobrar o preenchimento; quem já tem motivo entra no Pareto do PDCA. Protocolos do mesmo cliente, parceiro e mês aparecem juntos. "Vencido" = já passou da meta de dias (aba PDCA) contada da data da venda.</div>
+  </div>
+
+  <div class="section-title">Prazos de Contrato para Revisar</div>
+  <div class="card" style="margin-bottom:18px;">
+    <div class="proto-wrap"><table class="pdca-table" id="prazoRevisaoTable"></table></div>
+    <div style="color:var(--muted);font-size:11px;margin-top:10px;">Protocolos com prazo de contrato menor que 14 dias, o que é improvável (os prazos usuais são 14, 20, 30, 40 e 60). Vale conferir na planilha se não é erro de digitação.</div>
   </div>
 
   <div class="grid-2" style="margin-bottom:18px;">
@@ -1515,7 +1522,10 @@ function card(t,a,meta){
 function renderPrazoContrato(L){
   const tb=document.getElementById('prazoContratoTable');if(!tb)return;
   const by={};
-  L.filter(x=>!x.c&&x.prazo!=null).forEach(x=>{
+  const suspeitos=L.filter(x=>!x.c&&x.prazo!=null&&x.prazo<14).length;
+  const nota=document.getElementById('prazoSuspeitosNota');
+  if(nota)nota.textContent=suspeitos?suspeitos+' protocolo'+(suspeitos===1?'':'s')+' com prazo menor que 14 dias '+(suspeitos===1?'foi separado':'foram separados')+' desta tabela e '+(suspeitos===1?'está':'estão')+' na aba Análises, em "Prazos de contrato para revisar".':'';
+  L.filter(x=>!x.c&&x.prazo!=null&&x.prazo>=14).forEach(x=>{
     (by[x.prazo]=by[x.prazo]||{total:0,entregues:0,dentro:0,parc:{}});
     const g=by[x.prazo];
     g.total++;
@@ -1710,12 +1720,13 @@ function renderBacklog(L,meta){
   }})});
 }
 function renderAtrasoHist(L,meta){
-  // Só os entregues que estouraram a meta — "dias de atraso" = dias acima da meta.
-  // Quem entregou dentro da meta já está contado à parte no Resumo acima.
-  const atrasados=L.filter(x=>x.e&&x.dias!=null&&x.dias>meta).map(x=>x.dias-meta);
-  const total=atrasados.length;
+  // Base = todos os entregues. "Dentro da meta" + 4 faixas de dias de atraso além da meta.
+  const entregues=L.filter(x=>x.e&&x.dias!=null).map(x=>x.dias-meta);
+  const atrasados=entregues; // d = dias além da meta (<=0 = dentro da meta)
+  const total=entregues.length;
   const buckets=[
-    {label:'0 a 30 dias de atraso',test:d=>d<=30,color:'#f1c40f'},
+    {label:'Dentro da meta',test:d=>d<=0,color:'#2ecc71'},
+    {label:'0 a 30 dias de atraso',test:d=>d>0&&d<=30,color:'#f1c40f'},
     {label:'30 a 60 dias',test:d=>d>30&&d<=60,color:'#e67e22'},
     {label:'60 a 90 dias',test:d=>d>60&&d<=90,color:'#e74c3c'},
     {label:'Mais de 90 dias',test:d=>d>90,color:'#922b21'}
@@ -1886,20 +1897,38 @@ function renderInsights(L,meta){
     `<div class="insight-body">${c.body}</div>`+
     `<div class="insight-action">${c.action.replace(/^(Sugestão:)/,'<b>$1</b>')}</div></div>`).join('');
 }
-// Lista de todo protocolo ainda não entregue (nem cancelado), do mais pro menos atrasado,
-// com cliente, dias em andamento, se já venceu a meta e o motivo de atraso informado.
+// Pendentes (não entregues, não cancelados) que AINDA NÃO têm motivo de atraso preenchido:
+// é a lista de cobrança de preenchimento. Quem já tem motivo sai daqui (aparece no Pareto).
+// Agrupa por cliente + parceiro + mês de entrada, porque o mesmo cliente costuma ter
+// vários protocolos idênticos (ex.: um lote inteiro parado).
 function renderPendentes(L,meta){
   const tb=document.getElementById('pendentesTable');if(!tb)return;
-  const pend=L.filter(x=>!x.c&&!x.e).sort((a,b)=>(b.age||0)-(a.age||0));
-  if(!pend.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhum protocolo pendente — tudo entregue ou cancelado.</td></tr>';return;}
-  const head='<tr><th>Cliente</th><th>Parceiro</th><th>Entrou em</th><th>Dias em andamento</th><th>Situação</th><th>Motivo do atraso</th></tr>';
-  const rows=pend.map(x=>{
-    const vencido=x.age!=null&&x.age>meta;
-    return`<tr><td>${x.cliente||'—'}</td><td>${x.parceiro||'—'}</td><td>${mesLabel(x.mes)}</td><td>${x.age!=null?x.age+'d':'—'}</td>`+
-      `<td><span class="${vencido?'pdca-bad':'pdca-wa'}">${vencido?'Vencido':'Dentro do prazo'}</span></td>`+
-      `<td style="text-align:left;white-space:normal;">${x.mu||'<span style=\"color:var(--muted)\">— não informado —</span>'}</td></tr>`;
+  const pend=L.filter(x=>!x.c&&!x.e);
+  const sem=pend.filter(x=>!x.mu);
+  const res=document.getElementById('pendentesResumo');
+  if(res)res.textContent=pend.length+' protocolos pendentes: '+(pend.length-sem.length)+' já com motivo informado e '+sem.length+' ainda sem motivo.';
+  if(!sem.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Todos os protocolos pendentes já têm motivo de atraso informado.</td></tr>';return;}
+  const g={};
+  sem.forEach(x=>{const k=[x.cliente,x.parceiro,x.mes].join('|');
+    (g[k]=g[k]||{cliente:x.cliente,parceiro:x.parceiro,mes:x.mes,n:0,age:0});g[k].n++;g[k].age=Math.max(g[k].age,x.age||0);});
+  const grupos=Object.values(g).sort((a,b)=>b.age-a.age);
+  const head='<tr><th>Cliente</th><th>Parceiro</th><th>Entrou em</th><th>Protocolos</th><th>Dias em andamento</th><th>Situação</th></tr>';
+  const rows=grupos.map(x=>{
+    const vencido=x.age>meta;
+    return`<tr><td>${x.cliente||'—'}</td><td>${x.parceiro||'—'}</td><td>${mesLabel(x.mes)}</td><td>${x.n}</td><td>${x.age}d</td>`+
+      `<td><span class="${vencido?'pdca-bad':'pdca-wa'}">${vencido?'Vencido':'Dentro do prazo'}</span></td></tr>`;
   }).join('');
   tb.innerHTML=head+rows;
+}
+// Prazos de contrato menores que 14 dias: improváveis, provável erro de digitação na planilha.
+function renderPrazoRevisao(){
+  const tb=document.getElementById('prazoRevisaoTable');if(!tb)return;
+  const rows=(window.allRows||[]).filter(r=>r.prazoContratoDias>0&&r.prazoContratoDias<14&&r.statusNum!==14)
+    .sort((a,b)=>a.prazoContratoDias-b.prazoContratoDias);
+  if(!rows.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhum prazo de contrato suspeito.</td></tr>';return;}
+  const head='<tr><th>Cliente</th><th>Parceiro</th><th>Protocolo</th><th>Prazo informado</th><th>Data da venda</th><th>Status</th></tr>';
+  tb.innerHTML=head+rows.map(r=>`<tr><td>${r.cliente||'—'}</td><td>${r.parceiro||'—'}</td><td>${r.protocolo||'—'}</td>`+
+    `<td class="pdca-bad">${r.prazoContratoDias} dias</td><td>${fmtD(r.dataVenda)}</td><td style="text-align:left;">${(r.status||'—').replace(/^\d+\.\s*/,'')}</td></tr>`).join('');
 }
 // Rótulo do período em uso: sem filtro de data = "geral" (toda a base); com filtro,
 // mostra o intervalo selecionado, pra não dar a entender que é sempre "o mês atual".
@@ -1934,6 +1963,7 @@ function render(){
     $("cards").innerHTML=card("Entraram do dia 1 ao 15 · "+periodo,agg(q1,meta),meta)+card("Entraram do dia 16 ao fim do mês · "+periodo,agg(q2,meta),meta);
   }
   renderPrazoContrato(L);
+  renderPrazoRevisao();
   renderEntradasEntregues(L,meta);
   renderBacklog(L,meta);
   renderCapacidade(L,meta);
