@@ -58,8 +58,6 @@ main{padding:22px 28px 40px;max-width:1700px;margin:0 auto;}
 .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
 .grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:18px;margin-bottom:18px;}
 .grid-3-map{display:grid;grid-template-columns:1.5fr 1fr 1fr;gap:18px;margin-bottom:18px;}
-.grid-pipeline{display:grid;grid-template-columns:1fr 1.3fr;gap:18px;margin-bottom:18px;}
-@media(max-width:900px){.grid-pipeline{grid-template-columns:1fr;}}
 @media(max-width:1100px){.grid-3,.grid-3-map{grid-template-columns:1fr 1fr;}}
 @media(max-width:720px){.grid-2,.grid-3,.grid-3-map{grid-template-columns:1fr;}}
 /* KPI — grade fixa de 3 colunas (6 cards = 2 linhas), cor e destaque definidos por
@@ -128,17 +126,7 @@ main>.section-title:first-of-type{margin-top:0;}
 .scope-btn.active{background:var(--card-hi);color:var(--accent);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset;}
 .scope-hint{font-size:11px;color:var(--muted);margin-left:4px;}
 /* DONUT */
-.donut-wrap{display:flex;gap:16px;align-items:center;}
-.donut-chart{flex:0 0 130px;height:130px;}
-.donut-legend{flex:1;display:flex;flex-direction:column;gap:5px;}
-.legend-item{display:flex;align-items:center;gap:7px;font-size:11px;}
-.legend-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
-.legend-pct{margin-left:auto;color:var(--muted);font-size:10px;}
 /* TOP TABLE */
-.top-table{width:100%;border-collapse:collapse;}
-.top-table th{font-size:10px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);text-align:left;padding:0 0 7px;border-bottom:1px solid var(--border);}
-.top-table td{padding:6px 0;font-size:12px;border-bottom:1px solid #1e2333;}
-.top-table td:last-child{text-align:right;font-weight:700;color:var(--accent);}
 .rank{color:var(--muted);font-size:11px;min-width:18px;display:inline-block;}
 /* BADGES */
 .sla-badge{display:inline-block;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700;font-family:var(--font-m);}
@@ -153,18 +141,7 @@ main>.section-title:first-of-type{margin-top:0;}
 .prod-chip{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;background:var(--surface);color:var(--textdim);border:1px solid var(--border);}
 /* PROTO TABLE */
 .proto-wrap{overflow-x:auto;}
-.proto-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px;}
-.alert-table{min-width:850px;}
-.proto-table th{background:var(--surface);color:var(--muted);font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:8px 10px;text-align:left;position:sticky;top:0;}
-.proto-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--textdim);}
-.proto-table tr:hover td{background:var(--surface);}
-.proto-table td:first-child{color:var(--text);font-weight:500;}
 /* ALERT TABLE */
-.alert-table{width:100%;border-collapse:collapse;font-size:12px;}
-.alert-table th{background:var(--surface);color:var(--muted);font-size:10px;letter-spacing:.8px;text-transform:uppercase;padding:7px 10px;text-align:left;}
-.alert-table td{padding:7px 10px;border-bottom:1px solid var(--border);color:var(--textdim);}
-.alert-table tr:hover td{background:var(--surface);}
-.alert-table td:first-child{color:var(--text);font-weight:500;}
 .sem-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:3px;}
 .sem-green{background:#2ecc71;}.sem-yellow{background:#f39c12;}.sem-red{background:#e74c3c;}
 /* GROWTH */
@@ -196,11 +173,6 @@ main>.section-title:first-of-type{margin-top:0;}
 .tip{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:var(--border);color:var(--muted);font-size:9px;cursor:help;position:relative;flex-shrink:0;}
 .tip:hover::after{content:attr(data-tip);position:absolute;top:120%;left:50%;transform:translateX(-50%);background:#1e2333;border:1px solid var(--border);color:var(--text);font-size:11px;padding:8px 12px;border-radius:8px;white-space:normal;width:230px;z-index:100;line-height:1.5;font-weight:400;letter-spacing:0;text-transform:none;pointer-events:none;}
 /* CONVERSION */
-.conv-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
-.conv-label{font-size:11px;color:var(--textdim);min-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.conv-bar-wrap{flex:1;height:18px;background:var(--surface);border-radius:4px;overflow:hidden;}
-.conv-bar{height:100%;border-radius:4px;display:flex;align-items:center;justify-content:flex-end;padding-right:5px;font-size:10px;color:#fff;font-weight:700;}
-.conv-pct{font-size:11px;color:var(--accent);font-weight:700;min-width:34px;text-align:right;}
 /* ERROR */
 #errorBanner{display:none;background:rgba(231,76,60,.12);border:1px solid var(--danger);color:var(--danger);border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:13px;}
 /* APP SHELL / SIDEBAR */
@@ -221,7 +193,6 @@ main>.section-title:first-of-type{margin-top:0;}
   .nav-item{flex-shrink:0;}
 }
 /* PDCA */
-.pdca-kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--textdim);}
 .pdca-stat-grid{display:flex;flex-wrap:wrap;gap:1px;background:var(--border);border-radius:8px;overflow:hidden;}
 .pdca-stat{background:var(--surface);padding:12px 14px;display:flex;flex-direction:column;gap:7px;flex:1 1 180px;min-width:180px;}
 .pdca-stat .l{font-size:10.5px;color:var(--muted);line-height:1.35;}
@@ -236,8 +207,6 @@ main>.section-title:first-of-type{margin-top:0;}
 .insight-card .insight-body{font-size:12px;color:var(--textdim);line-height:1.5;}
 .insight-card .insight-action{font-size:12px;color:var(--text);line-height:1.5;margin-top:6px;padding-top:6px;border-top:1px dashed var(--border);}
 .insight-card .insight-action b{color:var(--accent);}
-.pdca-kv:last-child{border:0;}
-.pdca-kv b{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text);}
 .pdca-ok{color:var(--accent);}
 .pdca-bad{color:var(--danger);}
 .pdca-wa{color:var(--warn);}
@@ -251,6 +220,42 @@ main>.section-title:first-of-type{margin-top:0;}
 .pdca-dl dt{font-weight:700;color:var(--text);margin-top:14px;font-size:12.5px;}
 .pdca-dl dt:first-child{margin-top:0;}
 .pdca-dl dd{margin:3px 0 0;color:var(--muted);font-size:12px;line-height:1.5;}
+
+/* RELATÓRIO ONE PAGE */
+.rp-wrap{padding:20px;max-width:900px;margin:0 auto;}
+.rp-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:14px;}
+.rp-controls .scope-btn{margin:0;}
+.rp-sp{flex:1;}
+.rp-paper{background:#fff;color:#1a2233;border-radius:6px;padding:26px 30px;box-shadow:0 8px 30px rgba(0,0,0,.45);font-family:var(--font);font-size:11.5px;line-height:1.45;}
+.rp-head{display:flex;justify-content:space-between;align-items:flex-end;border-bottom:3px solid #1f9d55;padding-bottom:10px;margin-bottom:14px;}
+.rp-head h1{font-size:20px;margin:0;font-family:var(--font-d);color:#0f2a1d;}
+.rp-head .rp-sub{color:#5b6a82;font-size:11px;margin-top:2px;}
+.rp-head .rp-per{text-align:right;font-weight:700;font-size:13px;color:#1f9d55;}
+.rp-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px;}
+.rp-kpi{border:1px solid #dfe5ee;border-radius:8px;padding:8px 10px;background:#f7f9fc;}
+.rp-kpi .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.05em;color:#5b6a82;font-weight:700;}
+.rp-kpi .v{font-size:20px;font-weight:800;font-family:var(--font-d);color:#0f2a1d;margin:1px 0;}
+.rp-kpi .d{font-size:10.5px;color:#5b6a82;}
+.rp-up{color:#1f9d55;font-weight:700;}.rp-dn{color:#d63a3a;font-weight:700;}.rp-eq{color:#5b6a82;font-weight:700;}
+.rp-cols{display:grid;grid-template-columns:1.1fr 1fr;gap:14px;margin-bottom:12px;}
+.rp-paper h2{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:#1f9d55;margin:0 0 6px;border-bottom:1px solid #dfe5ee;padding-bottom:3px;}
+.rp-paper ul{margin:0;padding-left:16px;}.rp-paper li{margin-bottom:3px;}
+.rp-paper table{width:100%;border-collapse:collapse;font-size:11px;}
+.rp-paper th{text-align:left;color:#5b6a82;font-weight:700;font-size:9.5px;text-transform:uppercase;border-bottom:1px solid #dfe5ee;padding:2px 4px;}
+.rp-paper th.n,.rp-paper td.n{text-align:right;}
+.rp-paper td{padding:3px 4px;border-bottom:1px solid #eef1f6;}
+.rp-note{min-height:46px;border:1px dashed #b9c4d6;border-radius:6px;padding:6px 8px;background:#fbfcfe;outline:none;}
+.rp-foot{margin-top:10px;font-size:9.5px;color:#8591a8;display:flex;justify-content:space-between;}
+@media print{
+  @page{size:A4;margin:9mm;}
+  html,body{background:#fff!important;}
+  .sidebar,header,.rp-controls,#loginScreen,#errorBanner{display:none!important;}
+  .app-shell,.content-col{display:block!important;padding:0!important;margin:0!important;}
+  .rp-wrap{padding:0;max-width:none;}
+  .rp-paper{box-shadow:none;border-radius:0;padding:0;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+  .rp-note{border-color:#ccc;}
+}
+@media(max-width:700px){.rp-kpis{grid-template-columns:repeat(2,1fr);}.rp-cols{grid-template-columns:1fr;}.rp-paper{padding:16px;}}
 </style>
 </head>
 <body>
@@ -285,6 +290,7 @@ main>.section-title:first-of-type{margin-top:0;}
     <div class="nav-item" data-view="pdca" onclick="switchView('pdca')"><span class="nav-ico">🔁</span>PDCA</div>
     <div class="nav-item" data-view="partners" onclick="switchView('partners')"><span class="nav-ico">🤝</span>Qualidade Parceiros</div>
     <div class="nav-item" data-view="analises" onclick="switchView('analises')"><span class="nav-ico">📊</span>Análises</div>
+    <div class="nav-item" data-view="relatorio" onclick="switchView('relatorio')"><span class="nav-ico">📄</span>Relatório</div>
   </nav>
   <div class="content-col">
 <header>
@@ -298,6 +304,23 @@ main>.section-title:first-of-type{margin-top:0;}
     <button class="btn-logout" onclick="doLogout()">⏻ Sair</button>
   </div>
 </header>
+
+<div id="view-relatorio" class="view">
+<div class="rp-wrap">
+  <div class="rp-controls">
+    <button class="scope-btn active" data-rpmode="sem" onclick="Relatorio.setMode('sem')">Semanal</button>
+    <button class="scope-btn" data-rpmode="mes" onclick="Relatorio.setMode('mes')">Mensal</button>
+    <button class="scope-btn" onclick="Relatorio.nav(-1)" title="Período anterior">◀</button>
+    <button class="scope-btn" onclick="Relatorio.nav(1)" title="Período seguinte">▶</button>
+    <select id="rpScope" class="scope-btn" onchange="Relatorio.setScope(this.value)" style="background:var(--card);color:var(--text);">
+      <option value="all">Visão Geral</option><option value="net">NET TURBO</option><option value="partners">Demais Parceiros</option>
+    </select>
+    <span class="rp-sp"></span>
+    <button class="btn-primary" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
+  </div>
+  <div class="rp-paper" id="rpPaper"></div>
+</div>
+</div>
 
 <div id="view-dashboard" class="view active">
 <main>
@@ -326,7 +349,7 @@ main>.section-title:first-of-type{margin-top:0;}
     <label>Até</label><input type="month" id="filterAte" onchange="applyFilters()"/>
     <div class="filter-sep"></div>
     <label>Cliente</label>
-    <input type="text" id="filterCliente" placeholder="Buscar…" oninput="applyFilters()" style="width:130px;"/>
+    <input type="text" id="filterCliente" placeholder="Buscar…" oninput="debouncedFilters()" style="width:130px;"/>
     <span style="margin-left:auto;font-size:11px;color:var(--muted);" id="totalCount"></span>
     <button style="background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:5px 12px;font-size:12px;cursor:pointer;" onclick="clearFilters()">✕ Limpar</button>
     <button style="background:var(--accent);color:#06261a;border:none;border-radius:6px;padding:5px 12px;font-size:12px;font-weight:700;cursor:pointer;" onclick="exportFilteredCSV()">⬇ Exportar CSV</button>
@@ -637,6 +660,9 @@ function switchView(name){
     title.textContent='PDCA Last Mile';sub.textContent='GP · Samuel Almeida · Coortes por entrada';
   }else if(name==='partners'){
     title.textContent='Qualidade Parceiros';sub.textContent='GP · Samuel Almeida · Comparativo entre parceiros';
+  }else if(name==='relatorio'){
+    title.textContent='Relatório One Page';sub.textContent='GP · Samuel Almeida · Semanal e mensal';
+    if(window.Relatorio)window.Relatorio.render();
   }else if(name==='analises'){
     title.textContent='Análises';sub.textContent='GP · Samuel Almeida · SLA e rankings detalhados';
   }else{
@@ -721,6 +747,7 @@ async function loadData(){
         if(pdcaMsg)pdcaMsg.textContent='Erro ao calcular o PDCA: '+pdcaErr.message+' (os dados do dashboard continuam normais).';
       }
     }
+    if(window.Relatorio){try{window.Relatorio.render();}catch(re){console.error('Relatório render error:',re);}}
     if(window.PartnerQuality){
       try{window.PartnerQuality.render();}
       catch(pqErr){console.error('Qualidade Parceiros render error:',pqErr);}
@@ -737,7 +764,11 @@ async function loadData(){
 
 // ── CSV ───────────────────────────────────────────────────────────
 const DAY=864e5;
+// Escapa texto vindo da planilha antes de entrar em innerHTML (qualquer pessoa com acesso
+// de edição à planilha poderia, senão, injetar HTML/JS no dashboard).
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const norm=s=>(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();
+const YMAX=new Date().getFullYear()+2; // aceita datas até 2 anos à frente; fora disso é erro de digitação
 function parseDateBR(s){
   s=(s||"").trim();
   if(!s)return null;
@@ -745,11 +776,11 @@ function parseDateBR(s){
   // (ex.: "10/09/2026 00:00:00" ou "2026-09-10T00:00:00") — a planilha às vezes exporta
   // a coluna de data como data-hora, e isso derrubava o parser silenciosamente para null.
   let m=/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[ T]\d{1,2}:\d{2}(:\d{2})?)?$/.exec(s);
-  if(m){const y=+m[3];if(y<2025||y>2027)return null;return Date.UTC(y,+m[2]-1,+m[1]);}
+  if(m){const y=+m[3];if(y<2020||y>YMAX)return null;return Date.UTC(y,+m[2]-1,+m[1]);}
   m=/^(\d{1,2})-(\d{1,2})-(\d{4})(?:[ T]\d{1,2}:\d{2}(:\d{2})?)?$/.exec(s);
-  if(m){const y=+m[3];if(y<2025||y>2027)return null;return Date.UTC(y,+m[2]-1,+m[1]);}
+  if(m){const y=+m[3];if(y<2020||y>YMAX)return null;return Date.UTC(y,+m[2]-1,+m[1]);}
   m=/^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T]\d{1,2}:\d{2}(:\d{2})?)?$/.exec(s);
-  if(m){const y=+m[1];if(y<2025||y>2027)return null;return Date.UTC(y,+m[2]-1,+m[3]);}
+  if(m){const y=+m[1];if(y<2020||y>YMAX)return null;return Date.UTC(y,+m[2]-1,+m[3]);}
   return null;
 }
 const diff=(a,b)=>(a==null||b==null)?null:Math.round((a-b)/DAY);
@@ -780,7 +811,6 @@ function parseSheet(text){
   if(lines.length<2)return[];
   const sep=lines[0].split(';').length>lines[0].split(',').length?';':',';
   const headers=parseLine(lines[0],sep).map(h=>h.trim().replace(/^"|"$/g,'').replace(/\uFEFF/g,''));
-  console.log('Headers:',headers.slice(0,20));
 
   // Column indices based on confirmed structure
   // [0]Cliente [1]Parceiro [2]Estado [3]Cidade [4]Protocolo [5]Etiqueta
@@ -797,7 +827,6 @@ function parseSheet(text){
     dataConclusao:ci('conclus'), dataVenda:ci('venda'),
     liberado:ci('liberado')
   };
-  console.log('Indices:',idx);
   // Mapa por nome normalizado (sem acento), usado para colunas cujo nome exato
   // precisa de match exato/alternativo (ex.: duas variações possíveis de coluna)
   const H={};headers.forEach((h,i)=>{const k=norm(h);if(!(k in H))H[k]=i;});
@@ -874,13 +903,15 @@ function buildFilters(){
   const uniq=(arr)=>[...new Set(arr.filter(Boolean))].sort();
   const fill=(id,vals)=>{
     const el=document.getElementById(id);
-    if(el)el.innerHTML='<option value="">Todos</option>'+vals.map(v=>`<option value="${v}">${v}</option>`).join('');
+    if(el)el.innerHTML='<option value="">Todos</option>'+vals.map(v=>`<option value="${esc(v)}">${esc(v)}</option>`).join('');
   };
   fill('filterProduto',uniq(allRows.map(r=>r.produto)));
   fill('filterStatus',uniq(allRows.map(r=>r.status)));
   fill('filterParceiro',uniq(allRows.map(r=>r.parceiro)));
   fill('filterEstado',uniq(allRows.map(r=>r.estado)));
 }
+let _dbT;
+function debouncedFilters(){clearTimeout(_dbT);_dbT=setTimeout(applyFilters,200);}
 function gv(id){const el=document.getElementById(id);return el?el.value:'';}
 function applyFilters(){
   const prod=gv('filterProduto'),stat=gv('filterStatus')||activeStatusFilter;
@@ -941,7 +972,7 @@ function renderStageProtoList(){
   if(!activeStatusFilter){sec.style.display='none';return;}
   sec.style.display='';
   const titleEl=document.getElementById('stageProtoTitle');
-  const label=activeStatusFilter.replace(/^\d+\.\s*/,'');
+  const label=esc(activeStatusFilter.replace(/^\d+\.\s*/,''));
   if(titleEl)titleEl.innerHTML='Protocolos · '+label+' <span style="color:var(--muted);font-weight:400;">('+filteredRows.length+')</span>'+
     '<button onclick="clearStatusFilter()" style="margin-left:10px;background:var(--surface);color:var(--muted);border:1px solid var(--border);border-radius:6px;padding:3px 9px;font-size:10px;cursor:pointer;">✕ Fechar</button>';
   const tb=document.getElementById('stageProtoTable');if(!tb)return;
@@ -949,10 +980,10 @@ function renderStageProtoList(){
   const rows=[...filteredRows].sort((a,b)=>(b.dataVenda||0)-(a.dataVenda||0));
   const head='<tr><th>Cliente</th><th>Parceiro</th><th>Produto</th><th>Protocolo</th><th>Data da venda</th><th>Valor</th></tr>';
   const body=rows.slice(0,300).map(r=>
-    `<tr><td style="text-align:left;white-space:normal;">${r.cliente||'—'}</td>`+
-    `<td style="text-align:left;">${r.parceiro||'—'}</td>`+
-    `<td style="text-align:left;">${r.produto||'—'}</td>`+
-    `<td style="text-align:left;">${r.protocolo||'—'}</td>`+
+    `<tr><td style="text-align:left;white-space:normal;">${esc(r.cliente)||'—'}</td>`+
+    `<td style="text-align:left;">${esc(r.parceiro)||'—'}</td>`+
+    `<td style="text-align:left;">${esc(r.produto)||'—'}</td>`+
+    `<td style="text-align:left;">${esc(r.protocolo)||'—'}</td>`+
     `<td>${fmtD(r.dataVenda)}</td>`+
     `<td>${fmtRCur(r.valor)}</td></tr>`
   ).join('');
@@ -1065,12 +1096,12 @@ function renderFunnel(rows){
 
   const fmtR=v=>'R$ '+v.toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:0});
   function stageCard(st,c,maxC){
-    const color=getStatusColor(st);const label=st.replace(/^\d+\.\s*/,'').trim();
+    const color=getStatusColor(st);const label=esc(st.replace(/^\d+\.\s*/,'').trim());
     const pct=Math.max(6,Math.round((c/maxC)*100));
     const isActive=activeStatusFilter===st;
     const dim=activeStatusFilter&&!isActive;
     const val=valores[st]||0;
-    return`<div class="stage-card${isActive?' is-active':''}${dim?' is-dim':''}" onclick="filterByStatus('${st.replace(/'/g,"\\'")}')">
+    return`<div class="stage-card${isActive?' is-active':''}${dim?' is-dim':''}" data-status="${esc(st)}" onclick="filterByStatus(this.dataset.status)">
       <div class="stage-dot" style="background:${color}"></div>
       <div class="stage-count" style="color:${color}">${c}</div>
       <div class="stage-label">${label}</div>
@@ -1102,37 +1133,16 @@ function renderPipelineList(rows){
   tb.innerHTML=display.map(r=>`
     <tr>
       <td>${sname(r.cliente)}</td>
-      <td style="font-size:11px;color:var(--muted);">${r.parceiro||'—'}</td>
-      <td style="font-size:11px;">${r.estado||'—'}</td>
-      <td style="font-size:11px;color:var(--textdim);">${r.cidade||'—'}</td>
-      <td style="font-size:11px;color:var(--muted);font-family:var(--font-m);">${r.etiqueta||'—'}</td>
-      <td><span class="prod-chip">${r.produto||'—'}</span></td>
-      <td style="font-size:11px;">${r.prio||'—'}</td>
-      <td><span class="status-chip ${sCls(r.status)}">${(r.status||'').replace(/^\d+\.\s*/,'')}</span></td>
+      <td style="font-size:11px;color:var(--muted);">${esc(r.parceiro)||'—'}</td>
+      <td style="font-size:11px;">${esc(r.estado)||'—'}</td>
+      <td style="font-size:11px;color:var(--textdim);">${esc(r.cidade)||'—'}</td>
+      <td style="font-size:11px;color:var(--muted);font-family:var(--font-m);">${esc(r.etiqueta)||'—'}</td>
+      <td><span class="prod-chip">${esc(r.produto)||'—'}</span></td>
+      <td style="font-size:11px;">${esc(r.prio)||'—'}</td>
+      <td><span class="status-chip ${sCls(r.status)}">${esc((r.status||'').replace(/^\d+\.\s*/,''))}</span></td>
       <td>${r.slaGP!=null?slaBadge(r.slaGP):'—'}</td>
       <td style="text-align:right;color:var(--accent);font-weight:700;">${r.valor>0?'R$ '+r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—'}</td>
     </tr>`).join('');
-}
-
-// ── DONUT ─────────────────────────────────────────────────────────
-function renderDonut(rows){
-  const counts={};rows.forEach(r=>{if(r.produto)counts[r.produto]=(counts[r.produto]||0)+1;});
-  const sorted=Object.entries(counts).sort((a,b)=>b[1]-a[1]);
-  const labels=sorted.map(e=>e[0]),data=sorted.map(e=>e[1]),total=data.reduce((a,b)=>a+b,0);
-  const colors=PALETTE.slice(0,labels.length);
-  if(charts.donut)charts.donut.destroy();
-  const ctx=document.getElementById('donutChart');if(!ctx)return;
-  charts.donut=new Chart(ctx.getContext('2d'),{type:'doughnut',data:{labels,datasets:[{data,backgroundColor:colors,borderWidth:0,hoverOffset:6}]},options:{cutout:'65%',plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.label}: ${c.raw} (${Math.round(c.raw/total*100)}%)`}}},animation:{animateRotate:true}}});
-  const leg=document.getElementById('donutLegend');if(leg)leg.innerHTML=labels.map((l,i)=>`<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div><span>${l}</span><span class="legend-pct">${data[i]} · ${Math.round(data[i]/total*100)}%</span></div>`).join('');
-}
-
-// ── TICKET MÉDIO ──────────────────────────────────────────────────
-function renderTicketMedio(rows){
-  const acc={};rows.filter(r=>r.produto&&r.valor>0&&r.statusNum===13).forEach(r=>{if(!acc[r.produto])acc[r.produto]={s:0,c:0};acc[r.produto].s+=r.valor;acc[r.produto].c++;});
-  const sorted=Object.entries(acc).map(([p,v])=>({p,t:Math.round(v.s/v.c)})).sort((a,b)=>b.t-a.t);
-  if(charts.ticket)charts.ticket.destroy();
-  const ctx=document.getElementById('ticketMedio');if(!ctx)return;
-  charts.ticket=new Chart(ctx,{type:'bar',data:{labels:sorted.map(s=>s.p),datasets:[{label:'R$',data:sorted.map(s=>s.t),backgroundColor:'#9b59b6',borderRadius:5}]},options:darkOpts({indexAxis:'y',plugins:{tooltip:{callbacks:{label:c=>' R$ '+c.raw.toLocaleString('pt-BR',{minimumFractionDigits:2})}}}})});
 }
 
 // ── SLA ALERTS ────────────────────────────────────────────────────
@@ -1140,14 +1150,14 @@ function renderSLAAlerts(rows){
   const meta=parseInt(document.getElementById('metaSLA')?.value)||30;
   const ativos=rows.filter(r=>r.slaGP!=null&&r.status&&!isEntregue(r)&&!r.status.includes('Cancelado')).sort((a,b)=>b.slaGP-a.slaGP).slice(0,15);
   const tb=document.querySelector('#slaAlertTable tbody');if(!tb)return;
-  tb.innerHTML=ativos.map(r=>{const cls=r.slaGP>meta*1.5?'sem-red':r.slaGP>meta?'sem-yellow':'sem-green';return`<tr><td><span class="sem-dot ${cls}"></span></td><td>${sname(r.cliente)}</td><td><span class="prod-chip">${r.produto||'—'}</span></td><td style="font-size:10px;color:var(--muted)">${(r.status||'').replace(/^\d+\.\s*/,'')}</td><td>${slaBadge(r.slaGP)}</td></tr>`;}).join('');
+  tb.innerHTML=ativos.map(r=>{const cls=r.slaGP>meta*1.5?'sem-red':r.slaGP>meta?'sem-yellow':'sem-green';return`<tr><td><span class="sem-dot ${cls}"></span></td><td>${sname(r.cliente)}</td><td><span class="prod-chip">${esc(r.produto)||'—'}</span></td><td style="font-size:10px;color:var(--muted)">${esc((r.status||'').replace(/^\d+\.\s*/,''))}</td><td>${slaBadge(r.slaGP)}</td></tr>`;}).join('');
 }
 
 // ── PARADOS ───────────────────────────────────────────────────────
 function renderParados(rows){
   const parados=rows.filter(r=>r.slaGP!=null&&r.status&&(r.status.toLowerCase().includes('parado')||r.status.toLowerCase().includes('em andamento'))).sort((a,b)=>b.slaGP-a.slaGP).slice(0,15);
   const tb=document.querySelector('#paradosTable tbody');if(!tb)return;
-  tb.innerHTML=parados.map(r=>`<tr><td>${sname(r.cliente)}</td><td>${r.parceiro||'—'}</td><td style="font-size:10px;color:var(--muted)">${(r.status||'').replace(/^\d+\.\s*/,'')}</td><td>${slaBadge(r.slaGP)}</td></tr>`).join('');
+  tb.innerHTML=parados.map(r=>`<tr><td>${sname(r.cliente)}</td><td>${esc(r.parceiro)||'—'}</td><td style="font-size:10px;color:var(--muted)">${esc((r.status||'').replace(/^\d+\.\s*/,''))}</td><td>${slaBadge(r.slaGP)}</td></tr>`).join('');
 }
 
 // ── MONTHLY CHARTS ────────────────────────────────────────────────
@@ -1236,22 +1246,6 @@ function renderSLAByMonth(rows){
 }
 function updateMetaLine(){renderSLAByMonth(filteredRows);renderSLAAlerts(filteredRows);}
 
-// ── CONVERSION ────────────────────────────────────────────────────
-function renderConversion(rows){
-  const total=rows.length||1;
-  const allStages=[...FUNNEL_ORDER,...BOTTOM_ORDER];
-  const stageCounts=allStages.map(stage=>{
-    const count=rows.filter(r=>{const st=(r.status||'').replace(/^\d+\.\s*/,'').trim();return st.toLowerCase().includes(stage.toLowerCase())||stage.toLowerCase().includes(st.toLowerCase());}).length;
-    return{stage,count};
-  }).filter(s=>s.count>0);
-  const maxC=stageCounts[0]?stageCounts[0].count:1;
-  const el=document.getElementById('conversionFunnel');if(!el)return;
-  el.innerHTML=stageCounts.map(({stage,count})=>{
-    const pct=Math.round(count/total*100);const bw=Math.round(count/maxC*100);const color=getStatusColor(stage);
-    return`<div class="conv-row"><div class="conv-label" title="${stage}">${stage}</div><div class="conv-bar-wrap"><div class="conv-bar" style="width:${bw}%;background:${color};">${count}</div></div><div class="conv-pct">${pct}%</div></div>`;
-  }).join('');
-}
-
 // ── TOP CLIENTES ──────────────────────────────────────────────────
 // Normaliza o nome do cliente para agrupar (espaços duplicados/trailing e caixa não devem contar como clientes diferentes)
 const clienteKey=c=>(c||'').replace(/[\u0000-\u001F\u007F​-‍﻿]/g,'').trim().replace(/\s+/g,' ').toUpperCase();
@@ -1259,7 +1253,7 @@ const clienteKey=c=>(c||'').replace(/[\u0000-\u001F\u007F​-‍﻿]/g,'').trim(
 function rankDot(i){return i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71';}
 function renderRankList(elId,entries,fmt){
   const el=document.getElementById(elId);if(!el)return;
-  el.innerHTML=entries.map(([label,val],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${rankDot(i)}"></div><span style="color:var(--textdim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${label}">${label}</span><span class="city-count">${fmt?fmt(val):val}</span></div>`).join('')||'<div style="color:var(--muted);font-size:12px;padding:10px 0;">Sem dados.</div>';
+  el.innerHTML=entries.map(([label,val],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${rankDot(i)}"></div><span style="color:var(--textdim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${esc(label)}">${esc(label)}</span><span class="city-count">${fmt?fmt(val):val}</span></div>`).join('')||'<div style="color:var(--muted);font-size:12px;padding:10px 0;">Sem dados.</div>';
 }
 function renderTopClients(rows){
   const vMap={},vName={};
@@ -1298,7 +1292,7 @@ function renderSLARankList(elId,sorted,maxM){
   const el=document.getElementById(elId);if(!el)return;
   el.innerHTML=sorted.map(s=>{
     const pct=Math.round(s.media/maxM*100);
-    return`<div class="sla-rank-row"><div class="sla-rank-top"><span class="sla-rank-name" title="${s.l}">${s.l}</span><span class="sla-rank-val">${s.media}d <span>(${s.count})</span></span></div><div class="parc-bar-wrap"><div class="parc-bar" style="width:${pct}%;background:#2ecc71"></div></div></div>`;
+    return`<div class="sla-rank-row"><div class="sla-rank-top"><span class="sla-rank-name" title="${esc(s.l)}">${esc(s.l)}</span><span class="sla-rank-val">${s.media}d <span>(${s.count})</span></span></div><div class="parc-bar-wrap"><div class="parc-bar" style="width:${pct}%;background:#2ecc71"></div></div></div>`;
   }).join('')||'<div style="color:var(--muted);font-size:12px;padding:10px 0;">Sem dados.</div>';
 }
 function renderSLAByCliente(rows){
@@ -1361,12 +1355,12 @@ function renderHeatmap(rows){
   estados.forEach(est=>{
     const row=matrix[est]||{};
     const total=Object.values(row).reduce((a,b)=>a+b,0);
-    table+=`<tr><td style="padding:4px 8px;font-size:11px;color:var(--textdim);font-weight:600;white-space:nowrap;">${est}</td>`;
+    table+=`<tr><td style="padding:4px 8px;font-size:11px;color:var(--textdim);font-weight:600;white-space:nowrap;">${esc(est)}</td>`;
     meses.forEach(m=>{
       const v=row[m]||0;
       const bg=cellColor(v);
       const tc=v>0?'#fff':'#3a4560';
-      table+=`<td style="${tdStyle}background:${bg};color:${tc};" title="${est} · ${m}: ${v} protocolos">${v||''}</td>`;
+      table+=`<td style="${tdStyle}background:${bg};color:${tc};" title="${esc(est)} · ${m}: ${v} protocolos">${v||''}</td>`;
     });
     table+=`<td style="${tdStyle}background:#2a3147;color:var(--accent);">${total}</td>`;
     table+='</tr>';
@@ -1409,9 +1403,9 @@ function renderMap(allRowsIn){
   // Enquadra o mapa nos pontos reais em vez de ficar com zoom fixo e bordas vazias
   if(bounds.length)leafletMap.fitBounds(bounds,{padding:[24,24],maxZoom:11});
   const cr=document.getElementById('cityRanking');
-  if(cr)cr.innerHTML=Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([city,count],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71'}"></div><span style="color:var(--textdim)">${city}</span><span class="city-count">${count}</span></div>`).join('');
+  if(cr)cr.innerHTML=Object.entries(cityCount).sort((a,b)=>b[1]-a[1]).slice(0,20).map(([city,count],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71'}"></div><span style="color:var(--textdim)">${esc(city)}</span><span class="city-count">${count}</span></div>`).join('');
   const sr=document.getElementById('stateRanking');
-  if(sr)sr.innerHTML=Object.entries(stateCount).sort((a,b)=>b[1]-a[1]).map(([uf,count],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71'}"></div><span style="color:var(--textdim);font-weight:600;min-width:28px;">${uf}</span><span class="city-count">${count}</span></div>`).join('');
+  if(sr)sr.innerHTML=Object.entries(stateCount).sort((a,b)=>b[1]-a[1]).map(([uf,count],i)=>`<div class="map-city-row"><div class="city-dot" style="background:${i===0?'#e74c3c':i<3?'#f39c12':'#2ecc71'}"></div><span style="color:var(--textdim);font-weight:600;min-width:28px;">${esc(uf)}</span><span class="city-count">${count}</span></div>`).join('');
 }
 
 // ── PROTO TABLE ───────────────────────────────────────────────────
@@ -1419,11 +1413,11 @@ function renderProtoTable(rows){
   const sCls=st=>!st?'':(st.includes('Concluída')||st.includes('Entregue'))?'s-done':st.includes('Cancelado')?'s-cancel':st.includes('Pendente')||st.includes('validação')?'s-active':'s-pending';
   const el=document.getElementById('protoBody');if(!el)return;
   el.innerHTML=rows.slice(0,250).map(r=>`
-    <tr onclick="filterByStatus('${(r.status||'').replace(/'/g,"\\'")}')">
-      <td>${sname(r.cliente)}</td><td>${r.parceiro||'—'}</td><td>${r.estado||'—'}</td><td>${r.cidade||'—'}</td>
-      <td style="font-family:var(--font-m);color:var(--accent2);font-size:11px;">${r.protocolo}</td>
-      <td><span class="prod-chip">${r.produto||'—'}</span></td>
-      <td><span class="status-chip ${sCls(r.status)}">${(r.status||'').replace(/^\d+\.\s*/,'')}</span></td>
+    <tr data-status="${esc(r.status||'')}" onclick="filterByStatus(this.dataset.status)">
+      <td>${sname(r.cliente)}</td><td>${esc(r.parceiro)||'—'}</td><td>${esc(r.estado)||'—'}</td><td>${esc(r.cidade)||'—'}</td>
+      <td style="font-family:var(--font-m);color:var(--accent2);font-size:11px;">${esc(r.protocolo)}</td>
+      <td><span class="prod-chip">${esc(r.produto)||'—'}</span></td>
+      <td><span class="status-chip ${sCls(r.status)}">${esc((r.status||'').replace(/^\d+\.\s*/,''))}</span></td>
       <td>${r.slaGP!=null?slaBadge(r.slaGP):'—'}</td>
       <td>${r.valor>0?'R$ '+r.valor.toLocaleString('pt-BR',{minimumFractionDigits:2}):'—'}</td>
       <td style="color:var(--warn)">${r.nota>0?'★'.repeat(r.nota):'—'}</td>
@@ -1432,7 +1426,7 @@ function renderProtoTable(rows){
 
 // ── HELPERS ───────────────────────────────────────────────────────
 function slaBadge(v){const cls=v>40?'sla-bad':v>25?'sla-warn':'sla-ok';return`<span class="sla-badge ${cls}">${v}d</span>`;}
-function sname(name){if(!name)return'—';const s=name.replace(/\s*\([^)]*\)/g,'').trim();return`<span title="${name}">${s.length>24?s.slice(0,22)+'…':s}</span>`;}
+function sname(name){if(!name)return'—';const s=name.replace(/\s*\([^)]*\)/g,'').trim();return`<span title="${esc(name)}">${esc(s.length>24?s.slice(0,22)+'…':s)}</span>`;}
 function sortMonths(arr){
   const o={Out:10,Nov:11,Dez:12,Jan:1,Fev:2,Mar:3,Abr:4,Mai:5,Jun:6,Jul:7,Ago:8,Set:9};
   return[...new Set(arr)].filter(Boolean).sort((a,b)=>{const[ma,ya]=a.split('/');const[mb,yb]=b.split('/');const dy=parseInt(ya)-parseInt(yb);return dy!==0?dy:(o[ma]||0)-(o[mb]||0);});
@@ -1502,7 +1496,7 @@ function derive(meta,base){
     out.push({
       c,e,mes:ym(ent),q:new Date(ent).getUTCDate()<=15?1:2,
       mesC:conc!=null?ym(conc):null,dias:e?diff(conc,S):null,
-      gp:e&&lib!=null?diff(conc,lib):null,d30:e?diff(conc,ent):null,pre,motivo,
+      gp:e&&lib!=null?diff(conc,lib):null,pre,motivo,
       age:diff(T,S),ctr:(e&&prz&&lim!=null)?(conc<=lim?1:0):null,
       prazo:r.prazoContratoDias>0?r.prazoContratoDias:null,
       mu:r.motivoAtraso,parceiro:r.parceiro,cliente:r.cliente,produto:r.produto,protocolo:r.protocolo
@@ -1514,7 +1508,7 @@ function agg(L,meta){
   const B=L.filter(x=>!x.c), E=B.filter(x=>x.e), C=E.filter(x=>x.ctr!=null);
   return{
     n:L.length,canc:L.length-B.length,base:B.length,ent:E.length,
-    mes:E.filter(x=>x.mesC===x.mes).length,d30:E.filter(x=>x.d30<=30).length,
+    mes:E.filter(x=>x.mesC===x.mes).length,
     avg:av(E.map(x=>x.dias)),std:sd(E.map(x=>x.dias)),ok:E.filter(x=>x.dias<=meta).length,late:E.filter(x=>x.dias>meta).length,
     sem:B.filter(x=>x.pre!=null&&x.pre>=meta).length,libN:B.filter(x=>x.pre!=null).length,
     ab:B.filter(x=>!x.e).length,abL:B.filter(x=>!x.e&&x.age>meta).length,
@@ -1566,7 +1560,7 @@ function renderPrazoContrato(L){
   const head='<tr><th>Prazo</th><th>Protocolos</th><th>Entregues</th><th>Dentro do prazo</th><th>Parceiro(s) mais comuns</th></tr>';
   const rows=prazos.map(p=>{
     const g=by[p];
-    const top=Object.entries(g.parc).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([n,c])=>`${n} (${c})`).join(', ');
+    const top=Object.entries(g.parc).sort((a,b)=>b[1]-a[1]).slice(0,2).map(([n,c])=>`${esc(n)} (${c})`).join(', ');
     return`<tr><td style="text-align:left;">${p} dias</td><td>${g.total}</td><td>${g.entregues}</td>`+
       `<td>${g.entregues?g.dentro+'/'+g.entregues+' ('+pc(g.dentro,g.entregues)+')':'—'}</td>`+
       `<td style="text-align:left;color:var(--textdim);">${top||'—'}</td></tr>`;
@@ -1676,7 +1670,7 @@ function enumerarMeses(de,ate){
 // fica de fora porque ainda está incompleto). Ocupação = backlog atual ÷ backlog saudável.
 function mesesCompletos(n){
   const t=new Date(),out=[];
-  for(let i=1;i<=n;i++){const d=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()-i,1));out.push(d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0'));}
+  for(let i=1;i<=n;i++){const d=new Date(t.getFullYear(),t.getMonth()-i,1);out.push(d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'));}
   return out;
 }
 function capacidade(rows,meta){
@@ -1708,7 +1702,7 @@ function renderCapacidade(L,meta){
       .filter(([,c])=>c.aberto>0||c.entregues>0)
       .sort((a,b)=>(b[1].ocup||0)-(a[1].ocup||0)));
   const head='<tr><th>Produto</th><th>Vazão/mês</th><th>Entrada/mês</th><th>Backlog atual</th><th>Backlog saudável</th><th>Ocupação</th><th>Idade média</th><th>Vencidos (&gt;'+meta+'d)</th><th>Dias p/ zerar a fila</th><th>Situação</th></tr>';
-  const rows=linhas.map(([nome,c],i)=>`<tr${i===0?' style="font-weight:700;"':''}><td style="text-align:left;">${nome}</td>`+
+  const rows=linhas.map(([nome,c],i)=>`<tr${i===0?' style="font-weight:700;"':''}><td style="text-align:left;">${esc(nome)}</td>`+
     `<td>${f1(c.vazao)}</td>`+
     `<td class="${c.saldo>0.5?'pdca-bad':''}">${f1(c.entrada)}</td>`+
     `<td>${c.aberto}</td><td>${f1(c.saudavel)}</td>`+
@@ -1822,9 +1816,9 @@ function renderMotivoParceiro(L){
   const rows=topMotivos.map(([motivo,total,ps])=>{
     const partners=Object.entries(ps).sort((a,b)=>b[1]-a[1]);
     const concentrado=partners.length<=2;
-    const quem=partners.slice(0,4).map(([p,c])=>`${p} (${c})`).join(', ')+(partners.length>4?` +${partners.length-4}`:'');
+    const quem=partners.slice(0,4).map(([p,c])=>`${esc(p)} (${c})`).join(', ')+(partners.length>4?` +${partners.length-4}`:'');
     return `<tr>`+
-      `<td style="text-align:left;white-space:normal;">${motivo}</td>`+
+      `<td style="text-align:left;white-space:normal;">${esc(motivo)}</td>`+
       `<td>${total}</td>`+
       `<td style="text-align:left;white-space:normal;color:var(--textdim);">${quem}</td>`+
       `<td><span class="${concentrado?'pdca-bad':'pdca-wa'}">${concentrado?'Concentrado':'Espalhado'}</span></td>`+
@@ -1854,8 +1848,8 @@ function renderInsights(L,meta){
     L.filter(x=>!x.c&&x.mu).forEach(x=>{if(splitMotivos(x.mu).includes(topMotivo)){const p=(x.parceiro||'—').trim()||'—';porParceiro[p]=(porParceiro[p]||0)+1;}});
     const parceirosOrd=Object.entries(porParceiro).sort((a,b)=>b[1]-a[1]);
     const concentrado=parceirosOrd.length<=2;
-    const quemAgir=concentrado?`cobrar diretamente ${parceirosOrd.map(([p])=>p).join(' e ')}, que concentram esse motivo`:`revisar o processo com todos os parceiros envolvidos, já que o motivo está espalhado entre ${parceirosOrd.length} parceiros diferentes`;
-    cards.push({cls:'bad',head:`Principal motivo de atraso: ${topMotivo}`,
+    const quemAgir=concentrado?`cobrar diretamente ${parceirosOrd.map(([p])=>esc(p)).join(' e ')}, que concentram esse motivo`:`revisar o processo com todos os parceiros envolvidos, já que o motivo está espalhado entre ${parceirosOrd.length} parceiros diferentes`;
+    cards.push({cls:'bad',head:`Principal motivo de atraso: ${esc(topMotivo)}`,
       body:`Responde por ${topCount} de ${totalMotivos} ocorrências registradas (${pct}%) — é o maior ponto de atenção do período.`,
       action:`Sugestão: ${quemAgir}.`});
   }
@@ -1902,7 +1896,7 @@ function renderInsights(L,meta){
       .map(p=>[p,capacidade(L.filter(x=>((x.produto||'—').trim()||'—')===p),meta)])
       .filter(([,c])=>c.entregues>=3&&c.ocup!=null).sort((a,b)=>b[1].ocup-a[1].ocup);
     const pior=prods[0];
-    const piorTxt=pior&&pior[1].ocup>1?` O produto mais pressionado é ${pior[0]}, com ${pior[1].ocup.toFixed(1).replace('.',',')}× o backlog saudável.`:'';
+    const piorTxt=pior&&pior[1].ocup>1?` O produto mais pressionado é ${esc(pior[0])}, com ${pior[1].ocup.toFixed(1).replace('.',',')}× o backlog saudável.`:'';
     cards.push({cls:capG.ocup<=1?'':(capG.ocup<=1.5?'warn':'bad'),
       head:`Capacidade: backlog em ${capG.ocup.toFixed(1).replace('.',',')}× o nível saudável (${capG.status.toLowerCase()})`,
       body:`Entregando ~${capG.vazao.toFixed(1).replace('.',',')} protocolos/mês, o backlog saudável pra meta de ${meta} dias é ~${capG.saudavel.toFixed(0)}; hoje há ${capG.aberto} em andamento, ${capG.vencidos} já vencidos. No ritmo atual, zerar a fila levaria ~${Math.round(capG.diasZerar)} dias.${piorTxt}`,
@@ -1943,7 +1937,7 @@ function renderPendentes(L,meta){
   const head='<tr><th>Cliente</th><th>Parceiro</th><th>Entrou em</th><th>Protocolos</th><th>Dias em andamento</th><th>Situação</th></tr>';
   const rows=grupos.map(x=>{
     const vencido=x.age>meta;
-    return`<tr><td>${x.cliente||'—'}</td><td>${x.parceiro||'—'}</td><td>${mesLabel(x.mes)}</td><td>${x.n}</td><td>${x.age}d</td>`+
+    return`<tr><td>${esc(x.cliente)||'—'}</td><td>${esc(x.parceiro)||'—'}</td><td>${mesLabel(x.mes)}</td><td>${x.n}</td><td>${x.age}d</td>`+
       `<td><span class="${vencido?'pdca-bad':'pdca-wa'}">${vencido?'Vencido':'Dentro do prazo'}</span></td></tr>`;
   }).join('');
   tb.innerHTML=head+rows;
@@ -1955,8 +1949,8 @@ function renderPrazoRevisao(){
     .sort((a,b)=>a.prazoContratoDias-b.prazoContratoDias);
   if(!rows.length){tb.innerHTML='<tr><td style="text-align:center;color:var(--muted);padding:16px;">Nenhum prazo de contrato suspeito.</td></tr>';return;}
   const head='<tr><th>Cliente</th><th>Parceiro</th><th>Protocolo</th><th>Prazo informado</th><th>Data da venda</th><th>Status</th></tr>';
-  tb.innerHTML=head+rows.map(r=>`<tr><td>${r.cliente||'—'}</td><td>${r.parceiro||'—'}</td><td>${r.protocolo||'—'}</td>`+
-    `<td class="pdca-bad">${r.prazoContratoDias} dias</td><td>${fmtD(r.dataVenda)}</td><td style="text-align:left;">${(r.status||'—').replace(/^\d+\.\s*/,'')}</td></tr>`).join('');
+  tb.innerHTML=head+rows.map(r=>`<tr><td>${esc(r.cliente)||'—'}</td><td>${esc(r.parceiro)||'—'}</td><td>${esc(r.protocolo)||'—'}</td>`+
+    `<td class="pdca-bad">${r.prazoContratoDias} dias</td><td>${fmtD(r.dataVenda)}</td><td style="text-align:left;">${esc((r.status||'—').replace(/^\d+\.\s*/,''))}</td></tr>`).join('');
 }
 // ── PREVISIBILIDADE DE ENTREGA (aba Análises) ─────────────────────
 // Histórico = 6 meses completos (mês de conclusão). Previsão dos próximos 3 meses =
@@ -1966,7 +1960,7 @@ function renderPrazoRevisao(){
 // que existe de fato: backlog atual + entradas esperadas.
 let prevSerie='Geral',prevMetric='qtd';
 const PREV_MES=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
-function ymAdd(n){const t=new Date();const d=new Date(Date.UTC(t.getUTCFullYear(),t.getUTCMonth()+n,1));return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');}
+function ymAdd(n){const t=new Date();const d=new Date(t.getFullYear(),t.getMonth()+n,1);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
 function ymLbl(k){const m=/^(\d{4})-(\d{2})$/.exec(k);return PREV_MES[+m[2]-1]+'/'+m[1].slice(2);}
 function ymOfT(t){const d=new Date(t);return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0');}
 const mean=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:0;
@@ -2016,11 +2010,11 @@ function renderPrevisibilidade(){
     .sort((a,b)=>a==='Geral'?-1:b==='Geral'?1:S[b].mq-S[a].mq);
   const sel=document.getElementById('prevSerie');
   if(sel){const keep=nomes.includes(prevSerie)?prevSerie:'Geral';prevSerie=keep;
-    sel.innerHTML=nomes.map(n=>`<option value="${n}"${n===keep?' selected':''}>${n}</option>`).join('');}
+    sel.innerHTML=nomes.map(n=>`<option value="${esc(n)}"${n===keep?' selected':''}>${esc(n)}</option>`).join('');}
   const f1=x=>x.toFixed(1).replace('.',','), R=x=>'R$ '+Math.round(x).toLocaleString('pt-BR');
   const head='<tr><th>Produto</th><th>Entregas/mês</th><th>Previsibilidade</th><th>Previsão 3 meses (qtd)</th><th>Faixa (qtd)</th><th>Valor/mês</th><th>Previsão 3 meses (R$)</th><th>Faixa (R$)</th><th>Backlog</th><th>Cobertura</th></tr>';
   const rows=nomes.map(n=>{const c=S[n];
-    return`<tr${n==='Geral'?' style="font-weight:700;"':''}><td style="text-align:left;">${n}</td>`+
+    return`<tr${n==='Geral'?' style="font-weight:700;"':''}><td style="text-align:left;">${esc(n)}</td>`+
       `<td>${f1(c.mq)}</td><td><span class="${c.prevCls}">${c.prev}${c.cv!=null&&c.prev!=='Poucos dados'?' ('+Math.round(c.cv*100)+'%)':''}</span></td>`+
       `<td>${Math.round(c.qF)}${c.limitado?' *':''}</td><td>${Math.round(c.qLo)} a ${Math.round(c.qHi)}</td>`+
       `<td>${R(c.mv)}</td><td>${R(c.vF)}${c.limitado?' *':''}</td><td>${R(c.vLo)} a ${R(c.vHi)}</td>`+
@@ -2115,7 +2109,7 @@ function renderPartnersTable(stats){
   const tb=document.getElementById('partnersTable');if(!tb)return;
   let h='<tr><th>Parceiro</th><th>Protocolos</th><th>Entregues</th><th>SLA médio (venda → conclusão)</th><th>Taxa de cancelamento</th><th>Nota média PRC</th></tr>';
   stats.forEach(s=>{
-    h+='<tr><td>'+s.nome+'</td><td>'+s.total+'</td><td>'+s.entregues+'</td><td>'+fmtSla(s.slaMedio)+'</td>'
+    h+='<tr><td>'+esc(s.nome)+'</td><td>'+s.total+'</td><td>'+s.entregues+'</td><td>'+fmtSla(s.slaMedio)+'</td>'
       +'<td'+(s.cancelRate!=null&&s.cancelRate>=20?' class="pdca-bad"':'')+'>'+fmtPct(s.cancelRate)+'</td>'
       +'<td>'+(s.notaMedia!=null?s.notaMedia.toFixed(2)+' ★':'—')+'</td></tr>';
   });
@@ -2124,13 +2118,13 @@ function renderPartnersTable(stats){
 }
 function renderPartnersSlaChart(rows,topNomes){
   const acc={}; // acc[parceiro][mes] = {s,c}
-  rows.filter(r=>r.statusNum===13&&r.slaContrato!=null&&r.dataConclusao!=null&&topNomes.includes(parceiroKey(r.parceiro))).forEach(r=>{
+  rows.filter(r=>isEntregue(r)&&r.slaContrato!=null&&r.dataConclusao!=null&&topNomes.includes(parceiroKey(r.parceiro))).forEach(r=>{
     const k=parceiroKey(r.parceiro), m=ym(r.dataConclusao);
     if(!acc[k])acc[k]={};
     if(!acc[k][m])acc[k][m]={s:0,c:0};
     acc[k][m].s+=r.slaContrato;acc[k][m].c++;
   });
-  const meses=[...new Set(rows.filter(r=>r.statusNum===13&&r.slaContrato!=null&&r.dataConclusao!=null).map(r=>ym(r.dataConclusao)))].sort();
+  const meses=[...new Set(rows.filter(r=>isEntregue(r)&&r.slaContrato!=null&&r.dataConclusao!=null).map(r=>ym(r.dataConclusao)))].sort();
   const nomeOriginal={}; rows.forEach(r=>{const k=parceiroKey(r.parceiro);if(k&&!nomeOriginal[k])nomeOriginal[k]=r.parceiro;});
   const datasets=topNomes.map((k,i)=>({
     label:nomeOriginal[k]||k,
@@ -2153,7 +2147,7 @@ function render(){
     const a=acc[k];
     a.total++;
     if(r.statusNum===14)a.canc++;
-    if(r.statusNum===13){
+    if(isEntregue(r)){
       a.entregues++;
       if(r.slaContrato!=null){a.slaS+=r.slaContrato;a.slaC++;}
     }
@@ -2170,6 +2164,120 @@ function render(){
   renderPartnersSlaChart(rows,topNomes);
 }
 window.PartnerQuality={render};
+})();
+</script>
+
+<script>
+// ── RELATÓRIO ONE PAGE (semanal / mensal) — só o escopo do GP, mesmos dados e mesma regra de "entregue" ──
+(function(){
+const DAY=864e5,MN=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const E=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let mode='sem',off=0,sc='all';
+const today=()=>{const n=new Date();return Date.UTC(n.getFullYear(),n.getMonth(),n.getDate());};
+const fd=t=>{const d=new Date(t);return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear();};
+const R=v=>'R$ '+(v||0).toLocaleString('pt-BR',{maximumFractionDigits:0});
+function range(o){
+  const t=today(),d=new Date(t);
+  if(mode==='sem'){const s=t-((d.getUTCDay()+6)%7)*DAY+o*7*DAY;return[s,s+6*DAY];}
+  return[Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+o,1),Date.UTC(d.getUTCFullYear(),d.getUTCMonth()+o+1,0)];
+}
+const lbl=o=>{const[s,e]=range(o);if(mode==='sem')return fd(s).slice(0,5);const d=new Date(s);return MN[d.getUTCMonth()]+'/'+String(d.getUTCFullYear()).slice(2);};
+const inR=(t,s,e)=>t!=null&&t>=s&&t<=e;
+function rows(){
+  const a=window.allRows||[];
+  return sc==='net'?a.filter(isNetTurbo):sc==='partners'?a.filter(r=>!isNetTurbo(r)):a;
+}
+function limite(r){return r.dataLimite!=null?r.dataLimite:(r.dataVenda!=null&&r.prazoContrato>0?r.dataVenda+r.prazoContrato*DAY:null);}
+function calc(o,A){
+  const[s,e]=range(o),ref=Math.min(e,today());
+  const ent=A.filter(r=>isEntregue(r)&&inR(r.dataConclusao,s,e));
+  const entradas=A.filter(r=>r.statusNum!==14&&inR(r.dataVenda,s,e));
+  const slas=ent.map(r=>r.slaContrato).filter(x=>x!=null);
+  const cp=ent.filter(r=>r.prazoContrato>0&&r.slaContrato!=null);
+  const back=A.filter(r=>r.statusNum!==14&&r.dataVenda!=null&&r.dataVenda<=e&&(r.dataConclusao==null||r.dataConclusao>e));
+  const venc=back.filter(r=>{const l=limite(r);return l!=null&&l<ref;});
+  return{s,e,ent,entradas,valor:ent.reduce((x,r)=>x+(r.valor||0),0),
+    sla:slas.length?slas.reduce((x,y)=>x+y,0)/slas.length:null,
+    gp:(()=>{const g=ent.map(r=>r.slaGP).filter(x=>x!=null);return g.length?g.reduce((x,y)=>x+y,0)/g.length:null;})(),
+    prazo:cp.length?cp.filter(r=>r.slaContrato<=r.prazoContrato).length/cp.length*100:null,
+    back,venc,vencVal:venc.reduce((x,r)=>x+(r.valor||0),0)};
+}
+function group(list,f,top){
+  const m={};list.forEach(r=>{const k=f(r)||'—';(m[k]=m[k]||{n:0,v:0}).n++;m[k].v+=r.valor||0;});
+  return Object.entries(m).sort((a,b)=>b[1].n-a[1].n||b[1].v-a[1].v).slice(0,top);
+}
+function delta(c,p,inv,fmt){
+  if(p==null||c==null)return'<span class="rp-eq">sem comparação</span>';
+  const d=c-p,pr=mode==='sem'?'sem. anterior':'mês anterior';
+  if(Math.abs(d)<1e-9)return'<span class="rp-eq">= '+pr+'</span>';
+  const good=inv?d<0:d>0;
+  return'<span class="'+(good?'rp-up':'rp-dn')+'">'+(d>0?'▲ +':'▼ ')+fmt(d)+'</span> vs '+pr;
+}
+function trend(A){
+  const n=mode==='sem'?8:6,pts=[];
+  for(let k=n-1;k>=0;k--){pts.push({l:lbl(off-k),n:calc(off-k,A).ent.length,cur:k===0});}
+  const mx=Math.max(1,...pts.map(x=>x.n)),W=330,H=96,bw=W/n;
+  let g='';
+  pts.forEach((x,i)=>{
+    const h=Math.round(x.n/mx*(H-26)),X=i*bw+bw*.18,w=bw*.64;
+    g+='<rect x="'+X+'" y="'+(H-14-h)+'" width="'+w+'" height="'+h+'" rx="2" fill="'+(x.cur?'#1f9d55':'#a9dcc0')+'"/>'
+      +'<text x="'+(X+w/2)+'" y="'+(H-17-h)+'" font-size="9" text-anchor="middle" fill="#1a2233" font-weight="700">'+x.n+'</text>'
+      +'<text x="'+(X+w/2)+'" y="'+(H-3)+'" font-size="8" text-anchor="middle" fill="#5b6a82">'+E(x.l)+'</text>';
+  });
+  return'<svg viewBox="0 0 '+W+' '+H+'" width="100%" role="img" aria-label="Entregas por período">'+g+'</svg>';
+}
+function render(){
+  const el=document.getElementById('rpPaper');if(!el)return;
+  if(!(window.allRows||[]).length){el.innerHTML='<div style="padding:30px;text-align:center;color:#5b6a82;">Carregando dados…</div>';return;}
+  const A=rows(),c=calc(off,A),p=calc(off-1,A),sem=mode==='sem';
+  const per=sem?fd(c.s)+' a '+fd(c.e):(()=>{const d=new Date(c.s);return['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'][d.getUTCMonth()]+' de '+d.getUTCFullYear();})();
+  const parcial=c.e>today();
+  const nf=v=>String(Math.round(Math.abs(v)*10)/10).replace('.',',');
+  const kpi=(l,v,d)=>'<div class="rp-kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>';
+  const sv=c.sla==null?'—':nf(c.sla)+' d';
+  const prods=group(c.ent,r=>r.produto,5),mots=group(c.venc,r=>r.motivoAtraso||'Sem motivo informado',4);
+  const semMot=c.venc.filter(r=>!r.motivoAtraso).length;
+  const H=[];
+  H.push('Entregamos <b>'+c.ent.length+'</b> projeto(s), somando <b>'+R(c.valor)+'</b> ('+(p.ent.length?(c.ent.length>=p.ent.length?'+':'')+Math.round((c.ent.length/p.ent.length-1)*100)+'% sobre o período anterior':'período anterior sem entregas')+').');
+  H.push('Entraram <b>'+c.entradas.length+'</b> novo(s) protocolo(s) — '+(c.entradas.length>c.ent.length?'entradas acima das entregas, a fila cresce.':c.entradas.length<c.ent.length?'entregas acima das entradas, a fila diminui.':'entradas e entregas equilibradas.'));
+  if(c.sla!=null&&p.sla!=null&&Math.abs(c.sla-p.sla)>=1)H.push('SLA médio '+(c.sla<p.sla?'melhorou':'piorou')+' de <b>'+nf(p.sla)+'</b> para <b>'+nf(c.sla)+'</b> dias.');
+  if(c.prazo!=null)H.push('<b>'+Math.round(c.prazo)+'%</b> das entregas saíram dentro do prazo do contrato.');
+  if(prods[0])H.push('Produto que mais entregou: <b>'+E(prods[0][0])+'</b> ('+prods[0][1].n+').');
+  const acoes=[];
+  if(c.venc.length)acoes.push('Priorizar os <b>'+c.venc.length+'</b> projetos vencidos ('+R(c.vencVal)+' em risco), começando pelos mais antigos.');
+  if(semMot)acoes.push('Registrar o motivo de atraso em <b>'+semMot+'</b> projeto(s) vencido(s) sem justificativa — a gerência precisa dele para agir.');
+  if(mots[0]&&mots[0][0]!=='Sem motivo informado')acoes.push('Levar à gerência a causa mais frequente de atraso: <b>'+E(mots[0][0])+'</b> ('+mots[0][1].n+' projetos).');
+  if(c.entradas.length>c.ent.length)acoes.push('Entradas superaram entregas: avaliar reforço de capacidade ou reprogramação de agendas.');
+  if(!acoes.length)acoes.push('Manter o ritmo atual; nenhum ponto crítico identificado no período.');
+  const key='lm-rel-'+mode+'-'+c.s+'-'+sc;let note='';
+  try{note=localStorage.getItem(key)||'';}catch(_){}
+  el.innerHTML=
+   '<div class="rp-head"><div><h1>Relatório '+(sem?'Semanal':'Mensal')+' — Implantação Last Mile</h1><div class="rp-sub">Samuel Almeida · Diretoria de Operações'+(sc==='net'?' · NET TURBO':sc==='partners'?' · Demais Parceiros':'')+'</div></div>'
+   +'<div class="rp-per">'+E(per)+(parcial?'<div style="font-weight:500;font-size:10px;color:#8591a8;">período em andamento</div>':'')+'</div></div>'
+   +'<div class="rp-kpis">'
+   +kpi('Entregas',c.ent.length,delta(c.ent.length,p.ent.length,false,v=>nf(v)))
+   +kpi('Valor entregue',R(c.valor),delta(c.valor,p.valor,false,v=>R(Math.abs(v)).replace('R$ ','R$ ')))
+   +kpi('SLA médio (venda→entrega)',sv,(c.gp!=null?'<b>Na gestão (liberação→entrega): '+nf(c.gp)+' d</b><br>':'')+delta(c.sla,p.sla,true,nf))
+   +kpi('Novos protocolos',c.entradas.length,delta(c.entradas.length,p.entradas.length,true,nf))
+   +kpi('Backlog no fim do período',c.back.length,delta(c.back.length,p.back.length,true,nf))
+   +kpi('Vencidos em aberto',c.venc.length,c.venc.length?R(c.vencVal)+' em risco':'nenhum vencido')
+   +'</div>'
+   +'<div class="rp-cols"><div><h2>Destaques</h2><ul>'+H.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'
+   +'<div><h2>Entregas — '+(sem?'últimas 8 semanas':'últimos 6 meses')+'</h2>'+trend(A)+'</div></div>'
+   +'<div class="rp-cols"><div><h2>Entregas por produto</h2>'+(prods.length?'<table><tr><th>Produto</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+prods.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Sem entregas no período.</div>')+'</div>'
+   +'<div><h2>Atrasos em aberto por motivo</h2>'+(mots.length?'<table><tr><th>Motivo</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+mots.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Nenhum projeto vencido.</div>')+'</div></div>'
+   +'<div class="rp-cols" style="grid-template-columns:1fr;"><div><h2>Ações sugeridas para a gerência</h2><ul>'+acoes.map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>'
+   +'<h2>Observações do GP</h2><div class="rp-note" id="rpNote" contenteditable="true" data-ph="">'+E(note)+'</div>'
+   +'<div class="rp-foot"><span>Fonte: planilha Last Mile · "entregue" = data de conclusão preenchida e não cancelado · SLA em dias corridos</span><span>Gerado em '+fd(today())+'</span></div>';
+  const nt=document.getElementById('rpNote');
+  if(nt)nt.addEventListener('input',()=>{try{localStorage.setItem(key,nt.innerText);}catch(_){}});
+}
+window.Relatorio={
+  render,
+  setMode(m){mode=m;off=0;document.querySelectorAll('[data-rpmode]').forEach(b=>b.classList.toggle('active',b.dataset.rpmode===m));render();},
+  nav(d){off=Math.min(0,off+d);render();},
+  setScope(v){sc=v;render();}
+};
 })();
 </script>
 </body>
