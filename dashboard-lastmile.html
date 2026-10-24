@@ -874,7 +874,19 @@ function parseSheet(text){
     let inputBKO=parseDateBR(getN('input bko - entrou na validacao'));
     if(inputBKO==null)inputBKO=dataVenda;
     const dataLimite=parseDateBR(getN('data limite do contrato'));
-    const motivoAtraso=getN('motivo do atraso')||getN('motivo');
+    // Motivo "pré-gestão" automático: tempo da data da venda até a liberação para o GP.
+    // ≥30 dias → "30d+ pré-gestão"; ≥15 dias → "15+ pré-gestão". Só acrescenta quando o
+    // motivo digitado na planilha ainda não menciona pré-gestão (não duplica o manual).
+    let motivoAtraso=getN('motivo do atraso')||getN('motivo');
+    motivoAtraso=(motivoAtraso||'').replace(/\b15\s*d\s*\+\s*(pr[eé])/gi,'15+ $1');// "15d+ pré-gestão" digitado à mão → mesmo nome do automático
+    if(dataVenda!=null&&liberado!=null){
+      const pg=diff(liberado,dataVenda);
+      const jaTem=/pr[eé][\s-]*gest/i.test((motivoAtraso||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')+' '+motivoAtraso);
+      if(pg!=null&&pg>=15&&!jaTem){
+        const tag=pg>=30?'30d+ pré-gestão':'15+ pré-gestão';
+        motivoAtraso=motivoAtraso?motivoAtraso+', '+tag:tag;
+      }
+    }
 
     // SLA real de entrega (dias corridos), calculado pelas datas — não pela coluna bruta da planilha:
     // SLA do Contrato = data da venda → data de conclusão
