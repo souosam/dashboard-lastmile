@@ -2249,7 +2249,7 @@ function render(){
   const nf=v=>String(Math.round(Math.abs(v)*10)/10).replace('.',',');
   const kpi=(l,v,d)=>'<div class="rp-kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>';
   const sv=c.sla==null?'—':nf(c.sla)+' d';
-  const prods=group(c.ent,r=>r.produto,5),mots=group(c.venc,r=>r.motivoAtraso||'Sem motivo informado',4);
+  const prods=group(c.ent,r=>r.produto,5),mots=(()=>{const m={};c.venc.forEach(r=>{const l=(r.motivoAtraso||'').split(',').map(x=>x.trim()).filter(Boolean);(l.length?l:['Sem motivo informado']).forEach(k=>{(m[k]=m[k]||{n:0,v:0}).n++;m[k].v+=r.valor||0;});});return Object.entries(m).sort((x,y)=>y[1].n-x[1].n||y[1].v-x[1].v).slice(0,5);})();
   const semMot=c.venc.filter(r=>!r.motivoAtraso).length;
   const H=[];
   H.push('Entregamos <b>'+c.ent.length+'</b> projeto(s), somando <b>'+R(c.valor)+'</b> ('+(p.ent.length?(c.ent.length>=p.ent.length?'+':'')+Math.round((c.ent.length/p.ent.length-1)*100)+'% sobre o período anterior':'período anterior sem entregas')+').');
