@@ -313,7 +313,7 @@ main>.section-title:first-of-type{margin-top:0;}
     <button class="scope-btn" onclick="Relatorio.nav(-1)" title="Período anterior">◀</button>
     <button class="scope-btn" onclick="Relatorio.nav(1)" title="Período seguinte">▶</button>
     <select id="rpScope" class="scope-btn" onchange="Relatorio.setScope(this.value)" style="background:var(--card);color:var(--text);">
-      <option value="all">Visão Geral</option><option value="net">NET TURBO</option><option value="partners">Demais Parceiros</option>
+      <option value="all">Visão Geral</option><option value="net">Na rede (NET TURBO)</option><option value="partners">Last Mile (demais parceiros)</option>
     </select>
     <span class="rp-sp"></span>
     <button class="btn-primary" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
@@ -2188,13 +2188,15 @@ function rows(){
   return sc==='net'?a.filter(isNetTurbo):sc==='partners'?a.filter(r=>!isNetTurbo(r)):a;
 }
 function limite(r){return r.dataLimite!=null?r.dataLimite:(r.dataVenda!=null&&r.prazoContrato>0?r.dataVenda+r.prazoContrato*DAY:null);}
+// Entrada no GP = data em que o projeto foi liberado para a gestão (se faltar, usa a data da venda)
+const entrada=r=>r.liberado!=null?r.liberado:r.dataVenda;
 function calc(o,A){
   const[s,e]=range(o),ref=Math.min(e,today());
   const ent=A.filter(r=>isEntregue(r)&&inR(r.dataConclusao,s,e));
-  const entradas=A.filter(r=>r.statusNum!==14&&inR(r.dataVenda,s,e));
+  const entradas=A.filter(r=>r.statusNum!==14&&inR(entrada(r),s,e));
   const slas=ent.map(r=>r.slaContrato).filter(x=>x!=null);
   const cp=ent.filter(r=>r.prazoContrato>0&&r.slaContrato!=null);
-  const back=A.filter(r=>r.statusNum!==14&&r.dataVenda!=null&&r.dataVenda<=e&&(r.dataConclusao==null||r.dataConclusao>e));
+  const back=A.filter(r=>r.statusNum!==14&&entrada(r)!=null&&entrada(r)<=e&&(r.dataConclusao==null||r.dataConclusao>e));
   const venc=back.filter(r=>{const l=limite(r);return l!=null&&l<ref;});
   return{s,e,ent,entradas,valor:ent.reduce((x,r)=>x+(r.valor||0),0),
     sla:slas.length?slas.reduce((x,y)=>x+y,0)/slas.length:null,
@@ -2239,7 +2241,7 @@ function render(){
   const semMot=c.venc.filter(r=>!r.motivoAtraso).length;
   const H=[];
   H.push('Entregamos <b>'+c.ent.length+'</b> projeto(s), somando <b>'+R(c.valor)+'</b> ('+(p.ent.length?(c.ent.length>=p.ent.length?'+':'')+Math.round((c.ent.length/p.ent.length-1)*100)+'% sobre o período anterior':'período anterior sem entregas')+').');
-  H.push('Entraram <b>'+c.entradas.length+'</b> novo(s) protocolo(s) — '+(c.entradas.length>c.ent.length?'entradas acima das entregas, a fila cresce.':c.entradas.length<c.ent.length?'entregas acima das entradas, a fila diminui.':'entradas e entregas equilibradas.'));
+  H.push('Foram liberados para o GP <b>'+c.entradas.length+'</b> protocolo(s) — '+(c.entradas.length>c.ent.length?'entradas acima das entregas, a fila cresce.':c.entradas.length<c.ent.length?'entregas acima das entradas, a fila diminui.':'entradas e entregas equilibradas.'));
   if(c.sla!=null&&p.sla!=null&&Math.abs(c.sla-p.sla)>=1)H.push('SLA médio '+(c.sla<p.sla?'melhorou':'piorou')+' de <b>'+nf(p.sla)+'</b> para <b>'+nf(c.sla)+'</b> dias.');
   if(c.prazo!=null)H.push('<b>'+Math.round(c.prazo)+'%</b> das entregas saíram dentro do prazo do contrato.');
   if(prods[0])H.push('Produto que mais entregou: <b>'+E(prods[0][0])+'</b> ('+prods[0][1].n+').');
@@ -2252,13 +2254,13 @@ function render(){
   const key='lm-rel-'+mode+'-'+c.s+'-'+sc;let note='';
   try{note=localStorage.getItem(key)||'';}catch(_){}
   el.innerHTML=
-   '<div class="rp-head"><div><h1>Relatório '+(sem?'Semanal':'Mensal')+' — Implantação Last Mile</h1><div class="rp-sub">Samuel Almeida · Diretoria de Operações'+(sc==='net'?' · NET TURBO':sc==='partners'?' · Demais Parceiros':'')+'</div></div>'
+   '<div class="rp-head"><div><h1>Relatório '+(sem?'Semanal':'Mensal')+' — Implantação</h1><div class="rp-sub">Samuel Almeida · Diretoria de Operações'+(sc==='net'?' · Na rede (NET TURBO)':sc==='partners'?' · Last Mile (demais parceiros)':'')+'</div></div>'
    +'<div class="rp-per">'+E(per)+(parcial?'<div style="font-weight:500;font-size:10px;color:#8591a8;">período em andamento</div>':'')+'</div></div>'
    +'<div class="rp-kpis">'
    +kpi('Entregas',c.ent.length,delta(c.ent.length,p.ent.length,false,v=>nf(v)))
    +kpi('Valor entregue',R(c.valor),delta(c.valor,p.valor,false,v=>R(Math.abs(v)).replace('R$ ','R$ ')))
    +kpi('SLA médio (venda→entrega)',sv,(c.gp!=null?'<b>Na gestão (liberação→entrega): '+nf(c.gp)+' d</b><br>':'')+delta(c.sla,p.sla,true,nf))
-   +kpi('Novos protocolos',c.entradas.length,delta(c.entradas.length,p.entradas.length,true,nf))
+   +kpi('Liberados para o GP',c.entradas.length,delta(c.entradas.length,p.entradas.length,true,nf))
    +kpi('Backlog no fim do período',c.back.length,delta(c.back.length,p.back.length,true,nf))
    +kpi('Vencidos em aberto',c.venc.length,c.venc.length?R(c.vencVal)+' em risco':'nenhum vencido')
    +'</div>'
@@ -2268,7 +2270,7 @@ function render(){
    +'<div><h2>Atrasos em aberto por motivo</h2>'+(mots.length?'<table><tr><th>Motivo</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+mots.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Nenhum projeto vencido.</div>')+'</div></div>'
    +'<div class="rp-cols" style="grid-template-columns:1fr;"><div><h2>Ações sugeridas para a gerência</h2><ul>'+acoes.map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>'
    +'<h2>Observações do GP</h2><div class="rp-note" id="rpNote" contenteditable="true" data-ph="">'+E(note)+'</div>'
-   +'<div class="rp-foot"><span>Fonte: planilha Last Mile · "entregue" = data de conclusão preenchida e não cancelado · SLA em dias corridos</span><span>Gerado em '+fd(today())+'</span></div>';
+   +'<div class="rp-foot"><span>Fonte: planilha Last Mile · "entregue" = data de conclusão preenchida e não cancelado · entrada = data de liberação para o GP · SLA em dias corridos</span><span>Gerado em '+fd(today())+'</span></div>';
   const nt=document.getElementById('rpNote');
   if(nt)nt.addEventListener('input',()=>{try{localStorage.setItem(key,nt.innerText);}catch(_){}});
 }
