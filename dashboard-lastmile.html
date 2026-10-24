@@ -2263,6 +2263,8 @@ function render(){
   if(mots[0]&&mots[0][0]!=='Sem motivo informado')acoes.push('Levar à gerência a causa mais frequente de atraso: <b>'+E(mots[0][0])+'</b> ('+mots[0][1].n+' projetos).');
   if(c.entradas.length>c.ent.length)acoes.push('Entradas superaram entregas: avaliar reforço de capacidade ou reprogramação de agendas.');
   if(!acoes.length)acoes.push('Manter o ritmo atual; nenhum ponto crítico identificado no período.');
+  const DEF={'15+ pré-gestão':'protocolo que leva 15 ou mais dias para chegar até um GP para implantar.','30d+ pré-gestão':'protocolo que leva 30 ou mais dias para chegar até um GP para implantar.','Falta de material/equipamento':'o protocolo não tem o material necessário para seguir com a implantação, gerando atraso acima do SLA de contrato.','Sem motivo informado':'projeto vencido sem motivo registrado na planilha.'};
+  const top=mots[0],leg=top?'<div style="margin-top:6px;font-size:10px;color:#5b6a82;line-height:1.35;"><b>Causa mais frequente: '+E(top[0])+'</b> — '+(DEF[top[0]]?E(DEF[top[0]])+' ':'')+top[1].n+' de '+c.venc.length+' vencidos ('+Math.round(top[1].n/c.venc.length*100)+'%).</div>':'';
   const key='lm-rel-'+mode+'-'+c.s+'-'+sc;let note='';
   try{note=localStorage.getItem(key)||'';}catch(_){}
   el.innerHTML=
@@ -2279,10 +2281,10 @@ function render(){
    +'<div class="rp-cols"><div><h2>Destaques</h2><ul>'+H.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'
    +'<div><h2>Entregas — '+(sem?'últimas 8 semanas':'últimos 6 meses')+'</h2>'+trend(A)+'</div></div>'
    +'<div class="rp-cols"><div><h2>Entregas por produto</h2>'+(prods.length?'<table><tr><th>Produto</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+prods.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Sem entregas no período.</div>')+'</div>'
-   +'<div><h2>Atrasos em aberto por motivo</h2>'+(mots.length?'<table><tr><th>Motivo</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+mots.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Nenhum projeto vencido.</div>')+'</div></div>'
+   +'<div><h2>Atrasos em aberto por motivo</h2>'+(mots.length?'<table><tr><th>Motivo</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+mots.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Nenhum projeto vencido.</div>')+leg+'</div></div>'
    +'<div class="rp-cols" style="grid-template-columns:1fr;"><div><h2>Ações sugeridas para a gerência</h2><ul>'+acoes.map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>'
    +'<h2>Observações do GP</h2><div class="rp-note" id="rpNote" contenteditable="true" data-ph="">'+E(note)+'</div>'
-   +'<div class="rp-foot"><span>Fonte: planilha Last Mile · "entregue" = data de conclusão preenchida e não cancelado · entrada = data de liberação para o GP · SLA em dias corridos</span><span>Gerado em '+fd(today())+'</span></div>';
+   +'<div class="rp-foot"><span></span><span>Gerado em '+fd(today())+'</span></div>';
   const nt=document.getElementById('rpNote');
   if(nt)nt.addEventListener('input',()=>{try{localStorage.setItem(key,nt.innerText);}catch(_){}});
 }
