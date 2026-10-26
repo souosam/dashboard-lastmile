@@ -2258,9 +2258,13 @@ function render(){
   if(c.prazo!=null)H.push('<b>'+Math.round(c.prazo)+'%</b> das entregas saíram dentro do prazo do contrato.');
   if(prods[0])H.push('Produto que mais entregou: <b>'+E(prods[0][0])+'</b> ('+prods[0][1].n+').');
   const acoes=[];
-  if(c.venc.length)acoes.push('Priorizar os <b>'+c.venc.length+'</b> projetos vencidos ('+R(c.vencVal)+' em risco), começando pelos mais antigos.');
+  if(c.venc.length)acoes.push('Priorizar os <b>'+c.venc.length+'</b> projetos vencidos ('+R(c.vencVal)+' em backlog), começando pelos mais antigos.');
   if(semMot)acoes.push('Registrar o motivo de atraso em <b>'+semMot+'</b> projeto(s) vencido(s) sem justificativa — a gerência precisa dele para agir.');
-  if(mots[0]&&mots[0][0]!=='Sem motivo informado')acoes.push('Levar à gerência a causa mais frequente de atraso: <b>'+E(mots[0][0])+'</b> ('+mots[0][1].n+' projetos).');
+  const mr=mots.find(m=>m[0]!=='Sem motivo informado');
+  if(!sem&&mr){
+    const nm=mr[0],pv=calc(off-1,A).venc.filter(r=>(r.motivoAtraso||'').split(',').map(x=>x.trim()).includes(nm)).length;
+    acoes.push('Levar à gerência a causa mais frequente de atraso: <b>'+E(nm)+'</b> ('+mr[1].n+' projetos'+(p.venc.length?'; no mês anterior: '+pv:'')+').');
+  }
   if(c.entradas.length>c.ent.length)acoes.push('Entradas superaram entregas: avaliar reforço de capacidade ou reprogramação de agendas.');
   if(!acoes.length)acoes.push('Manter o ritmo atual; nenhum ponto crítico identificado no período.');
   const DEF={'15+ pré-gestão':'protocolo que leva 15 ou mais dias para chegar até um GP para implantar.','30d+ pré-gestão':'protocolo que leva 30 ou mais dias para chegar até um GP para implantar.','Falta de material/equipamento':'o protocolo não tem o material necessário para seguir com a implantação, gerando atraso acima do SLA de contrato.','Sem motivo informado':'projeto vencido sem motivo registrado na planilha.'};
@@ -2276,7 +2280,7 @@ function render(){
    +kpi('SLA médio (venda→entrega)',sv,(c.gp!=null?'<b>Na gestão (liberação→entrega): '+nf(c.gp)+' d</b><br>':'')+delta(c.sla,p.sla,true,nf))
    +kpi('Liberados para o GP',c.entradas.length,delta(c.entradas.length,p.entradas.length,true,nf))
    +kpi('Backlog no fim do período',c.back.length,delta(c.back.length,p.back.length,true,nf))
-   +kpi('Vencidos em aberto',c.venc.length,c.venc.length?R(c.vencVal)+' em risco':'nenhum vencido')
+   +kpi('Vencidos em aberto',c.venc.length,c.venc.length?R(c.vencVal)+' em backlog':'nenhum vencido')
    +'</div>'
    +'<div class="rp-cols"><div><h2>Destaques</h2><ul>'+H.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'
    +'<div><h2>Entregas — '+(sem?'últimas 8 semanas':'últimos 6 meses')+'</h2>'+trend(A)+'</div></div>'
