@@ -2259,7 +2259,11 @@ function render(){
   if(prods[0])H.push('Produto que mais entregou: <b>'+E(prods[0][0])+'</b> ('+prods[0][1].n+').');
   const acoes=[];
   if(c.venc.length)acoes.push('Priorizar os <b>'+c.venc.length+'</b> projetos vencidos ('+R(c.vencVal)+' em backlog), começando pelos mais antigos.');
-  if(semMot)acoes.push('Registrar o motivo de atraso em <b>'+semMot+'</b> projeto(s) vencido(s) sem justificativa — a gerência precisa dele para agir.');
+  if(semMot){
+    const lst=c.venc.filter(r=>!r.motivoAtraso).sort((x,y)=>(limite(x)||0)-(limite(y)||0));
+    const ids=lst.slice(0,8).map(r=>E(r.protocolo||r.cliente)).join(', ')+(lst.length>8?' e mais '+(lst.length-8):'');
+    acoes.push('Registrar o motivo de atraso em <b>'+semMot+'</b> projeto(s) vencido(s) sem justificativa — a gerência precisa dele para agir. <span style="color:#5b6a82;">Protocolos: '+ids+'.</span>');
+  }
   const mr=mots.find(m=>m[0]!=='Sem motivo informado');
   if(!sem&&mr){
     const nm=mr[0],pv=calc(off-1,A).venc.filter(r=>(r.motivoAtraso||'').split(',').map(x=>x.trim()).includes(nm)).length;
