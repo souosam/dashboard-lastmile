@@ -2210,11 +2210,14 @@ function calc(o,A){
   const cp=ent.filter(r=>r.prazoContrato>0&&r.slaContrato!=null);
   const back=A.filter(r=>r.statusNum!==14&&entrada(r)!=null&&entrada(r)<=e&&(r.dataConclusao==null||r.dataConclusao>e));
   const venc=back.filter(r=>{const l=limite(r);return l!=null&&l<ref;});
+  // Atrasos NOVOS do período: o prazo do contrato venceu dentro do período e não foi cumprido
+  // (aberto ainda, ou entregue depois do prazo). É o fluxo do período, não o estoque acumulado.
+  const atr=A.filter(r=>{if(r.statusNum===14)return false;const l=limite(r);if(l==null||!inR(l,s,e)||l>=ref)return false;return r.dataConclusao==null||r.dataConclusao>l;});
   return{s,e,ent,entradas,valor:ent.reduce((x,r)=>x+(r.valor||0),0),
     sla:slas.length?slas.reduce((x,y)=>x+y,0)/slas.length:null,
     gp:(()=>{const g=ent.map(r=>r.slaGP).filter(x=>x!=null);return g.length?g.reduce((x,y)=>x+y,0)/g.length:null;})(),
     prazo:cp.length?cp.filter(r=>r.slaContrato<=r.prazoContrato).length/cp.length*100:null,
-    back,venc,vencVal:venc.reduce((x,r)=>x+(r.valor||0),0)};
+    back,venc,atr,vencVal:venc.reduce((x,r)=>x+(r.valor||0),0)};
 }
 function group(list,f,top){
   const m={};list.forEach(r=>{const k=f(r)||'—';(m[k]=m[k]||{n:0,v:0}).n++;m[k].v+=r.valor||0;});
@@ -2249,7 +2252,7 @@ function render(){
   const nf=v=>String(Math.round(Math.abs(v)*10)/10).replace('.',',');
   const kpi=(l,v,d)=>'<div class="rp-kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>';
   const sv=c.sla==null?'—':nf(c.sla)+' d';
-  const prods=group(c.ent,r=>r.produto,5),mots=(()=>{const m={};c.venc.forEach(r=>{const l=(r.motivoAtraso||'').split(',').map(x=>x.trim()).filter(Boolean);(l.length?l:['Sem motivo informado']).forEach(k=>{(m[k]=m[k]||{n:0,v:0}).n++;m[k].v+=r.valor||0;});});return Object.entries(m).sort((x,y)=>y[1].n-x[1].n||y[1].v-x[1].v).slice(0,5);})();
+  const prods=group(c.ent,r=>r.produto,5),mots=(()=>{const m={};c.atr.forEach(r=>{const l=(r.motivoAtraso||'').split(',').map(x=>x.trim()).filter(Boolean);(l.length?l:['Sem motivo informado']).forEach(k=>{(m[k]=m[k]||{n:0,v:0}).n++;m[k].v+=r.valor||0;});});return Object.entries(m).sort((x,y)=>y[1].n-x[1].n||y[1].v-x[1].v).slice(0,5);})();
   const semMot=c.venc.filter(r=>!r.motivoAtraso).length;
   const H=[];
   H.push('Entregamos <b>'+c.ent.length+'</b> projeto(s), somando <b>'+R(c.valor)+'</b> ('+(p.ent.length?(c.ent.length>=p.ent.length?'+':'')+Math.round((c.ent.length/p.ent.length-1)*100)+'% sobre o período anterior':'período anterior sem entregas')+').');
@@ -2266,13 +2269,13 @@ function render(){
   }
   const mr=mots.find(m=>m[0]!=='Sem motivo informado');
   if(!sem&&mr){
-    const nm=mr[0],pv=calc(off-1,A).venc.filter(r=>(r.motivoAtraso||'').split(',').map(x=>x.trim()).includes(nm)).length;
-    acoes.push('Levar à gerência a causa mais frequente de atraso: <b>'+E(nm)+'</b> ('+mr[1].n+' projetos'+(p.venc.length?'; no mês anterior: '+pv:'')+').');
+    const nm=mr[0],pv=p.atr.filter(r=>(r.motivoAtraso||'').split(',').map(x=>x.trim()).includes(nm)).length;
+    acoes.push('Levar à gerência a causa mais frequente de atraso: <b>'+E(nm)+'</b> ('+mr[1].n+' projetos'+(p.atr.length?'; no mês anterior: '+pv:'')+').');
   }
   if(c.entradas.length>c.ent.length)acoes.push('Entradas superaram entregas: avaliar reforço de capacidade ou reprogramação de agendas.');
   if(!acoes.length)acoes.push('Manter o ritmo atual; nenhum ponto crítico identificado no período.');
   const DEF={'15+ pré-gestão':'protocolo que leva 15 ou mais dias para chegar até um GP para implantar.','30d+ pré-gestão':'protocolo que leva 30 ou mais dias para chegar até um GP para implantar.','Falta de material/equipamento':'o protocolo não tem o material necessário para seguir com a implantação, gerando atraso acima do SLA de contrato.','Sem motivo informado':'projeto vencido sem motivo registrado na planilha.'};
-  const top=mots[0],leg=top?'<div style="margin-top:6px;font-size:10px;color:#5b6a82;line-height:1.35;"><b>Causa mais frequente: '+E(top[0])+'</b> — '+(DEF[top[0]]?E(DEF[top[0]])+' ':'')+top[1].n+' de '+c.venc.length+' vencidos ('+Math.round(top[1].n/c.venc.length*100)+'%).</div>':'';
+  const top=mots[0],leg=top?'<div style="margin-top:6px;font-size:10px;color:#5b6a82;line-height:1.35;"><b>Causa mais frequente: '+E(top[0])+'</b> — '+(DEF[top[0]]?E(DEF[top[0]])+' ':'')+top[1].n+' de '+c.atr.length+' atrasos '+(sem?'da semana':'do mês')+' ('+Math.round(top[1].n/c.atr.length*100)+'%).</div>':'';
   const key='lm-rel-'+mode+'-'+c.s+'-'+sc;let note='';
   try{note=localStorage.getItem(key)||'';}catch(_){}
   el.innerHTML=
@@ -2284,12 +2287,12 @@ function render(){
    +kpi('SLA médio (venda→entrega)',sv,(c.gp!=null?'<b>Na gestão (liberação→entrega): '+nf(c.gp)+' d</b><br>':'')+delta(c.sla,p.sla,true,nf))
    +kpi('Liberados para o GP',c.entradas.length,delta(c.entradas.length,p.entradas.length,true,nf))
    +kpi('Backlog no fim do período',c.back.length,delta(c.back.length,p.back.length,true,nf))
-   +kpi('Vencidos em aberto',c.venc.length,c.venc.length?R(c.vencVal)+' em backlog':'nenhum vencido')
+   +kpi('Vencidos em aberto (acumulado)',c.venc.length,c.venc.length?'acumulado · '+R(c.vencVal)+' em backlog':'nenhum vencido')
    +'</div>'
    +'<div class="rp-cols"><div><h2>Destaques</h2><ul>'+H.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'
    +'<div><h2>Entregas — '+(sem?'últimas 8 semanas':'últimos 6 meses')+'</h2>'+trend(A)+'</div></div>'
    +'<div class="rp-cols"><div><h2>Entregas por produto</h2>'+(prods.length?'<table><tr><th>Produto</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+prods.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Sem entregas no período.</div>')+'</div>'
-   +'<div><h2>Atrasos em aberto por motivo</h2>'+(mots.length?'<table><tr><th>Motivo</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+mots.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Nenhum projeto vencido.</div>')+leg+'</div></div>'
+   +'<div><h2>Novos atrasos '+(sem?'da semana':'do mês')+' por motivo</h2>'+(mots.length?'<table><tr><th>Motivo</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+mots.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Nenhum prazo venceu '+(sem?'nesta semana':'neste mês')+' sem ser cumprido.</div>')+leg+'</div></div>'
    +'<div class="rp-cols" style="grid-template-columns:1fr;"><div><h2>Ações sugeridas para a gerência</h2><ul>'+acoes.map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>'
    +'<h2>Observações do GP</h2><div class="rp-note" id="rpNote" contenteditable="true" data-ph="">'+E(note)+'</div>'
    +'<div class="rp-foot"><span></span><span>Gerado em '+fd(today())+'</span></div>';
