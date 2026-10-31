@@ -141,6 +141,7 @@ main>.section-title:first-of-type{margin-top:0;}
 .prod-chip{display:inline-block;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;background:var(--surface);color:var(--textdim);border:1px solid var(--border);}
 /* PROTO TABLE */
 .proto-wrap{overflow-x:auto;}
+#stageProtoSection .proto-wrap{max-height:56vh;overflow-y:auto;}
 /* ALERT TABLE */
 .sem-dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:3px;}
 .sem-green{background:#2ecc71;}.sem-yellow{background:#f39c12;}.sem-red{background:#e74c3c;}
@@ -256,6 +257,34 @@ main>.section-title:first-of-type{margin-top:0;}
   .rp-note{border-color:#ccc;}
 }
 @media(max-width:700px){.rp-kpis{grid-template-columns:repeat(2,1fr);}.rp-cols{grid-template-columns:1fr;}.rp-paper{padding:16px;}}
+
+/* PROCESSOS */
+.pc-wrap{padding:22px 28px;max-width:1280px;margin:0 auto;}
+.pc-controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:6px;}
+.pc-controls select{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;}
+.pc-title{font-size:11px;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);font-weight:700;margin:22px 0 10px;}
+.pc-flow{display:flex;align-items:stretch;gap:0;flex-wrap:wrap;}
+.pc-node{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;min-width:150px;flex:1 1 160px;position:relative;}
+.pc-node.pc-term{flex:0 1 120px;min-width:110px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:var(--card-hi);}
+.pc-arrow{display:flex;align-items:center;justify-content:center;width:26px;color:var(--muted);font-size:20px;flex:0 0 26px;}
+.pc-node .pc-l{font-size:10px;letter-spacing:.7px;text-transform:uppercase;color:var(--muted);font-weight:700;}
+.pc-node .pc-v{font-family:var(--font-d);font-size:26px;font-weight:800;color:var(--text);margin:2px 0;}
+.pc-node .pc-s{font-size:11px;color:var(--textdim);line-height:1.4;}
+.pc-bar{height:6px;border-radius:4px;background:var(--surface);margin-top:8px;overflow:hidden;}
+.pc-bar>i{display:block;height:100%;border-radius:4px;}
+.pc-hot{border-color:var(--danger);box-shadow:0 0 0 1px var(--danger) inset,0 0 18px rgba(255,92,92,.18);}
+.pc-badge{position:absolute;top:-9px;right:12px;background:var(--danger);color:#fff;font-size:9px;font-weight:800;letter-spacing:.6px;padding:2px 8px;border-radius:10px;text-transform:uppercase;}
+.pc-grid{display:flex;flex-wrap:wrap;gap:10px;}
+.pc-grid .pc-node{flex:1 1 150px;max-width:210px;}
+.pc-ph{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;margin:12px 0 6px;}
+.pc-read{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:10px;padding:12px 16px;font-size:13px;line-height:1.55;color:var(--text);}
+.pc-read b{color:var(--accent);}
+.pc-seg{display:grid;grid-template-columns:230px 1fr 90px 70px;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px;}
+.pc-seg .pc-track{height:12px;background:var(--surface);border-radius:6px;overflow:hidden;}
+.pc-seg .pc-track>i{display:block;height:100%;background:var(--info);border-radius:6px;}
+.pc-seg.pc-top .pc-track>i{background:var(--danger);}
+.pc-note{font-size:11px;color:var(--muted);line-height:1.5;margin-top:8px;}
+@media(max-width:760px){.pc-wrap{padding:14px;}.pc-arrow{display:none;}.pc-seg{grid-template-columns:1fr 70px;}.pc-seg .pc-track{grid-column:1/-1;}}
 </style>
 </head>
 <body>
@@ -291,6 +320,7 @@ main>.section-title:first-of-type{margin-top:0;}
     <div class="nav-item" data-view="partners" onclick="switchView('partners')"><span class="nav-ico">🤝</span>Qualidade Parceiros</div>
     <div class="nav-item" data-view="analises" onclick="switchView('analises')"><span class="nav-ico">📊</span>Análises</div>
     <div class="nav-item" data-view="relatorio" onclick="switchView('relatorio')"><span class="nav-ico">📄</span>Relatório</div>
+    <div class="nav-item" data-view="processos" onclick="switchView('processos')"><span class="nav-ico">🧭</span>Processos</div>
   </nav>
   <div class="content-col">
 <header>
@@ -319,6 +349,16 @@ main>.section-title:first-of-type{margin-top:0;}
     <button class="btn-primary" onclick="window.print()">🖨 Imprimir / Salvar PDF</button>
   </div>
   <div class="rp-paper" id="rpPaper"></div>
+</div>
+</div>
+
+<div id="view-processos" class="view">
+<div class="pc-wrap">
+  <div class="pc-controls">
+    <select id="pcScope" onchange="Processos.setScope(this.value)"><option value="all">Visão Geral</option><option value="net">Na rede (NET TURBO)</option><option value="partners">Last Mile (demais parceiros)</option></select>
+    <select id="pcWin" onchange="Processos.setWin(this.value)"><option value="3">Entregues nos últimos 3 meses</option><option value="6" selected>Entregues nos últimos 6 meses</option><option value="12">Entregues nos últimos 12 meses</option><option value="0">Todo o histórico</option></select>
+  </div>
+  <div id="pcBody"></div>
 </div>
 </div>
 
@@ -660,6 +700,9 @@ function switchView(name){
     title.textContent='PDCA Last Mile';sub.textContent='GP · Samuel Almeida · Coortes por entrada';
   }else if(name==='partners'){
     title.textContent='Qualidade Parceiros';sub.textContent='GP · Samuel Almeida · Comparativo entre parceiros';
+  }else if(name==='processos'){
+    title.textContent='Processos';sub.textContent='GP · Samuel Almeida · Mapa do fluxo e gargalos';
+    if(window.Processos)window.Processos.render();
   }else if(name==='relatorio'){
     title.textContent='Relatório One Page';sub.textContent='GP · Samuel Almeida · Semanal e mensal';
     if(window.Relatorio)window.Relatorio.render();
@@ -747,6 +790,7 @@ async function loadData(){
         if(pdcaMsg)pdcaMsg.textContent='Erro ao calcular o PDCA: '+pdcaErr.message+' (os dados do dashboard continuam normais).';
       }
     }
+    if(window.Processos){try{window.Processos.render();}catch(pe){console.error('Processos render error:',pe);}}
     if(window.Relatorio){try{window.Relatorio.render();}catch(re){console.error('Relatório render error:',re);}}
     if(window.PartnerQuality){
       try{window.PartnerQuality.render();}
@@ -872,6 +916,8 @@ function parseSheet(text){
     if(assinatura==null)assinatura=parseDateBR(getN('assinatura do contrato (cliente)'));
     if(assinatura!=null&&dataVenda!=null){const d=diff(dataVenda,assinatura);if(d<0||d>90)assinatura=null;}
     let inputBKO=parseDateBR(getN('input bko - entrou na validacao'));
+    const inputBKORaw=inputBKO; // sem o fallback para a data da venda (usado no mapa de processos)
+    const agendamento=parseDateBR(getN('agendamento (vistoria/externo/interno)'));
     if(inputBKO==null)inputBKO=dataVenda;
     const dataLimite=parseDateBR(getN('data limite do contrato'));
     // Motivo "pré-gestão" automático: tempo da data da venda até a liberação para o GP.
@@ -905,7 +951,7 @@ function parseSheet(text){
       protocolo:get('protocolo'),etiqueta:get('etiqueta'),produto:get('produto'),
       prio:get('prio'),status,statusNum,
       valor,nota,slaGP,slaContrato,prazoContrato,mes,mesSort,
-      dataVenda,liberado,dataConclusao,assinatura,inputBKO,dataLimite,
+      dataVenda,liberado,dataConclusao,assinatura,inputBKO,inputBKORaw,agendamento,dataLimite,
       prazoContratoDias:prazoContrato,motivoAtraso,entregue};
   }).filter(Boolean);
 }
@@ -1010,8 +1056,13 @@ function filterByStatus(status){
   applyFilters();
   renderStageProtoList();
   if(activeStatusFilter){
+    // Espera o layout assentar (filtros re-renderizam gráficos e mudam alturas) e só rola se a
+    // lista não estiver já visível; para no topo da lista, abaixo do cabeçalho fixo.
     const sec=document.getElementById('stageProtoSection');
-    if(sec)sec.scrollIntoView({behavior:'smooth',block:'start'});
+    if(sec)requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      const hd=document.querySelector('header'),hh=hd?hd.offsetHeight:0,top=sec.getBoundingClientRect().top;
+      if(top>window.innerHeight*0.55||top<hh)window.scrollTo({top:Math.max(0,window.scrollY+top-hh-12),behavior:'smooth'});
+    }));
   }
 }
 function clearStatusFilter(){
@@ -2252,7 +2303,8 @@ function render(){
   const nf=v=>String(Math.round(Math.abs(v)*10)/10).replace('.',',');
   const kpi=(l,v,d)=>'<div class="rp-kpi"><div class="l">'+l+'</div><div class="v">'+v+'</div><div class="d">'+d+'</div></div>';
   const sv=c.sla==null?'—':nf(c.sla)+' d';
-  const prods=group(c.ent,r=>r.produto,5),mots=(()=>{const m={};c.atr.forEach(r=>{const l=(r.motivoAtraso||'').split(',').map(x=>x.trim()).filter(Boolean);(l.length?l:['Sem motivo informado']).forEach(k=>{(m[k]=m[k]||{n:0,v:0}).n++;m[k].v+=r.valor||0;});});return Object.entries(m).sort((x,y)=>y[1].n-x[1].n||y[1].v-x[1].v).slice(0,5);})();
+  const prods=(()=>{const m={};c.ent.forEach(r=>{const k=r.produto||'—',o=m[k]=m[k]||{n:0,v:0,rede:0,lm:0};o.n++;o.v+=r.valor||0;if(isNetTurbo(r))o.rede++;else o.lm++;});return Object.entries(m).sort((a,b)=>b[1].n-a[1].n||b[1].v-a[1].v).slice(0,5);})(),
+  redeN=c.ent.filter(isNetTurbo).length,lmN=c.ent.length-redeN,mots=(()=>{const m={};c.atr.forEach(r=>{const l=(r.motivoAtraso||'').split(',').map(x=>x.trim()).filter(Boolean);(l.length?l:['Sem motivo informado']).forEach(k=>{(m[k]=m[k]||{n:0,v:0}).n++;m[k].v+=r.valor||0;});});return Object.entries(m).sort((x,y)=>y[1].n-x[1].n||y[1].v-x[1].v).slice(0,5);})();
   const semMot=c.venc.filter(r=>!r.motivoAtraso).length;
   const H=[];
   H.push('Entregamos <b>'+c.ent.length+'</b> projeto(s), somando <b>'+R(c.valor)+'</b> ('+(p.ent.length?(c.ent.length>=p.ent.length?'+':'')+Math.round((c.ent.length/p.ent.length-1)*100)+'% sobre o período anterior':'período anterior sem entregas')+').');
@@ -2276,22 +2328,40 @@ function render(){
   if(!acoes.length)acoes.push('Manter o ritmo atual; nenhum ponto crítico identificado no período.');
   const DEF={'15+ pré-gestão':'protocolo que leva 15 ou mais dias para chegar até um GP para implantar.','30d+ pré-gestão':'protocolo que leva 30 ou mais dias para chegar até um GP para implantar.','Falta de material/equipamento':'o protocolo não tem o material necessário para seguir com a implantação, gerando atraso acima do SLA de contrato.','Sem motivo informado':'projeto vencido sem motivo registrado na planilha.'};
   const top=mots[0],leg=top?'<div style="margin-top:6px;font-size:10px;color:#5b6a82;line-height:1.35;"><b>Causa mais frequente: '+E(top[0])+'</b> — '+(DEF[top[0]]?E(DEF[top[0]])+' ':'')+top[1].n+' de '+c.atr.length+' atrasos '+(sem?'da semana':'do mês')+' ('+Math.round(top[1].n/c.atr.length*100)+'%).</div>':'';
+  let desemp='';
+  if(!sem){
+    const hist=[];for(let k=1;k<=6;k++)hist.push(calc(off-k,A));
+    const avg=f=>{const v=hist.map(f).filter(x=>x!=null);return v.length?v.reduce((x,y)=>x+y,0)/v.length:null;};
+    const aE=avg(h=>h.ent.length),aV=avg(h=>h.valor),aG=avg(h=>h.gp),aL=avg(h=>h.entradas.length);
+    const pct=(x,b)=>b?(x>=b?'+':'')+Math.round((x/b-1)*100)+'%':'—';
+    const cls=(x,b,inv)=>b==null||x==null?'rp-eq':((inv?x<b:x>b)?'rp-up':(x===b?'rp-eq':'rp-dn'));
+    const row=(n,cur,av,f,inv)=>'<tr><td>'+n+'</td><td class="n"><b>'+(cur==null?'—':f(cur))+'</b></td><td class="n">'+(av==null?'—':f(av))+'</td><td class="n '+cls(cur,av,inv)+'">'+(cur==null||av==null||!av?'—':pct(cur,av))+'</td></tr>';
+    const n0=v=>String(Math.round(v)),n1=v=>String(Math.round(v*10)/10).replace('.',',');
+    const serie=[3,2,1,0].map(k=>{const h=calc(off-k,A);return lbl(off-k)+' '+(h.gp==null?'—':n1(h.gp)+' d');}).join(' → ');
+    const all={};(A.filter(r=>isEntregue(r)&&r.dataConclusao!=null)).forEach(r=>{const d=new Date(r.dataConclusao),k=d.getUTCFullYear()*100+d.getUTCMonth();all[k]=(all[k]||0)+1;});
+    const best=Math.max(0,...Object.values(all)),isBest=c.ent.length>0&&c.ent.length>=best&&c.e<=today();
+    const nProd=new Set(c.ent.map(r=>r.produto).filter(Boolean)).size;
+    desemp='<h2>Meu desempenho — comparado à média dos 6 meses anteriores</h2><table><tr><th>Indicador</th><th class="n">Este mês</th><th class="n">Média 6 meses</th><th class="n">Variação</th></tr>'
+      +row('Entregas',c.ent.length,aE,n0,false)+row('Valor entregue',c.valor,aV,R,false)+row('SLA na gestão (liberação→entrega, média em dias)',c.gp,aG,n1,true)+row('Liberados para o GP',c.entradas.length,aL,n0,false)+'</table>'
+      +'<div style="margin-top:5px;font-size:10.5px;color:#1a2233;"><b>SLA na gestão (média):</b> '+serie+(isBest?' · <b>melhor mês do histórico em entregas</b>':'')+' · '+nProd+' tipo(s) de produto entregue(s)</div>';
+  }
   const key='lm-rel-'+mode+'-'+c.s+'-'+sc;let note='';
   try{note=localStorage.getItem(key)||'';}catch(_){}
   el.innerHTML=
    '<div class="rp-head"><div><h1>Relatório '+(sem?'Semanal':'Mensal')+' — Implantação</h1><div class="rp-sub">Samuel Almeida · Diretoria de Operações'+(sc==='net'?' · Na rede (NET TURBO)':sc==='partners'?' · Last Mile (demais parceiros)':'')+'</div></div>'
    +'<div class="rp-per">'+E(per)+(parcial?'<div style="font-weight:500;font-size:10px;color:#8591a8;">período em andamento</div>':'')+'</div></div>'
    +'<div class="rp-kpis">'
-   +kpi('Entregas',c.ent.length,delta(c.ent.length,p.ent.length,false,v=>nf(v)))
+   +kpi('Entregas',c.ent.length,delta(c.ent.length,p.ent.length,false,v=>nf(v))+'<br>Rede própria '+redeN+' · LM '+lmN)
    +kpi('Valor entregue',R(c.valor),delta(c.valor,p.valor,false,v=>R(Math.abs(v)).replace('R$ ','R$ ')))
    +kpi('SLA médio (venda→entrega)',sv,(c.gp!=null?'<b>Na gestão (liberação→entrega): '+nf(c.gp)+' d</b><br>':'')+delta(c.sla,p.sla,true,nf))
    +kpi('Liberados para o GP',c.entradas.length,delta(c.entradas.length,p.entradas.length,true,nf))
    +kpi('Backlog no fim do período',c.back.length,delta(c.back.length,p.back.length,true,nf))
    +kpi('Vencidos em aberto (acumulado)',c.venc.length,c.venc.length?'acumulado · '+R(c.vencVal)+' em backlog':'nenhum vencido')
    +'</div>'
+   +(desemp?'<div style="margin-bottom:12px;">'+desemp+'</div>':'')
    +'<div class="rp-cols"><div><h2>Destaques</h2><ul>'+H.map(x=>'<li>'+x+'</li>').join('')+'</ul></div>'
    +'<div><h2>Entregas — '+(sem?'últimas 8 semanas':'últimos 6 meses')+'</h2>'+trend(A)+'</div></div>'
-   +'<div class="rp-cols"><div><h2>Entregas por produto</h2>'+(prods.length?'<table><tr><th>Produto</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+prods.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Sem entregas no período.</div>')+'</div>'
+   +'<div class="rp-cols"><div><h2>Entregas por produto</h2>'+(prods.length?'<table><tr><th>Produto</th><th class="n">Qtd</th><th class="n">Rede própria</th><th class="n">LM</th><th class="n">Valor</th></tr>'+prods.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+x[1].rede+'</td><td class="n">'+x[1].lm+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table><div style="margin-top:5px;font-size:10px;color:#5b6a82;">Rede própria = NET TURBO · LM = Last Mile (demais parceiros)</div>':'<div style="color:#5b6a82;">Sem entregas no período.</div>')+'</div>'
    +'<div><h2>Novos atrasos '+(sem?'da semana':'do mês')+' por motivo</h2>'+(mots.length?'<table><tr><th>Motivo</th><th class="n">Qtd</th><th class="n">Valor</th></tr>'+mots.map(x=>'<tr><td>'+E(x[0])+'</td><td class="n">'+x[1].n+'</td><td class="n">'+R(x[1].v)+'</td></tr>').join('')+'</table>':'<div style="color:#5b6a82;">Nenhum prazo venceu '+(sem?'nesta semana':'neste mês')+' sem ser cumprido.</div>')+leg+'</div></div>'
    +'<div class="rp-cols" style="grid-template-columns:1fr;"><div><h2>Ações sugeridas para a gerência</h2><ul>'+acoes.map(x=>'<li>'+x+'</li>').join('')+'</ul></div></div>'
    +'<h2>Observações do GP</h2><div class="rp-note" id="rpNote" contenteditable="true" data-ph="">'+E(note)+'</div>'
@@ -2305,6 +2375,82 @@ window.Relatorio={
   nav(d){off=Math.min(0,off+d);render();},
   setScope(v){sc=v;render();}
 };
+})();
+</script>
+
+<script>
+// ── PROCESSOS: mapa visual do fluxo (venda → pré-gestão → liberação → implantação → entrega) e gargalos ──
+(function(){
+const DAY=864e5;
+const E=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let sc='all',win=6;
+const today=()=>{const n=new Date();return Date.UTC(n.getFullYear(),n.getMonth(),n.getDate());};
+const dd=(a,b)=>(a==null||b==null)?null:Math.round((a-b)/DAY);
+const avg=a=>a.length?a.reduce((x,y)=>x+y,0)/a.length:null;
+const n1=v=>v==null?'—':String(Math.round(v*10)/10).replace('.',',');
+const R=v=>'R$ '+(v||0).toLocaleString('pt-BR',{maximumFractionDigits:0});
+function rows(){const a=window.allRows||[];return sc==='net'?a.filter(isNetTurbo):sc==='partners'?a.filter(r=>!isNetTurbo(r)):a;}
+function limite(r){return r.dataLimite!=null?r.dataLimite:(r.dataVenda!=null&&r.prazoContrato>0?r.dataVenda+r.prazoContrato*DAY:null);}
+function render(){
+  const el=document.getElementById('pcBody');if(!el)return;
+  if(!(window.allRows||[]).length){el.innerHTML='<div class="pc-note" style="padding:30px;text-align:center;">Carregando dados…</div>';return;}
+  const A=rows(),T=today(),cut=win?T-win*30.44*DAY:null;
+  // 1) Fases macro — todos os projetos entregues no período que têm venda, liberação e conclusão
+  const done=A.filter(r=>isEntregue(r)&&r.dataConclusao!=null&&(cut==null||r.dataConclusao>=cut));
+  const ph=done.map(r=>({r,pre:dd(r.liberado,r.dataVenda),gp:dd(r.dataConclusao,r.liberado)})).filter(x=>x.pre!=null&&x.gp!=null&&x.pre>=0&&x.gp>=0);
+  const aPre=avg(ph.map(x=>x.pre)),aGp=avg(ph.map(x=>x.gp)),tot=(aPre||0)+(aGp||0);
+  const pPre=tot?aPre/tot*100:0,pGp=tot?aGp/tot*100:0;
+  const lenta=ph.length?ph.filter(x=>x.pre>=15).length/ph.length*100:null;
+  const cp=ph.filter(x=>x.r.prazoContrato>0);
+  const usoPrazo=cp.length?avg(cp.map(x=>(x.pre+x.gp)/x.r.prazoContrato*100)):null;
+  const preUso=cp.length?avg(cp.map(x=>x.pre/x.r.prazoContrato*100)):null;
+  const gargalo=pPre>=pGp?'pre':'gp';
+  const node=(l,v,sub,pct,col,hot)=>'<div class="pc-node'+(hot?' pc-hot':'')+'">'+(hot?'<div class="pc-badge">Maior tempo</div>':'')+'<div class="pc-l">'+l+'</div><div class="pc-v">'+v+'</div><div class="pc-s">'+sub+'</div><div class="pc-bar"><i style="width:'+Math.round(pct)+'%;background:'+col+'"></i></div></div>';
+  const term=(l,s2)=>'<div class="pc-node pc-term"><div class="pc-l">'+l+'</div><div class="pc-s">'+s2+'</div></div>';
+  const ar='<div class="pc-arrow">›</div>';
+  const fluxo=ph.length?'<div class="pc-flow">'+term('Venda','início do ciclo')+ar
+    +node('Pré-gestão · venda → liberação',n1(aPre)+' d','<b>'+Math.round(pPre)+'%</b> do ciclo'+(lenta!=null?'<br>'+Math.round(lenta)+'% levaram 15 d ou mais':'')+(preUso!=null?'<br>consome '+Math.round(preUso)+'% do prazo do contrato':''),pPre,'#5b8dd9',gargalo==='pre')+ar
+    +term('Liberado p/ GP','entra na implantação')+ar
+    +node('Implantação · liberação → entrega',n1(aGp)+' d','<b>'+Math.round(pGp)+'%</b> do ciclo<br>etapa sob gestão do GP',pGp,'#2ecc71',gargalo==='gp')+ar
+    +term('Entregue','ciclo médio: '+n1(tot)+' d')+'</div>'
+    :'<div class="pc-note">Sem entregas com data de venda e de liberação no período escolhido.</div>';
+  // 2) Onde os projetos estão agora — por status
+  const open=A.filter(r=>!isEntregue(r)&&r.statusNum!==14&&Number.isFinite(r.statusNum));
+  const by={};
+  open.forEach(r=>{const o=by[r.statusNum]=by[r.statusNum]||{n:r.statusNum,lab:(r.status||'').replace(/^\d+\.\s*/,''),c:0,v:0,venc:0};o.c++;o.v+=r.valor||0;const l=limite(r);if(l!=null&&l<T)o.venc++;});
+  const st=Object.values(by).sort((a,b)=>a.n-b.n),mx=Math.max(1,...st.map(x=>x.c));
+  const topN=st.filter(x=>x.n!==4).sort((a,b)=>b.c-a.c)[0];
+  const phase=n=>n<=2?['Validação e contrato','#5b8dd9']:n<=10?['Implantação','#2ecc71']:['Fechamento','#9b59b6'];
+  let grid='',lastPh='';
+  st.forEach(x=>{
+    const[pn,pc]=phase(x.n);
+    if(pn!==lastPh){grid+=(lastPh?'</div>':'')+'<div class="pc-ph" style="color:'+pc+'">'+pn+'</div><div class="pc-grid">';lastPh=pn;}
+    const hot=topN&&x.n===topN.n,stop=x.n===4;
+    grid+='<div class="pc-node'+(hot?' pc-hot':'')+'">'+(hot?'<div class="pc-badge">Maior acúmulo</div>':stop?'<div class="pc-badge" style="background:var(--warn)">Bloqueio</div>':'')
+      +'<div class="pc-l">'+String(x.n).padStart(2,'0')+' · '+E(x.lab)+'</div><div class="pc-v">'+x.c+'</div><div class="pc-s">'+R(x.v)+(x.venc?'<br><span style="color:var(--danger)">'+x.venc+' vencido(s)</span>':'<br>nenhum vencido')+'</div><div class="pc-bar"><i style="width:'+Math.round(x.c/mx*100)+'%;background:'+(stop?'var(--warn)':pc)+'"></i></div></div>';
+  });
+  grid+=lastPh?'</div>':'';
+  // 3) Detalhe por etapa (só onde as datas de etapa estão preenchidas)
+  const seg=[['Venda → Input no BKO',r=>dd(r.inputBKORaw,r.dataVenda)],['Input no BKO → Liberação p/ GP',r=>dd(r.liberado,r.inputBKORaw)],['Liberação → Agendamento',r=>dd(r.agendamento,r.liberado)],['Agendamento → Conclusão',r=>r.entregue?dd(r.dataConclusao,r.agendamento):null]];
+  const S=seg.map(([n,f])=>{let ok=[],bad=0;A.forEach(r=>{const d=f(r);if(d==null)return;if(d<0||d>365)bad++;else ok.push(d);});return{n,a:avg(ok),k:ok.length,bad};});
+  const smax=Math.max(1,...S.map(x=>x.a||0)),stop2=S.filter(x=>x.k>=5).sort((a,b)=>b.a-a.a)[0];
+  const recent=A.filter(r=>r.dataVenda!=null&&r.dataVenda>=Date.UTC(2026,4,1)),recOk=recent.filter(r=>r.inputBKORaw!=null).length;
+  const det=S.map(x=>'<div class="pc-seg'+(stop2&&x===stop2?' pc-top':'')+'"><div>'+x.n+'</div><div class="pc-track"><i style="width:'+Math.round((x.a||0)/smax*100)+'%"></i></div><div><b>'+n1(x.a)+' d</b></div><div style="color:var(--muted)">n='+x.k+'</div></div>').join('');
+  // leitura automática
+  const L=[];
+  if(ph.length)L.push('Em média, um projeto leva <b>'+n1(tot)+' dias</b> da venda à entrega: <b>'+n1(aPre)+'</b> até chegar à implantação ('+Math.round(pPre)+'%) e <b>'+n1(aGp)+'</b> na implantação ('+Math.round(pGp)+'%).');
+  if(preUso!=null)L.push('Só a pré-gestão consome em média <b>'+Math.round(preUso)+'%</b> do prazo do contrato, antes de o projeto chegar ao GP.');
+  if(topN)L.push('Hoje o maior acúmulo está em <b>'+E(topN.lab)+'</b>: '+topN.c+' projeto(s), '+Math.round(topN.c/Math.max(1,open.length)*100)+'% do backlog.');
+  const par=by[4];if(par)L.push('<b>'+par.c+'</b> projeto(s) estão como <b>Parado</b> ('+R(par.v)+').');
+  el.innerHTML=
+   '<div class="pc-title">Fluxo do processo — onde o tempo é gasto <span style="text-transform:none;letter-spacing:0;font-weight:500">(média de '+ph.length+' projeto(s) entregue(s))</span></div>'+fluxo
+   +'<div class="pc-title">Onde estão os projetos agora ('+open.length+' em aberto)</div>'+(st.length?grid:'<div class="pc-note">Nenhum projeto em aberto.</div>')
+   +'<div class="pc-title">Leitura do gargalo</div><div class="pc-read">'+(L.length?'<ul style="margin:0;padding-left:18px;">'+L.map(x=>'<li>'+x+'</li>').join('')+'</ul>':'Sem dados suficientes.')+'</div>'
+   +'<div class="pc-title">Detalhe por etapa — dias médios entre marcos</div>'+det
+   +'<div class="pc-note">Base do detalhe: apenas projetos com as duas datas preenchidas ('+S.map(x=>x.n.split(' → ')[0]+': '+x.k).join(' · ')+'). Datas fora de ordem foram descartadas'+(S.reduce((a,x)=>a+x.bad,0)?' ('+S.reduce((a,x)=>a+x.bad,0)+' ocorrência(s))':'')+'. '
+   +'Os projetos vendidos a partir de maio/26 quase não têm datas de etapa: <b>'+recOk+' de '+recent.length+'</b> com Input no BKO. Preencher essas colunas na planilha amplia o detalhe por etapa.</div>';
+}
+window.Processos={render,setScope(v){sc=v;render();},setWin(v){win=+v;render();}};
 })();
 </script>
 </body>
